@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PipeField OS</string>
+    <string name="title_activity_main">PipeField OS</string>
+    <string name="package_name">com.rennerkargbo.pipefieldos</string>
+    <string name="custom_url_scheme">com.rennerkargbo.pipefieldos</string>
+</resources>

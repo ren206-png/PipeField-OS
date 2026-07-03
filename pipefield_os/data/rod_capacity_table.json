@@ -1,0 +1,60 @@
+{
+  "rod_capacities": [
+    {
+      "diameter_in": 0.375,
+      "diameter_str": "3/8\"",
+      "threads_per_inch": 16,
+      "tensile_stress_area_in2": 0.0775,
+      "allowable_load_lb": 1550
+    },
+    {
+      "diameter_in": 0.500,
+      "diameter_str": "1/2\"",
+      "threads_per_inch": 13,
+      "tensile_stress_area_in2": 0.1419,
+      "allowable_load_lb": 2840
+    },
+    {
+      "diameter_in": 0.625,
+      "diameter_str": "5/8\"",
+      "threads_per_inch": 11,
+      "tensile_stress_area_in2": 0.2260,
+      "allowable_load_lb": 4519
+    },
+    {
+      "diameter_in": 0.750,
+      "diameter_str": "3/4\"",
+      "threads_per_inch": 10,
+      "tensile_stress_area_in2": 0.3340,
+      "allowable_load_lb": 6681
+    },
+    {
+      "diameter_in": 0.875,
+      "diameter_str": "7/8\"",
+      "threads_per_inch": 9,
+      "tensile_stress_area_in2": 0.4620,
+      "allowable_load_lb": 9240
+    },
+    {
+      "diameter_in": 1.000,
+      "diameter_str": "1\"",
+      "threads_per_inch": 8,
+      "tensile_stress_area_in2": 0.6060,
+      "allowable_load_lb": 12120
+    },
+    {
+      "diameter_in": 1.250,
+      "diameter_str": "1-1/4\"",
+      "threads_per_inch": 7,
+      "tensile_stress_area_in2": 0.9690,
+      "allowable_load_lb": 19380
+    },
+    {
+      "diameter_in": 1.500,
+      "diameter_str": "1-1/2\"",
+      "threads_per_inch": 6,
+      "tensile_stress_area_in2": 1.4050,
+      "allowable_load_lb": 28100
+    }
+  ]
+}

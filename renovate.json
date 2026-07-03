@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "Major Next.js / React upgrades require manual review",
+      "matchPackageNames": ["next", "react", "react-dom", "@types/react", "@types/react-dom"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "Batch infrastructure updates monthly",
+      "matchPackageNames": [
+        "@supabase/supabase-js",
+        "@supabase/ssr",
+        "stripe",
+        "@stripe/stripe-js",
+        "@capacitor/core",
+        "@capacitor/ios",
+        "@capacitor/android",
+        "@capacitor/app",
+        "@capacitor/haptics",
+        "@capacitor/keyboard",
+        "@capacitor/push-notifications",
+        "@capacitor/splash-screen",
+        "@capacitor/status-bar",
+        "@capacitor/cli",
+        "@capacitor-mlkit/barcode-scanning"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "infrastructure",
+      "schedule": ["every 4 weeks on the first monday"]
+    },
+    {
+      "description": "Auto-merge safe patch updates",
+      "matchUpdateTypes": ["patch"],
+      "excludePackageNames": [
+        "next", "react", "react-dom",
+        "@supabase/supabase-js", "@supabase/ssr",
+        "stripe", "@capacitor/core"
+      ],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ]
+}

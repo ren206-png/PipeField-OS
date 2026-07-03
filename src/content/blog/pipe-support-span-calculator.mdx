@@ -1,0 +1,56 @@
+Getting pipe support spacing right is critical — too far apart and the pipe sags under its own weight, too close and you're wasting materials and installation time.
+
+## The Basic Rule
+
+Maximum span depends on:
+- Pipe size and schedule (wall thickness)
+- Pipe material (carbon steel, stainless, etc.)
+- Contents (gas, water, steam)
+- Operating temperature
+
+## MSS SP-69 Standard Spans
+
+These are typical maximum spans for carbon steel pipe with water:
+
+| Pipe Size (NPS) | Sch 40 Max Span |
+|---|---|
+| 1" | 7 ft |
+| 2" | 10 ft |
+| 3" | 12 ft |
+| 4" | 14 ft |
+| 6" | 17 ft |
+| 8" | 19 ft |
+| 10" | 22 ft |
+| 12" | 23 ft |
+
+**For gas service:** increase by ~30% (lighter than water-filled)
+**For steam or high-temp:** reduce by 20–30%
+
+## The Formula Behind It
+
+For a simply supported beam with uniform load:
+
+```
+L_max = √(10 × S × Z / w)
+```
+
+Where:
+- S = allowable bending stress (psi)
+- Z = section modulus of pipe (in³)
+- w = load per unit length (lb/in) — pipe weight + contents
+
+This gets complex fast. That's why calculators exist.
+
+## Hanger Load
+
+Each hanger carries the weight of half the pipe span on each side:
+
+**Hanger Load = w × L**
+
+Where w is lb/ft and L is the tributary length (sum of half spans on each side).
+
+## Use the Built-In Calculator
+
+The PipeField OS pipe support calculator handles all of this automatically — select your pipe size, schedule, and contents and get the max span and hanger load instantly.
+
+[Try the Support Span Calculator →](/register)

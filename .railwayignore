@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+src
+public
+ios
+android
+*.ts
+*.tsx
+package.json
+package-lock.json
+tailwind.config.ts
+tsconfig.json
+next.config.mjs

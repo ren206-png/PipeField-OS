@@ -1,0 +1,65 @@
+Every pipefitter needs to do certain calculations repeatedly throughout the day. Here are the 6 most important — with the formulas and a faster way to run them.
+
+## 1. Pipe Offsets
+
+The most common field calculation. For a 45° simple offset:
+- **Travel = Spread × 1.414**
+- **Set = Spread × 1.000**
+
+For rolling offsets: find the true offset first with `√(Rise² + Roll²)`, then multiply by 1.414.
+
+## 2. Cut Length
+
+Cut length = fitting-to-fitting dimension minus take-outs for each fitting end.
+
+Take-outs vary by fitting type (elbow, tee, flange) and pipe size. Always verify against the manufacturer's dimension tables.
+
+## 3. Pipe Weight
+
+Knowing pipe weight matters for rigging and hanger design.
+
+**Formula:** `Weight (lb/ft) = 10.69 × (OD - Wall) × Wall`
+
+**Example:** 6" Sch 40 (OD=6.625", Wall=0.280")
+- Weight = 10.69 × (6.625 - 0.280) × 0.280 = **18.97 lb/ft**
+
+## 4. Thermal Expansion
+
+Pipes grow when heated. Getting this wrong causes stress failures.
+
+**Formula:** `ΔL = α × L × ΔT`
+
+Where:
+- α = coefficient of thermal expansion (carbon steel: 6.5 × 10⁻⁶ in/in/°F)
+- L = pipe length in inches
+- ΔT = temperature change in °F
+
+**Example:** 100-ft carbon steel pipe, ΔT = 200°F
+- ΔL = 6.5×10⁻⁶ × 1200 × 200 = **1.56 inches**
+
+## 5. Pipe Support Span
+
+Undersized spans cause sag and overstress. Oversized spans waste materials.
+
+ASME B31.1 and MSS SP-69 give standard spans. For a quick check:
+- 4" Sch 40 water-filled: ~13 ft max span
+- 6" Sch 40 water-filled: ~17 ft max span
+- 8" Sch 40 water-filled: ~19 ft max span
+
+## 6. Barlow's Formula (Min Wall Thickness)
+
+Used to verify a pipe can handle the design pressure.
+
+**Formula:** `t = (P × OD) / (2 × S × E × Y)`
+
+Where:
+- P = design pressure (psi)
+- S = allowable stress (psi)
+- E = longitudinal joint factor
+- Y = temperature coefficient
+
+## Do It Faster
+
+All 6 of these calculations are built into PipeField OS — free, no installation, works on your phone in the field.
+
+[Open the Calculators →](/register)

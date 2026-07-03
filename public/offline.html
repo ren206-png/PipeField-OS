@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <title>Offline — PipeField OS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #0f172a;
+      color: #f1f5f9;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1.5rem;
+      color: #f97316;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #f1f5f9;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #94a3b8;
+      max-width: 28rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 9999px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      color: #64748b;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #f97316;
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    button {
+      margin-top: 1.5rem;
+      background-color: #f97316;
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.625rem 1.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+    button:hover { background-color: #ea6c0a; }
+  </style>
+</head>
+<body>
+  <!-- Pipeline / grid icon -->
+  <svg class="icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="8"  y="26" width="48" height="12" rx="6" fill="currentColor" opacity="0.9"/>
+    <rect x="26" y="8"  width="12" height="48" rx="6" fill="currentColor" opacity="0.9"/>
+  </svg>
+
+  <h1>You're offline</h1>
+  <p>PipeField OS will sync your data automatically once your connection is restored.</p>
+
+  <div class="badge">
+    <span class="dot"></span>
+    Waiting to reconnect…
+  </div>
+
+  <button onclick="window.location.reload()">Try again</button>
+
+  <script>
+    // Auto-reload when the network comes back
+    window.addEventListener('online', () => window.location.reload())
+  </script>
+</body>
+</html>
