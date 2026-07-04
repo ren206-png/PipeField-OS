@@ -271,7 +271,7 @@ function WpsRow({ wps }: { wps: WpsRecord }) {
 }
 
 export default function WpsPage() {
-  const { data: records = [], isLoading } = useWpsList()
+  const { data: records = [], isLoading, isError } = useWpsList()
   const createWps = useCreateWps()
 
   const [showModal, setShowModal] = useState(false)
@@ -352,6 +352,14 @@ export default function WpsPage() {
           <div className="flex items-center justify-center py-16 gap-2 text-surface-500">
             <Loader2 className="w-5 h-5 animate-spin" />
             <span>Loading WPS records…</span>
+          </div>
+        ) : isError ? (
+          <div className="text-center py-16">
+            <AlertCircle className="w-10 h-10 text-red-500/60 mx-auto mb-3" />
+            <p className="text-surface-400 font-medium">Could not load WPS records</p>
+            <p className="text-surface-500 text-sm mt-1">
+              Check your connection or contact support if the problem persists.
+            </p>
           </div>
         ) : records.length === 0 ? (
           <div className="text-center py-16">

@@ -1,4 +1,5 @@
 'use client'
+import { apiFetch } from '@/lib/apiFetch'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 export interface WpsRecord {
@@ -25,8 +26,9 @@ export function useWpsList() {
   return useQuery<WpsRecord[]>({
     queryKey: ['wps'],
     staleTime: 5 * 60 * 1000,
+    retry: false,           // fail fast — don't retry on 500 (missing table, etc.)
     queryFn: async () => {
-      const res = await fetch('/api/wps')
+      const res = await apiFetch('/api/wps')
       if (!res.ok) throw new Error('Failed to load WPS records')
       return res.json()
     },
@@ -37,7 +39,7 @@ export function useCreateWps() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (body: WpsInput) => {
-      const res = await fetch('/api/wps', {
+      const res = await apiFetch('/api/wps', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),
@@ -53,7 +55,7 @@ export function useUpdateWps() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, ...body }: Partial<WpsRecord> & { id: string }) => {
-      const res = await fetch(`/api/wps/${id}`, {
+      const res = await apiFetch(`/api/wps/${id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),
@@ -69,7 +71,7 @@ export function useDeleteWps() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/wps/${id}`, { method: 'DELETE' })
+      const res = await apiFetch(`/api/wps/${id}`, { method: 'DELETE' })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error ?? 'Failed') }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['wps'] }),
