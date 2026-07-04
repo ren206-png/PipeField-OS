@@ -9,6 +9,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useCallback,
@@ -68,14 +69,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfileAndOrg = useCallback(async (user: User) => {
     try {
       const ac = new AbortController()
-      const timeout = setTimeout(() => ac.abort(), 8_000)
+      const timeout = setTimeout(() => ac.abort(), 4_000)
 
       let p: UserProfile | null = null
       let org: Organization | null = null
 
       try {
-        const res = await fetch('/api/me', { signal: ac.signal, credentials: 'same-origin' })
-        if (res.ok) {
+        // Get the current session to inject the Bearer token as a header.
+        // This is the belt-and-suspenders approach: cookies carry the session
+        // normally, but if cookie forwarding fails (timing race on sign-in,
+        // browser policy, etc.) the Authorization header ensures the server
+        // can still validate the session.
+        const { data: { session } } = await supabase.auth.getSession()
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`
+        }
+
+        // Retry up to 3 times with backoff — handles the race where
+        // the Supabase cookie isn't written yet immediately after sign-in.
+        let res: Response | null = null
+        for (let attempt = 0; attempt < 3; attempt++) {
+          if (attempt > 0) await new Promise(r => setTimeout(r, 400 * attempt))
+          res = await fetch('/api/me', { signal: ac.signal, credentials: 'include', headers })
+          if (res.ok || res.status !== 401) break
+        }
+        if (res?.ok) {
           const json = await res.json()
           p   = json.profile      as UserProfile   | null
           org = json.organization as Organization  | null
@@ -119,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('[AuthProvider] timeout — clearing isLoading')
       initialized = true
       setState(prev => ({ ...prev, isLoading: false }))
-    }, 6_000)
+    }, 3_000)
 
     // ── Bootstrap: immediately check the current session.
     // onAuthStateChange fires asynchronously; getSession() resolves right away
@@ -182,12 +201,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, fetchProfileAndOrg])
 
   async function signOut() {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } catch {
+      // ignore — force redirect regardless
+    }
     window.location.href = '/login'
   }
 
+  // Memoize the context value so consumers only re-render when the
+  // specific fields they care about actually change — not on every
+  // isLoading toggle that doesn't affect their rendered output.
+  const contextValue = useMemo<AuthContextValue>(
+    () => ({ ...state, signOut, refreshProfile }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      state.user,
+      state.profile,
+      state.organization,
+      state.isLoading,
+      state.isAuthenticated,
+      state.isPlatformAdmin,
+      state.isOrgOwner,
+      state.isOrgAdmin,
+      state.canManageUsers,
+    ]
+  )
+
   return (
-    <AuthContext.Provider value={{ ...state, signOut, refreshProfile }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   )

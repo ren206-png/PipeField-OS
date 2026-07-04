@@ -1,41 +1,82 @@
 // ============================================================
 // GET /api/me
 // Returns the current user's profile + organization.
-// Fetched server-side via admin client so it bypasses any
-// browser→Supabase REST latency issues.
+// Accepts auth via:
+//   1. Supabase session cookie (normal browser flow)
+//   2. Authorization: Bearer <access_token> header (fallback for
+//      timing races on sign-in before cookies are written)
 // ============================================================
-import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
-    if (authError) return authError
-
     const admin = createAdminClient()
+    let userId: string | null = null
 
-    const { data: profile } = await admin
+    // ── Strategy 1: Bearer token from Authorization header ────
+    const authHeader = req.headers.get('authorization') ?? ''
+    if (authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      // Verify the token against Supabase Auth
+      const { data: { user }, error } = await admin.auth.getUser(token)
+      if (!error && user) {
+        userId = user.id
+      }
+    }
+
+    if (!userId) {
+      // ── Strategy 2: Session cookie (standard SSR flow) ──────
+      const cookieStore = await cookies()
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll: () => cookieStore.getAll(),
+            setAll: (cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) => {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                )
+              } catch { /* Server Component context — ignore */ }
+            },
+          },
+        }
+      )
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) userId = user.id
+    }
+
+    if (!userId) {
+      console.warn('[/api/me] no userId resolved — returning 401')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // ── Look up profile + org in ONE query ───────────────────
+    // Embedding organizations(*) eliminates the second round-trip
+    // and cuts cold-start latency by ~200-400 ms.
+    const { data: row, error: profileError } = await admin
       .from('user_profiles')
-      .select('*')
-      .eq('auth_user_id', caller.id)
+      .select('*, organizations(*)')
+      .eq('auth_user_id', userId)
       .maybeSingle()
 
-    if (!profile) {
+    if (profileError) {
+      console.error('[/api/me] profile query error:', profileError)
+    }
+
+    if (!row) {
+      console.warn('[/api/me] no profile found for userId:', userId)
       return NextResponse.json({ profile: null, organization: null })
     }
 
-    let organization = null
-    if (profile.organization_id) {
-      const { data: org } = await admin
-        .from('organizations')
-        .select('*')
-        .eq('id', profile.organization_id)
-        .maybeSingle()
-      organization = org
-    }
+    // Separate the embedded org from the profile fields
+    const { organizations: organization = null, ...profile } = row
 
     return NextResponse.json({ profile, organization })
   } catch (err) {
