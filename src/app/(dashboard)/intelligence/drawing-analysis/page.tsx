@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '@/lib/apiFetch'
 import { useProjects } from '@/hooks/useProjects'
+import { IsoBlueprint3DPanel } from '@/components/ai/IsoBlueprint3DPanel'
 
 // ── Types ─────────────────────────────────────────────────────
 type DrawingType = 'isometric' | 'pnid' | 'general_arrangement' | 'detail'
@@ -531,6 +532,11 @@ export default function DrawingAnalysisPage() {
 
       {/* Results or empty state */}
       {result ? <ResultPanel result={result} /> : <EmptyState />}
+
+      {/* ── ISO Blueprint 3D ── */}
+      <div className="mt-12 pt-8 border-t border-surface-700">
+        <IsoBlueprint3DPanel />
+      </div>
     </div>
   )
 }
