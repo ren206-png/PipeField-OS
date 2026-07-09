@@ -4,7 +4,7 @@
 // joined with welder names. Scoped to the caller's org.
 // Sorted by rate descending.
 // ============================================================
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -21,9 +21,9 @@ export interface WelderRejectionRate {
   rate:       number
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     if (!caller.organization_id) {

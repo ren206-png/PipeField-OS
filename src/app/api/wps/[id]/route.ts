@@ -3,6 +3,8 @@ import { requireAuth } from '@/lib/api-auth'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const patchSchema = z.object({
   wps_number:           z.string().min(1).max(50).optional(),
   revision:             z.string().max(10).optional(),
@@ -18,12 +20,12 @@ const patchSchema = z.object({
 })
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     const supabase = await createClient()
     const { data, error } = await supabase
@@ -47,7 +49,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     const body = await req.json()
     const parsed = patchSchema.safeParse(body)
@@ -72,12 +74,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     const supabase = await createClient()
     // Block delete if welds reference this WPS

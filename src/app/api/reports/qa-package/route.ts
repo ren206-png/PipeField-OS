@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/api-auth'
+
+export const dynamic = 'force-dynamic'
 import { Document, Page, Text, View, StyleSheet, renderToBuffer, Font, type DocumentProps } from '@react-pdf/renderer'
 import React from 'react'
 
@@ -420,7 +422,7 @@ function QAPackage({
 export async function GET(req: NextRequest) {
   try {
     // Auth gate — QA packages contain sensitive project data
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })

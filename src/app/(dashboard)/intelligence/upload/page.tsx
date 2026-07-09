@@ -3,14 +3,15 @@
 // Intelligence Center — Upload Knowledge Document
 // ============================================================
 import { useState, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Upload, FileText, X, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react'
-import { useForm, Controller } from 'react-hook-form'
+import { ArrowLeft, Upload, FileText, X, AlertTriangle, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { useKnowledgeCategories, useUploadKnowledge } from '@/hooks/useKnowledge'
+import { useQuery } from '@tanstack/react-query'
+import { apiFetch } from '@/lib/apiFetch'
+import { useKnowledgeCategories, useUploadKnowledge, type KnowledgeSource } from '@/hooks/useKnowledge'
 import { useProjects } from '@/hooks/useProjects'
 
 const ACCEPTED_EXTENSIONS = [
@@ -63,20 +64,38 @@ function formatFileSize(bytes: number) {
 }
 
 export default function UploadKnowledgePage() {
-  const router = useRouter()
   const { data: categories = [] } = useKnowledgeCategories()
   const { data: projects = [] }   = useProjects()
   const { mutateAsync: upload, isPending } = useUploadKnowledge()
 
-  const [file,       setFile]       = useState<File | null>(null)
-  const [dragOver,   setDragOver]   = useState(false)
-  const [uploaded,   setUploaded]   = useState(false)
+  const [file,         setFile]         = useState<File | null>(null)
+  const [dragOver,     setDragOver]     = useState(false)
+  const [uploaded,     setUploaded]     = useState(false)
+  const [processingId, setProcessingId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Poll processing status every 3 s until ready or failed
+  const { data: processingSource } = useQuery<KnowledgeSource>({
+    queryKey:       ['knowledge-source-poll', processingId],
+    queryFn:        () =>
+      apiFetch(`/api/knowledge/sources/${processingId}`).then(async r => {
+        const json = await r.json()
+        if (!r.ok) throw new Error(json.error ?? 'Failed')
+        return json
+      }),
+    enabled:        !!processingId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.processing_status
+      if (status === 'ready' || status === 'failed') return false
+      return 3000
+    },
+  })
+
+  const processingStatus = processingSource?.processing_status ?? (processingId ? 'pending' : null)
 
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver:      zodResolver(schema),
@@ -106,7 +125,7 @@ export default function UploadKnowledgePage() {
       : []
 
     try {
-      await upload({
+      const source = await upload({
         file,
         title:           values.title,
         description:     values.description || undefined,
@@ -119,7 +138,8 @@ export default function UploadKnowledgePage() {
         tags,
       })
       setUploaded(true)
-      toast.success('Document uploaded successfully')
+      setProcessingId(source.id)
+      toast.success('Document uploaded — indexing in progress')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Upload failed')
     }
@@ -132,11 +152,35 @@ export default function UploadKnowledgePage() {
           <CheckCircle2 className="w-8 h-8 text-green-400" />
         </div>
         <h2 className="text-xl font-bold text-surface-50">Document Uploaded</h2>
+
+        {/* Processing status indicator */}
+        {processingStatus && (
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium ${
+            processingStatus === 'ready'
+              ? 'border-green-500/30 bg-green-500/10 text-green-400'
+              : processingStatus === 'failed'
+                ? 'border-red-500/30 bg-red-500/10 text-red-400'
+                : 'border-surface-600 bg-surface-800 text-surface-300'
+          }`}>
+            {processingStatus === 'ready' ? (
+              <><CheckCircle2 className="w-4 h-4" /> Ready — document indexed successfully</>
+            ) : processingStatus === 'failed' ? (
+              <><XCircle className="w-4 h-4" /> Processing failed — please try again</>
+            ) : (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Processing document…</>
+            )}
+          </div>
+        )}
+
         <p className="text-sm text-surface-400">
-          Your document has been added to the Intelligence Center and is queued for AI processing.
+          {processingStatus === 'ready'
+            ? 'Your document is now searchable in the Intelligence Center.'
+            : processingStatus === 'failed'
+              ? 'AI indexing failed. The file was saved but may not be searchable. Try re-uploading.'
+              : 'Your document has been added to the Intelligence Center and is being indexed by AI.'}
         </p>
         <div className="flex gap-3 justify-center pt-2">
-          <Link href="/intelligence/upload" onClick={() => setUploaded(false)} className="btn-secondary text-sm px-4 py-2">
+          <Link href="/intelligence/upload" onClick={() => { setUploaded(false); setProcessingId(null) }} className="btn-secondary text-sm px-4 py-2">
             Upload Another
           </Link>
           <Link href="/intelligence/sources" className="btn-primary text-sm px-4 py-2">

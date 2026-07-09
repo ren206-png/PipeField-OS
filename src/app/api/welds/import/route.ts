@@ -9,6 +9,8 @@ import { z } from 'zod'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+export const dynamic = 'force-dynamic'
+
 const rowSchema = z.object({
   weld_id_number: z.string().min(1, 'Weld ID is required').max(50),
   project_id:     z.string().uuid('Invalid project ID'),
@@ -24,7 +26,7 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     if (!caller.organization_id) {

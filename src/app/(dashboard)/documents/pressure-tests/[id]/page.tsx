@@ -6,6 +6,7 @@ import { use, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Edit2, CheckCircle, FileDown, Loader2, PenLine } from 'lucide-react'
 import { usePressureTest, useUpdatePressureTest } from '@/hooks/usePressureTests'
+import { apiFetch } from '@/lib/apiFetch'
 import { useAuth } from '@/hooks/useAuth'
 import SignatureModal from '@/components/shared/SignatureModal'
 import { useSignatures } from '@/hooks/useSignatures'
@@ -40,7 +41,7 @@ export default function PressureTestDetailPage({ params }: Props) {
     if (!test) return
     setDownloading(true)
     try {
-      const res = await fetch('/api/reports/pressure-test-certificate', {
+      const res = await apiFetch('/api/reports/pressure-test-certificate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ testId: id }),

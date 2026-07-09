@@ -4,6 +4,7 @@
 // Renders in the bottom-right corner of every dashboard page.
 // ============================================================
 import { useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { MessageSquarePlus, X, Star, Loader2, CheckCircle2 } from 'lucide-react'
 
 const CATEGORIES = [
@@ -48,7 +49,7 @@ export function FeedbackWidget() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/feedback', {
+      const res = await apiFetch('/api/feedback', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({

@@ -6,12 +6,14 @@ import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { startOfWeek, subWeeks, format } from 'date-fns'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     const { id: projectId } = await params

@@ -8,6 +8,7 @@ import { Header } from './Header'
 import { MobileNav } from './MobileNav'
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import { QuickAddWeld } from '@/components/shared/QuickAddWeld'
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -51,6 +52,9 @@ export function DashboardShell({
 
       {/* Floating feedback widget */}
       <FeedbackWidget />
+
+      {/* Mobile quick-add weld FAB */}
+      <QuickAddWeld />
     </div>
   )
 }

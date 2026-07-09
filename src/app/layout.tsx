@@ -10,6 +10,18 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
 
+// ── Site URL ─────────────────────────────────────────────────
+// NEXT_PUBLIC_APP_URL must be set in the Vercel (or CI) environment
+// for og:url, canonical, sitemap, and robots to emit correct production
+// URLs. The fallback ensures the build never hard-crashes, but a warning
+// is emitted so the missing var surfaces in build logs.
+if (!process.env.NEXT_PUBLIC_APP_URL && process.env.NODE_ENV === 'production') {
+  console.warn(
+    '[layout] NEXT_PUBLIC_APP_URL is not set. ' +
+    'og:url, canonical, and sitemap URLs will fall back to https://pipefield-os.com. ' +
+    'Set this variable in your Vercel environment to suppress this warning.'
+  )
+}
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pipefield-os.com'
 
 export const metadata = {
@@ -36,6 +48,10 @@ export const metadata = {
     statusBarStyle: 'black-translucent',
     title: 'PipeField OS',
   },
+  // Canonical URL for the root — child pages override this via their own metadata.
+  alternates: {
+    canonical: APP_URL,
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -46,7 +62,9 @@ export const metadata = {
       'Weld tracking, NDE management, QA packages, and 6 built-in pipefitter field calculators. Built for the field and the office.',
     images: [
       {
-        url: '/og',
+        // Absolute URL — metadataBase resolves relative paths, but being
+        // explicit prevents issues when the page is shared without context.
+        url: `${APP_URL}/og?title=PipeField+OS&subtitle=Pipeline+QC+%26+Pipefitter+Field+Tools`,
         width: 1200,
         height: 630,
         alt: 'PipeField OS — Pipeline QC Platform',
@@ -58,7 +76,7 @@ export const metadata = {
     title: 'PipeField OS — Pipeline QC & Pipefitter Field Tools',
     description:
       'Weld tracking, NDE management, QA packages, and 6 built-in pipefitter field calculators.',
-    images: ['/og'],
+    images: [`${APP_URL}/og?title=PipeField+OS&subtitle=Pipeline+QC+%26+Pipefitter+Field+Tools`],
   },
   robots: {
     index: true,

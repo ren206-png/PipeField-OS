@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const repairSchema = z.object({
   repair_number:        z.number().int().min(1).default(1),
   failure_mode:         z.string().max(200).optional().nullable(),
@@ -22,7 +24,7 @@ interface RouteContext {
   params: { id: string }
 }
 
-export async function GET(_req: NextRequest, { params }: RouteContext) {
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
     const supabase = await createClient()
     const { data: { user }, error: authErr } = await supabase.auth.getUser()

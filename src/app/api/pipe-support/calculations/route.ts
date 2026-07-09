@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const saveSchema = z.object({
   name:       z.string().min(1).max(200),
   project_id: z.string().uuid().optional().nullable(),

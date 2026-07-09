@@ -11,6 +11,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requirePlatformAdmin } from '@/lib/api-auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const schema = z.object({
   email: z.string().trim().toLowerCase().email('Invalid email format'),
 })

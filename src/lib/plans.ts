@@ -5,29 +5,64 @@
 // ============================================================
 
 export const PLANS = {
-  starter: {
-    name: 'Starter',
-    priceId: process.env.STRIPE_PRICE_STARTER ?? '',
-    price: 49,
+  field_pro: {
+    name:     'Field Pro',
+    priceId:  process.env.STRIPE_PRICE_FIELD_PRO ?? '',
+    price:    9,
     interval: 'month' as const,
-    limits: { projects: 3, users: 5, welds: 500 },
-    features: ['Basic QC tracking', 'PDF exports', '5 users'],
+    limits:   { projects: 1, users: 1, welds: 500 },
+    features: [
+      'Offset & take-off calculators',
+      'Mobile app access',
+      'Daily log — PDF + CSV export',
+      'Personal project history',
+      '1 user, no seat sharing',
+    ],
   },
-  pro: {
-    name: 'Pro',
-    priceId: process.env.STRIPE_PRICE_PRO ?? '',
-    price: 149,
+  starter: {
+    name:     'Starter',
+    priceId:  process.env.STRIPE_PRICE_STARTER ?? '',
+    price:    49,
     interval: 'month' as const,
-    limits: { projects: 20, users: 25, welds: 10000 },
-    features: ['Everything in Starter', 'NDE tracker', 'Daily email digest', '25 users'],
+    limits:   { projects: Infinity, users: 3, welds: 5000 },
+    features: [
+      'Up to 3 users',
+      'Unlimited projects',
+      'Weld & spool tracking',
+      'QR code stickers',
+      'CSV / PDF reports',
+      'Email support',
+    ],
+  },
+  professional: {
+    name:     'Professional',
+    priceId:  process.env.STRIPE_PRICE_PROFESSIONAL ?? '',
+    price:    149,
+    interval: 'month' as const,
+    limits:   { projects: Infinity, users: 15, welds: Infinity },
+    features: [
+      'Up to 15 users',
+      'Everything in Starter',
+      'NDE inspection tracking',
+      'Welder cert management',
+      'Advanced analytics',
+      'Priority support',
+    ],
   },
   enterprise: {
-    name: 'Enterprise',
-    priceId: process.env.STRIPE_PRICE_ENTERPRISE ?? '',
-    price: 499,
+    name:     'Enterprise',
+    priceId:  process.env.STRIPE_PRICE_ENTERPRISE ?? '',
+    price:    399,
     interval: 'month' as const,
-    limits: { projects: Infinity, users: Infinity, welds: Infinity },
-    features: ['Unlimited everything', 'Priority support', 'Custom integrations'],
+    limits:   { projects: Infinity, users: Infinity, welds: Infinity },
+    features: [
+      'Unlimited users',
+      'Everything in Professional',
+      'Custom integrations',
+      'SSO / SAML',
+      'Dedicated account manager',
+      'SLA guarantee',
+    ],
   },
 } as const
 

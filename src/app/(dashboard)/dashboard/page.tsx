@@ -14,6 +14,7 @@ import { WELD_STATUS_LABELS, SPOOL_STATUS_LABELS, DFR_STATUS_COLORS, DFR_STATUS_
 import { formatDateTime } from '@/lib/utils'
 import { OnboardingBanner } from '@/components/dashboard/OnboardingBanner'
 import { CertExpiryBanner } from '@/components/welders/CertExpiryBanner'
+import { WelderRiskWidget } from '@/components/dashboard/WelderRiskWidget'
 
 export const metadata: Metadata = { title: 'Dashboard — PipeField OS' }
 
@@ -684,6 +685,9 @@ export default async function DashboardPage() {
               </div>
             </div>
           )}
+
+          {/* Welder risk monitor */}
+          <WelderRiskWidget />
 
           {/* Urgent spools */}
           {urgentSpools.length > 0 && (

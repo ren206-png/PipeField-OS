@@ -49,7 +49,34 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params
   const meta = postMeta[slug]
   if (!meta) return {}
-  return { title: meta.title, description: meta.description }
+
+  const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pipefield-os.com'
+  const canonicalUrl = `${SITE_URL}/blog/${slug}`
+  // Per-post OG image — passes the post title and category as subtitle so the
+  // dynamic /og edge function renders a unique card for every article.
+  const ogImageUrl = `${SITE_URL}/og?title=${encodeURIComponent(meta.title)}&subtitle=${encodeURIComponent(meta.category + ' · PipeField OS')}`
+
+  return {
+    title: meta.title,
+    description: meta.description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: meta.title,
+      description: meta.description,
+      url: canonicalUrl,
+      type: 'article',
+      publishedTime: meta.date,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: meta.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: meta.title,
+      description: meta.description,
+      images: [ogImageUrl],
+    },
+  }
 }
 
 export default async function BlogPostPage({ params }: Props) {

@@ -3,9 +3,36 @@
 // Server component, NO auth required.
 // Uses admin client to bypass RLS for public reads.
 // ============================================================
+export const dynamic = 'force-dynamic'
+
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import { createAdminClient } from '@/lib/supabase/admin'
+
+// ── Per-share metadata ─────────────────────────────────────────
+export async function generateMetadata(
+  { params }: { params: Promise<{ token: string }> }
+): Promise<Metadata> {
+  const { token } = await params
+  const admin = createAdminClient()
+  const { data: link } = await admin
+    .from('share_links')
+    .select('label, organizations(name)')
+    .eq('token', token)
+    .maybeSingle()
+
+  if (!link) return { title: 'Project Report' }
+
+  const orgName = (link.organizations as unknown as ShareLinkOrg | null)?.name
+  const label   = link.label ?? 'Project Report'
+
+  return {
+    title:       orgName ? `${label} — ${orgName}` : label,
+    description: `Live project progress report shared by ${orgName ?? 'your team'} via PipeField OS.`,
+    robots:      { index: false, follow: false }, // don't index shared reports
+  }
+}
 import { sendShareViewEmail } from '@/lib/email'
 import {
   Flame, Package, ShieldCheck, AlertCircle,
@@ -14,6 +41,14 @@ import {
 } from 'lucide-react'
 
 // ── Types ─────────────────────────────────────────────────────
+
+/** Supabase join shape returned by `share_links.select('*, organizations(...)')` */
+interface ShareLinkOrg {
+  id:       string
+  name:     string
+  logo_url: string | null
+}
+
 interface WeldRow {
   id:             string
   weld_id_number: string
@@ -121,50 +156,59 @@ export default async function SharePortalPage({
     ? new Date(link.expires_at) < new Date()
     : false
 
-  // ── Log view + notify creator (non-blocking) ──────────────
+  // ── Log view + notify creator (non-blocking, only for valid links) ──
   const headersList = await headers()
   const viewerIp = headersList.get('x-forwarded-for') ?? headersList.get('x-real-ip') ?? null
   const viewerUa = headersList.get('user-agent') ?? null
 
-  // Fire-and-forget — don't block page render
-  void (async () => {
-    try {
-      // 1. Insert view record
-      await admin.from('share_link_views').insert({
-        share_link_id: link.id,
-        viewer_ip: viewerIp,
-        viewer_ua: viewerUa,
-      })
+  // Fire-and-forget — don't block page render. Skip for expired links.
+  if (!isExpired) {
+    void (async () => {
+      try {
+        // 1. Insert view record
+        await admin.from('share_link_views').insert({
+          share_link_id: link.id,
+          viewer_ip: viewerIp,
+          viewer_ua: viewerUa,
+        })
 
-      // 2. Atomic view count increment (best-effort)
-      const rpcResult = await admin.rpc('increment_share_link_views' as never, { link_id: link.id })
-      if (rpcResult.error) {
-        await admin
-          .from('client_share_links')
-          .update({ views: ((link as Record<string, unknown>).views as number ?? 0) + 1 })
-          .eq('id', link.id)
-      }
-
-      // 3. Email the creator (if we can look up their email)
-      if (link.created_by) {
-        const { data: creator } = await admin.auth.admin.getUserById(link.created_by)
-        const creatorEmail = creator?.user?.email
-        if (creatorEmail) {
-          const org = link.organizations as unknown as { name: string } | null
-          const projectName = org?.name ?? 'your project'
-          const viewedAt = new Date().toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' }) + ' UTC'
-          await sendShareViewEmail({
-            to: creatorEmail,
-            projectName,
-            shareLabel: link.label,
-            viewedAt,
-          }).catch(() => { /* non-fatal */ })
+        // 2. Atomic view count increment (best-effort)
+        const rpcResult = await admin.rpc('increment_share_link_views' as never, { link_id: link.id })
+        if (rpcResult.error) {
+          await admin
+            .from('client_share_links')
+            .update({ views: ((link as Record<string, unknown>).views as number ?? 0) + 1 })
+            .eq('id', link.id)
         }
+
+        // 3. Email the creator (if we can look up their email)
+        if (link.created_by) {
+          const { data: creator } = await admin.auth.admin.getUserById(link.created_by)
+          const creatorEmail = creator?.user?.email
+          if (creatorEmail) {
+            // Prefer the linked project name; fall back to org name
+            const org = link.organizations as unknown as ShareLinkOrg | null  // Supabase join
+            const linkedProject = link.project_id
+              ? await admin.from('projects').select('name').eq('id', link.project_id).maybeSingle()
+              : null
+            const projectName =
+              (linkedProject?.data as { name: string } | null)?.name ??
+              org?.name ??
+              'your project'
+            const viewedAt = new Date().toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' }) + ' UTC'
+            await sendShareViewEmail({
+              to: creatorEmail,
+              projectName,
+              shareLabel: link.label,
+              viewedAt,
+            }).catch(() => { /* non-fatal */ })
+          }
+        }
+      } catch {
+        // Non-fatal — don't block page render
       }
-    } catch {
-      // Non-fatal — don't block page render
-    }
-  })()
+    })()
+  }
 
   // ── Expired guard ──────────────────────────────────────────
   if (isExpired) {
@@ -193,7 +237,7 @@ export default async function SharePortalPage({
     projectIds = [projectId]
   } else {
     // All-projects link — fetch org's projects
-    const orgId = (link.organizations as unknown as { id: string } | null)?.id ?? ''
+    const orgId = (link.organizations as unknown as ShareLinkOrg | null)?.id ?? ''
     const { data: orgProjects } = await admin
       .from('projects')
       .select('id')
@@ -273,7 +317,7 @@ export default async function SharePortalPage({
   const recentWelds = welds.slice(0, 10)
 
   // ── Organisation ──────────────────────────────────────────
-  const org = link.organizations as unknown as { id: string; name: string; logo_url: string | null } | null
+  const org = link.organizations as unknown as ShareLinkOrg | null
 
   return (
     <main className="min-h-screen bg-gray-50">

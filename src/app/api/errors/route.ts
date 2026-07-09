@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getCallerProfile } from '@/lib/api-auth'
 
+export const dynamic = 'force-dynamic'
+
 interface ErrorPayload {
   message: string
   stack?: string

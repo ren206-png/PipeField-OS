@@ -14,9 +14,9 @@ interface RouteContext {
 }
 
 // ── GET ───────────────────────────────────────────────────────
-export async function GET(_req: NextRequest, { params }: RouteContext) {
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })
@@ -51,7 +51,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 // ── PATCH ─────────────────────────────────────────────────────
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })
@@ -93,7 +93,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       .eq('id', id)
       .eq('organization_id', caller.organization_id)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -116,9 +116,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 }
 
 // ── DELETE (hard delete — admin only) ─────────────────────────
-export async function DELETE(_req: NextRequest, { params }: RouteContext) {
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })

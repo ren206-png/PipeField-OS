@@ -13,7 +13,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
-import { rateLimit } from '@/lib/rate-limit'
+import { checkAiRateLimit, AI_HOURLY_LIMITS, DEFAULT_HOURLY_LIMIT } from '@/lib/ai-rate-limit'
 import { invoke } from '@/intelligence'
 import type { CapabilityName, InvocationContext } from '@/intelligence'
 
@@ -52,14 +52,21 @@ export async function aiRoute<TInput, TOutput>(
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    // 3. Rate limit: 60 AI calls per user per hour across all capabilities
-    if (!rateLimit({
-      key:      `ai:${capability}:${caller.auth_user_id}`,
-      limit:    60,
-      windowMs: 60 * 60_000,
-    })) {
+    // 3. Rate limit — DB-backed, works across all Vercel instances
+    const hourlyLimit = AI_HOURLY_LIMITS[capability] ?? DEFAULT_HOURLY_LIMIT
+    const rateCheck = await checkAiRateLimit({
+      userId:         caller.id,
+      organizationId: caller.organization_id,
+      capability,
+      limitPerHour:   hourlyLimit,
+    })
+    if (!rateCheck.allowed) {
       return NextResponse.json(
-        { error: 'Too many AI requests. Please wait before trying again.' },
+        {
+          error:   `Rate limit reached: ${rateCheck.count}/${rateCheck.limit} requests this hour. Resets at ${new Date(rateCheck.resetAt).toUTCString()}.`,
+          reason:  'rate_limited',
+          resetAt: rateCheck.resetAt,
+        },
         { status: 429 },
       )
     }

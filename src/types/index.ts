@@ -293,6 +293,16 @@ export interface Weld {
   created_by: string
   created_at: string
   updated_at: string
+  // ── Columns added via ALTER TABLE (fix-welds-schema.sql, fix-all-columns.sql) ──
+  spool_number:   string | null
+  line_number:    string | null
+  pipe_size:      string | null
+  wall_thickness: string | null
+  weld_process:   string | null
+  material:       string | null
+  joint_type:     string | null
+  // ── Added via migrations/20260702_wps.sql ──
+  wps_id:         string | null
 }
 
 // ------------------------------------------------------------

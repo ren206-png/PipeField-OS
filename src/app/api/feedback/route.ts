@@ -8,6 +8,8 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireOrgAdmin } from '@/lib/api-auth'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'

@@ -8,6 +8,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { checkProjectLimit } from '@/lib/usage'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const createSchema = z.object({
   name:           z.string().min(1).max(200),
   project_number: z.string().max(50).optional().nullable(),
@@ -23,7 +25,7 @@ const createSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     const orgId = caller.organization_id

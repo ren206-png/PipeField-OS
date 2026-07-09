@@ -6,6 +6,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { STATS } from '@/lib/stats'
 import {
   Flame,
   Layers,
@@ -23,6 +24,8 @@ import {
   Weight,
   Ruler,
   MoveHorizontal,
+  Award,
+  Shield,
 } from 'lucide-react'
 
 export default async function RootPage() {
@@ -154,23 +157,23 @@ export default async function RootPage() {
             </Link>
           </div>
 
-          {/* Trusted by */}
-          <div className="flex flex-col items-center gap-3">
+          {/* Credibility — truthful, verifiable claims only */}
+          <div className="flex flex-col items-center gap-4">
             <p className="text-xs uppercase tracking-widest text-surface-600 font-semibold">
-              Trusted by contractors &amp; field crews
+              Built by the trade, for the trade
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {[
-                'Apex Fabrication',
-                'Northern Pipeline Corp',
-                'Delta Industrial Services',
-                'RenCo Enterprises',
-              ].map((name) => (
+                { icon: Award,  text: 'Red Seal Journeyman Steamfitter / Pipefitter' },
+                { icon: Shield, text: 'ASME B31.3 Aligned Exports' },
+                { icon: Calculator, text: '6 Built-In Field Calculators' },
+              ].map(({ icon: Icon, text }) => (
                 <span
-                  key={name}
-                  className="rounded-full border border-surface-700 bg-surface-800 px-4 py-1.5 text-xs font-medium text-surface-400"
+                  key={text}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-surface-700 bg-surface-800 px-4 py-1.5 text-xs font-medium text-surface-300"
                 >
-                  {name}
+                  <Icon className="h-3 w-3 text-brand-400 flex-shrink-0" />
+                  {text}
                 </span>
               ))}
             </div>
@@ -179,15 +182,11 @@ export default async function RootPage() {
       </section>
 
       {/* ── STATS BAR ───────────────────────────────────────── */}
+      {/* Values are defined in src/lib/stats.ts — only real, verifiable numbers. */}
       <section className="border-y border-surface-800 bg-surface-950">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { value: '6', label: 'Field Calculators' },
-              { value: '50,000+', label: 'Welds Tracked' },
-              { value: '12 min', label: 'Avg. QA Package Generation' },
-              { value: '100%', label: 'Code Compliant Exports' },
-            ].map((stat) => (
+            {STATS.map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl sm:text-4xl font-extrabold text-brand-500 mb-1">
                   {stat.value}
@@ -575,68 +574,57 @@ export default async function RootPage() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ────────────────────────────────────── */}
+      {/* ── CREDIBILITY BLOCK ───────────────────────────────── */}
+      {/*
+        Testimonials removed: fabricated attributions are a liability.
+        Replaced with a factual "built by the trade" credibility block.
+        Add real testimonials here once you have written consent from
+        actual users, attributed only to role + city/province (not company name).
+      */}
       <section className="py-24">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold text-surface-50 mb-4">
-              Trusted by the field and the office
-            </h2>
-            <p className="text-surface-400 max-w-xl mx-auto">
-              Whether you&apos;re swinging a wrench or managing compliance, PipeField OS delivers.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 gap-6">
-            {/* Pipefitter testimonial */}
-            <div
-              className="rounded-2xl p-px"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(249,115,22,0.4) 0%, rgba(249,115,22,0.1) 50%, rgba(249,115,22,0.4) 100%)',
-              }}
-            >
-              <div className="rounded-2xl bg-surface-900 px-7 py-9 h-full flex flex-col">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-brand-400 self-start">
-                  <HardHat className="h-3 w-3" />
-                  Pipefitter
-                </div>
-                <div className="text-4xl text-brand-500/30 font-serif leading-none select-none mb-2" aria-hidden>
-                  &ldquo;
-                </div>
-                <blockquote className="text-lg font-medium text-surface-100 leading-relaxed mb-5 flex-1">
-                  The offset calculator alone saves me 20 minutes a day. I used to carry a
-                  dog-eared cheat sheet — now I just pull up PipeField on my phone.
-                </blockquote>
-                <cite className="not-italic text-sm text-surface-400 font-medium">
-                  — Journeyman Pipefitter, Apex Fabrication
-                </cite>
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl p-px"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(249,115,22,0.4) 0%, rgba(249,115,22,0.1) 50%, rgba(249,115,22,0.4) 100%)',
+            }}
+          >
+            <div className="rounded-2xl bg-surface-900 px-8 py-12 flex flex-col sm:flex-row items-center gap-8">
+              {/* Badge */}
+              <div className="flex-shrink-0 w-20 h-20 rounded-2xl bg-brand-500/10 border border-brand-500/30 flex items-center justify-center">
+                <Award className="h-10 w-10 text-brand-400" />
               </div>
-            </div>
 
-            {/* QC Manager testimonial */}
-            <div
-              className="rounded-2xl p-px"
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(100,116,139,0.4) 0%, rgba(100,116,139,0.1) 50%, rgba(100,116,139,0.4) 100%)',
-              }}
-            >
-              <div className="rounded-2xl bg-surface-900 px-7 py-9 h-full flex flex-col">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-surface-600/50 bg-surface-800 px-3 py-1 text-xs font-bold uppercase tracking-widest text-surface-300 self-start">
-                  <Building2 className="h-3 w-3" />
-                  QC Manager
+              {/* Text */}
+              <div className="space-y-3 text-center sm:text-left">
+                <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-brand-400">
+                  <HardHat className="h-3 w-3" />
+                  Built by the trade
                 </div>
-                <div className="text-4xl text-surface-500/30 font-serif leading-none select-none mb-2" aria-hidden>
-                  &ldquo;
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-surface-50 leading-tight">
+                  Designed by a Red Seal Journeyman<br className="hidden sm:block" /> Steamfitter / Pipefitter
+                </h2>
+                <p className="text-surface-400 max-w-xl leading-relaxed">
+                  Every calculator, every QA template, and every weld tracking workflow was built
+                  by someone who has read and interpreted B31.3, cut pipe in the field, and filled
+                  out QC paperwork on a job site. This isn&apos;t enterprise software adapted for
+                  the trades — it was built from the ground up for pipeline work.
+                </p>
+                <div className="flex flex-wrap gap-3 justify-center sm:justify-start pt-1">
+                  {[
+                    'ASME B31.3 Familiar',
+                    'Field-Tested Workflows',
+                    'No Bloat. No Fluff.',
+                  ].map((badge) => (
+                    <span
+                      key={badge}
+                      className="inline-flex items-center gap-1 rounded-full border border-surface-700 bg-surface-800 px-3 py-1 text-xs font-medium text-surface-300"
+                    >
+                      <CheckCircle2 className="h-3 w-3 text-brand-400" />
+                      {badge}
+                    </span>
+                  ))}
                 </div>
-                <blockquote className="text-lg font-medium text-surface-100 leading-relaxed mb-5 flex-1">
-                  PipeField OS replaced 4 separate spreadsheets for us. Our QC documentation
-                  time dropped by 60% and our handover packages are audit-ready from day one.
-                </blockquote>
-                <cite className="not-italic text-sm text-surface-400 font-medium">
-                  — Site QC Manager, Northern Pipeline Corp
-                </cite>
               </div>
             </div>
           </div>
@@ -712,7 +700,8 @@ export default async function RootPage() {
                 { label: 'For Pipefitters', href: '#for-pipefitters' },
                 { label: 'For Companies', href: '#for-companies' },
                 { label: 'Sign In', href: '/login' },
-                { label: 'Privacy', href: '#' },
+                { label: 'Privacy', href: '/privacy' },
+                { label: 'Terms', href: '/terms' },
                 { label: 'Contact', href: '#contact' },
               ].map(({ label, href }) => (
                 <Link

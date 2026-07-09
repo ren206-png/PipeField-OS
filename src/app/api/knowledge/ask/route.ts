@@ -7,10 +7,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import OpenAI from 'openai'
+import { rateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 const SYSTEM_PROMPT = `You are PipeField Intelligence, an AI assistant for pipeline construction professionals.
 Answer ONLY from the provided context documents. If the answer is not clearly stated in the context, say "I don't have sufficient information in the knowledge base to answer this confidently."
@@ -35,10 +39,15 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })
+    }
+
+    // Rate limit: 30 AI queries per user per hour
+    if (!rateLimit({ key: `knowledge-ask:${caller.auth_user_id}`, limit: 30, windowMs: 60 * 60_000 })) {
+      return NextResponse.json({ error: 'Too many queries. Please wait before asking again.' }, { status: 429 })
     }
 
     // Permission check — all roles with knowledge:query can ask
@@ -59,6 +68,8 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient()
 
+    const openai = getOpenAI()
+
     // 1. Embed the query
     const embResp = await openai.embeddings.create({
       model: 'text-embedding-3-small',
@@ -75,7 +86,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (rpcError) {
-      console.error('[knowledge/ask] rpc error:', rpcError)
+      logger.error('knowledge.ask.rpc_error', rpcError)
       return NextResponse.json({ error: rpcError.message }, { status: 500 })
     }
 
@@ -88,9 +99,11 @@ export async function POST(req: NextRequest) {
       )
       .join('\n\n---\n\n')
 
+    // If no chunks matched, use a no-context prompt so GPT explicitly signals
+    // it has no knowledge-base information rather than hallucinating an answer.
     const userMessage = contextBlock
       ? `Context documents:\n\n${contextBlock}\n\n---\n\nQuestion: ${query}`
-      : `Question: ${query}\n\n(No relevant documents found in the knowledge base.)`
+      : `No relevant documents were found in the knowledge base for this question.\n\nQuestion: ${query}\n\nBecause there are no matching documents, respond only with: "I don't have specific information about that in the knowledge base. Please upload relevant documents or rephrase your question."`
 
     // 4. Call GPT-4o-mini
     const completion = await openai.chat.completions.create({
@@ -129,7 +142,7 @@ export async function POST(req: NextRequest) {
         source_count:    uniqueSources.length,
       })
       .select('id')
-      .single()
+      .maybeSingle()
 
     // 7. Log query sources
     if (queryLog && matchedChunks.length > 0) {
@@ -159,7 +172,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (err) {
-    console.error('[knowledge/ask]', err)
+    logger.error('knowledge.ask.failed', err)
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Ask failed' },
       { status: 500 },

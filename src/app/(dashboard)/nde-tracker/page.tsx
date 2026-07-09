@@ -144,6 +144,7 @@ export default function NdeTrackerPage() {
   // Load all NDE inspections
   const { data: allRecords = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['nde-tracker', organizationId, projectFilter],
+    staleTime: 60_000,
     enabled: !!organizationId,
     queryFn: async () => {
       let q = createClient()

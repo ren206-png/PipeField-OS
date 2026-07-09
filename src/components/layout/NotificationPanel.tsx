@@ -120,7 +120,7 @@ export function NotificationPanel({ onClose }: NotificationPanelProps) {
               All read
             </button>
           )}
-          <button onClick={onClose} className="p-1.5 text-surface-500 hover:text-surface-300 rounded-lg hover:bg-surface-700 transition-colors">
+          <button onClick={onClose} aria-label="Close notifications" className="p-1.5 text-surface-500 hover:text-surface-300 rounded-lg hover:bg-surface-700 transition-colors">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>

@@ -1,4 +1,5 @@
 'use client'
+import { apiFetch } from '@/lib/apiFetch'
 // ============================================================
 // useWelds — weld list, detail, and status mutation.
 //
@@ -83,12 +84,13 @@ export function useWelds(filters: {
   })
 }
 
-export function useWeld(id: string) {
+export function useWeld(id: string, initialData?: Awaited<ReturnType<typeof fetchWeld>>) {
   return useQuery({
     queryKey: ['weld', id],
     staleTime: 30 * 1000,
     queryFn: () => fetchWeld(id),
     enabled: !!id,
+    ...(initialData ? { initialData, initialDataUpdatedAt: 0 } : {}),
   })
 }
 
@@ -100,7 +102,7 @@ export function useWeldsRealtime(organizationId: string | undefined) {
     const supabase = createClient()
 
     const channel = supabase
-      .channel(`welds:org:${organizationId}`)
+      .channel(`welds:org:${organizationId}:${Date.now()}`)
       .on('postgres_changes', {
         event: '*', // INSERT, UPDATE, DELETE
         schema: 'public',
@@ -152,7 +154,7 @@ export function useUpdateWeldStatus() {
       }
 
       // Fire-and-forget email notification — never blocks the UI
-      fetch('/api/notifications/weld-status', {
+      apiFetch('/api/notifications/weld-status', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({

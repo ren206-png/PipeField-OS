@@ -10,7 +10,7 @@ import type { Weld, WeldStatus } from '@/types'
 
 export interface WeldWithExtras extends Weld {
   project_name?:  string
-  spool_number?:  string
+  spool_number:   string | null
   photos?:        WeldPhoto[]
   timeline?:      WeldTimelineEntry[]
 }

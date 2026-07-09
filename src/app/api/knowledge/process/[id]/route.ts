@@ -7,14 +7,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import OpenAI from 'openai'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
-const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET ?? 'internal'
+// Read once at module scope — falsy when the env var is not set.
+// The request handler checks this and returns 503 rather than silently
+// accepting or rejecting calls, making misconfiguration immediately visible.
+const INTERNAL_SECRET = process.env.INTERNAL_API_SECRET
 const CHUNK_SIZE      = 2000   // ~500 tokens in chars
 const CHUNK_OVERLAP   = 200    // sliding window overlap
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+}
 
 // ── Text extraction ───────────────────────────────────────────
 
@@ -69,13 +75,18 @@ export async function POST(
 ) {
   const { id: sourceId } = await params
 
-  // Auth: accept internal secret header OR valid user session
+  // Fail fast if the secret is not configured — surface misconfiguration
+  // as a 503 rather than silently rejecting all internal pipeline calls.
+  if (!INTERNAL_SECRET) {
+    logger.error('knowledge.process.misconfigured', new Error('INTERNAL_API_SECRET is not set'))
+    return NextResponse.json({ error: 'Service misconfigured' }, { status: 503 })
+  }
+
+  // Auth: only accept the internal secret header (no user session path)
   const authHeader = req.headers.get('authorization') ?? ''
   const isInternal = authHeader === `Bearer ${INTERNAL_SECRET}`
 
   if (!isInternal) {
-    // Fallback: could validate user session here, but for simplicity
-    // we only allow internal calls from the upload route.
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -93,7 +104,7 @@ export async function POST(
       .from('knowledge_sources')
       .select('id, organization_id, storage_path, file_type, title')
       .eq('id', sourceId)
-      .single()
+      .maybeSingle()
 
     if (fetchError || !source) {
       throw new Error(fetchError?.message ?? 'Source not found')
@@ -132,6 +143,7 @@ export async function POST(
     const chunks = chunkText(fullText)
 
     // Generate embeddings in batches of 100
+    const openai    = getOpenAI()
     const BATCH_SIZE = 100
     const allEmbeddings: number[][] = []
 
@@ -179,7 +191,7 @@ export async function POST(
     return NextResponse.json({ ok: true, chunks: chunks.length })
 
   } catch (err) {
-    console.error('[knowledge/process]', err)
+    logger.error('knowledge.process.failed', err)
 
     await admin
       .from('knowledge_sources')

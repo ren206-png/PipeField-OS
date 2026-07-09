@@ -4,9 +4,18 @@
 // Left: branding panel. Right: form panel.
 // ============================================================
 import type { Metadata } from 'next'
+import { SITE_URL } from '@/lib/site-url'
 
+// Individual auth pages are 'use client' and cannot export their own
+// metadata, so the layout covers all three routes with a generic title.
+// The root template turns this into "Account | PipeField OS".
+// canonical points to /login as the primary auth entry point.
 export const metadata: Metadata = {
-  title: 'Sign In',
+  title: 'Account',
+  description: 'Sign in to PipeField OS — pipeline QC and field tools for pipefitters.',
+  alternates: {
+    canonical: `${SITE_URL}/login`,
+  },
 }
 
 export default function AuthLayout({

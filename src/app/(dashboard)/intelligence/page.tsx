@@ -1,13 +1,18 @@
 'use client'
 // ============================================================
-// PipeField Intelligence Center — Hub Page
-// Company-trained industrial knowledge layer
+// PipeField Intelligence Center — Hub Page (Phase 2)
+// Showcases all AI capabilities + knowledge base management
 // ============================================================
 import Link from 'next/link'
-import { Brain, Upload, BookOpen, Search, TrendingUp, FileText, Shield, ChevronRight, MessageCircle } from 'lucide-react'
+import {
+  Brain, Upload, BookOpen, Search, TrendingUp, FileText, Shield,
+  ChevronRight, MessageCircle, HardHat, Flame, Layers, Wrench,
+  ClipboardCheck, HardDrive, Calculator, Calendar, PackageSearch, Activity,
+} from 'lucide-react'
 import { useKnowledgeSources, useKnowledgeCategories } from '@/hooks/useKnowledge'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDate } from '@/lib/utils'
+import { AiUsageWidget } from '@/components/ai/AiUsageWidget'
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   procedure:        'Procedure',
@@ -34,8 +39,10 @@ export default function IntelligencePage() {
   const { data: sourcesData } = useKnowledgeSources({ limit: 6 })
   const { data: categories = [] } = useKnowledgeCategories()
 
-  const sources = sourcesData?.sources ?? []
-  const total   = sourcesData?.total ?? 0
+  const sources   = sourcesData?.sources ?? []
+  const total     = sourcesData?.total ?? 0
+  const aiReady   = sources.filter(s => s.processing_status === 'ready').length
+  const hasDocuments = total > 0
 
   const canUpload = profile?.role && [
     'platform_admin','organization_owner','administrator',
@@ -54,7 +61,7 @@ export default function IntelligencePage() {
           <div>
             <h1 className="text-2xl font-bold text-surface-50">Intelligence Center</h1>
             <p className="text-sm text-surface-500 mt-0.5">
-              Your company's trained knowledge — procedures, lessons learned, field expertise
+              AI-powered tools trained on your company's procedures, specs, and field expertise
             </p>
           </div>
         </div>
@@ -72,118 +79,238 @@ export default function IntelligencePage() {
         </div>
       </div>
 
-      {/* ── Ask AI call-to-action ───────────────────────────── */}
-      <div className="rounded-xl border border-brand-500/30 bg-brand-500/10 p-5 flex items-center gap-4">
-        <div className="w-10 h-10 rounded-xl bg-brand-500/20 border border-brand-500/40 flex items-center justify-center shrink-0">
-          <Brain className="w-5 h-5 text-brand-400" />
+      {/* ── Onboarding banner — shown only when no docs uploaded ── */}
+      {!hasDocuments && canUpload && (
+        <div className="rounded-xl border-2 border-dashed border-brand-500/30 bg-brand-500/5 p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center shrink-0">
+              <Upload className="w-6 h-6 text-brand-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-brand-200">
+                Upload your first document to activate AI features
+              </p>
+              <p className="text-xs text-surface-400 mt-1 leading-relaxed">
+                The AI capabilities below draw answers from your company's uploaded procedures, WPS, safety plans, and specifications.
+                Without documents, the AI has no project-specific knowledge to work from.
+                Start with a WPS or safety plan to see Welding Guidance and Safety Analysis in action.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {['WPS / PQR', 'Safety Plan / JSA', 'ITP', 'Method Statement', 'Lessons Learned'].map(t => (
+                  <span key={t} className="text-xs bg-brand-500/10 border border-brand-500/20 text-brand-300 px-2 py-1 rounded-full">{t}</span>
+                ))}
+              </div>
+            </div>
+            <Link href="/intelligence/upload" className="btn-primary text-sm px-5 py-2.5 shrink-0">
+              <Upload className="w-4 h-4 mr-2" />
+              Upload First Document
+            </Link>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-brand-200">AI-powered Q&amp;A is live</p>
-          <p className="text-xs text-surface-400 mt-0.5">
-            Ask questions about procedures, specs, lessons learned, and field documents — get answers with source citations.
-          </p>
-        </div>
-        <Link href="/intelligence/ask" className="btn-primary text-sm px-4 py-2 shrink-0">
-          <MessageCircle className="w-4 h-4 mr-2" />
-          Ask AI
-        </Link>
-      </div>
+      )}
 
       {/* ── Stats row ───────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={FileText}  label="Total Documents" value={total}              color="text-brand-400"   />
-        <StatCard icon={BookOpen}  label="Categories"      value={categories.length}  color="text-blue-400"   />
-        <StatCard icon={TrendingUp} label="Active Sources" value={sources.filter(s => s.status === 'active').length} color="text-green-400" />
-        <StatCard icon={Search}    label="AI Ready"        value={sources.filter(s => s.processing_status === 'ready').length} color="text-purple-400" />
+        <StatCard icon={FileText}   label="Total Documents" value={total}              color="text-brand-400"  />
+        <StatCard icon={BookOpen}   label="Categories"      value={categories.length}  color="text-blue-400"  />
+        <StatCard icon={TrendingUp} label="Active Sources"  value={sources.filter(s => s.status === 'active').length} color="text-green-400" />
+        <StatCard icon={Search}     label="AI Ready"        value={aiReady}            color="text-purple-400"/>
       </div>
 
-      {/* ── Quick actions ───────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <QuickAction
-          href="/intelligence/ask"
-          icon={MessageCircle}
-          title="Ask AI"
-          desc="Chat with your knowledge base — get answers with source citations"
-          color="purple"
-        />
-        <QuickAction
-          href="/intelligence/upload"
-          icon={Upload}
-          title="Upload Knowledge"
-          desc="Add procedures, reports, lessons learned, drawings"
-          color="brand"
-          disabled={!canUpload}
-        />
-        <QuickAction
-          href="/intelligence/sources"
-          icon={BookOpen}
-          title="Browse Library"
-          desc="Search and filter all company knowledge documents"
-          color="blue"
-        />
-        <QuickAction
-          href="/intelligence/sources?document_type=lessons_learned"
-          icon={TrendingUp}
-          title="Lessons Learned"
-          desc="Past mistakes, root causes, and field improvements"
-          color="green"
-        />
+      {/* ── AI Capabilities grid ────────────────────────────── */}
+      <div>
+        <h2 className="text-base font-semibold text-surface-100 mb-1">AI Capabilities</h2>
+        <p className="text-xs text-surface-500 mb-4">
+          All capabilities draw from your uploaded knowledge base. Upload documents to improve accuracy.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <CapabilityCard
+            href="/intelligence/ask"
+            icon={MessageCircle}
+            title="Ask AI"
+            desc="Chat with your knowledge base — procedures, specs, and lessons learned"
+            color="purple"
+            badge="All plans"
+          />
+          <CapabilityCard
+            href="/intelligence/field-assistant"
+            icon={HardHat}
+            title="Field Assistant"
+            desc="Plain-language answers for pipefitters and field workers"
+            color="orange"
+            badge="All plans"
+          />
+          <CapabilityCard
+            href="/intelligence/welding-guidance"
+            icon={Flame}
+            title="Welding Guidance"
+            desc="WPS recommendations and certification checks for your weld parameters"
+            color="red"
+            badge="Starter+"
+          />
+          <CapabilityCard
+            href="/intelligence/drawing-analysis"
+            icon={Layers}
+            title="Drawing Analysis"
+            desc="AI vision analysis of isometrics, P&IDs, and GA drawings"
+            color="teal"
+            badge="Professional+"
+          />
+          <CapabilityCard
+            href="/welds/new"
+            icon={Wrench}
+            title="QA/QC Assistance"
+            desc="NCR drafting, ITP guidance, and disposition recommendations"
+            color="blue"
+            badge="Starter+"
+          />
+          <CapabilityCard
+            href="/welds/new"
+            icon={Shield}
+            title="Safety Analysis"
+            desc="Hazard identification and safety controls from your safety documents"
+            color="yellow"
+            badge="All plans"
+          />
+          <CapabilityCard
+            href="/spools"
+            icon={PackageSearch}
+            title="Material Takeoff"
+            desc="AI-generated BOM from spool data, aggregated by size and material"
+            color="green"
+            badge="Starter+"
+          />
+          <CapabilityCard
+            href="/projects"
+            icon={ClipboardCheck}
+            title="Inspection Guidance"
+            desc="Hold/witness points and acceptance criteria for ITP activities"
+            color="indigo"
+            badge="Starter+"
+          />
+          <CapabilityCard
+            href="/projects"
+            icon={HardDrive}
+            title="Fabrication Planning"
+            desc="Optimal spool sequence recommendations based on priority and dates"
+            color="pink"
+            badge="Professional+"
+          />
+          <CapabilityCard
+            href="/projects"
+            icon={Calculator}
+            title="Estimating"
+            desc="Effort estimates from scope data and your productivity rates"
+            color="amber"
+            badge="Professional+"
+          />
+          <CapabilityCard
+            href="/projects"
+            icon={Calendar}
+            title="Scheduling"
+            desc="Schedule health analysis and recovery action recommendations"
+            color="cyan"
+            badge="Professional+"
+          />
+          <CapabilityCard
+            href="/projects"
+            icon={Activity}
+            title="Digital Twin"
+            desc="Live project status twin — system readiness and commissioning queries"
+            color="violet"
+            badge="Enterprise"
+          />
+        </div>
       </div>
 
-      {/* ── Recent uploads ──────────────────────────────────── */}
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-surface-100">Recent Documents</h2>
-          <Link href="/intelligence/sources" className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
-            View all <ChevronRight className="w-3 h-3" />
-          </Link>
+      {/* ── AI Usage ────────────────────────────────────────── */}
+      <div>
+        <h2 className="text-base font-semibold text-surface-100 mb-4">AI Usage — Last 30 Days</h2>
+        <AiUsageWidget />
+      </div>
+
+      {/* ── Knowledge base section ──────────────────────────── */}
+      <div>
+        <h2 className="text-base font-semibold text-surface-100 mb-4">Knowledge Base</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <QuickAction
+            href="/intelligence/upload"
+            icon={Upload}
+            title="Upload Knowledge"
+            desc="Add procedures, WPS, safety plans, drawings"
+            color="brand"
+            disabled={!canUpload}
+          />
+          <QuickAction
+            href="/intelligence/sources"
+            icon={BookOpen}
+            title="Browse Library"
+            desc="Search and filter all company knowledge documents"
+            color="blue"
+          />
+          <QuickAction
+            href="/intelligence/sources?document_type=lessons_learned"
+            icon={TrendingUp}
+            title="Lessons Learned"
+            desc="Past mistakes, root causes, and field improvements"
+            color="green"
+          />
         </div>
 
-        {sources.length === 0 ? (
-          <div className="text-center py-12">
-            <Brain className="w-10 h-10 text-surface-700 mx-auto mb-3" />
-            <p className="text-sm text-surface-500 font-medium">No documents yet</p>
-            <p className="text-xs text-surface-600 mt-1">
-              Start building your company's knowledge base by uploading procedures, reports, and field documents.
-            </p>
-            {canUpload && (
-              <Link href="/intelligence/upload" className="btn-primary text-sm px-4 py-2 mt-4 inline-flex">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload First Document
-              </Link>
-            )}
+        {/* Recent documents */}
+        <div className="card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-sm font-semibold text-surface-100">Recent Documents</h3>
+            <Link href="/intelligence/sources" className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
+              View all <ChevronRight className="w-3 h-3" />
+            </Link>
           </div>
-        ) : (
-          <div className="divide-y divide-surface-800">
-            {sources.map(source => (
-              <Link
-                key={source.id}
-                href={`/intelligence/sources/${source.id}`}
-                className="flex items-center gap-4 py-3 hover:bg-surface-800/40 -mx-2 px-2 rounded-lg transition-colors group"
-              >
-                {/* Category colour dot */}
-                <div
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: source.knowledge_categories?.color ?? '#64748b' }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-surface-100 truncate group-hover:text-white">
-                    {source.title}
-                  </p>
-                  <p className="text-xs text-surface-500 mt-0.5">
-                    {source.knowledge_categories?.name ?? 'Uncategorised'} ·{' '}
-                    {DOC_TYPE_LABELS[source.document_type] ?? 'Document'} ·{' '}
-                    {formatDate(source.created_at)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs text-surface-600">{formatFileSize(source.file_size)}</span>
-                  <StatusPill status={source.processing_status} />
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+
+          {sources.length === 0 ? (
+            <div className="text-center py-10">
+              <Brain className="w-10 h-10 text-surface-700 mx-auto mb-3" />
+              <p className="text-sm text-surface-500 font-medium">No documents yet</p>
+              <p className="text-xs text-surface-600 mt-1 max-w-xs mx-auto">
+                Upload your first document to give the AI something to work from.
+              </p>
+              {canUpload && (
+                <Link href="/intelligence/upload" className="btn-primary text-sm px-4 py-2 mt-4 inline-flex items-center">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload First Document
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-surface-800">
+              {sources.map(source => (
+                <Link
+                  key={source.id}
+                  href={`/intelligence/sources/${source.id}`}
+                  className="flex items-center gap-4 py-3 hover:bg-surface-800/40 -mx-2 px-2 rounded-lg transition-colors group"
+                >
+                  <div
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: source.knowledge_categories?.color ?? '#64748b' }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-surface-100 truncate group-hover:text-white">
+                      {source.title}
+                    </p>
+                    <p className="text-xs text-surface-500 mt-0.5">
+                      {source.knowledge_categories?.name ?? 'Uncategorised'} ·{' '}
+                      {DOC_TYPE_LABELS[source.document_type] ?? 'Document'} ·{' '}
+                      {formatDate(source.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-xs text-surface-600">{formatFileSize(source.file_size)}</span>
+                    <StatusPill status={source.processing_status} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── Categories grid ─────────────────────────────────── */}
@@ -228,9 +355,7 @@ export default function IntelligencePage() {
 
 // ── Sub-components ────────────────────────────────────────────
 
-function StatCard({
-  icon: Icon, label, value, color,
-}: {
+function StatCard({ icon: Icon, label, value, color }: {
   icon: React.ElementType; label: string; value: number; color: string
 }) {
   return (
@@ -242,17 +367,50 @@ function StatCard({
   )
 }
 
-function QuickAction({
-  href, icon: Icon, title, desc, color, disabled,
-}: {
+type CapColor = 'purple'|'orange'|'red'|'teal'|'blue'|'yellow'|'green'|'indigo'|'pink'|'amber'|'cyan'|'violet'
+
+const CAP_COLOR_MAP: Record<CapColor, string> = {
+  purple: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
+  orange: 'bg-orange-500/10 border-orange-500/20 text-orange-400',
+  red:    'bg-red-500/10    border-red-500/20    text-red-400',
+  teal:   'bg-teal-500/10   border-teal-500/20   text-teal-400',
+  blue:   'bg-blue-500/10   border-blue-500/20   text-blue-400',
+  yellow: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400',
+  green:  'bg-green-500/10  border-green-500/20  text-green-400',
+  indigo: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
+  pink:   'bg-pink-500/10   border-pink-500/20   text-pink-400',
+  amber:  'bg-amber-500/10  border-amber-500/20  text-amber-400',
+  cyan:   'bg-cyan-500/10   border-cyan-500/20   text-cyan-400',
+  violet: 'bg-violet-500/10 border-violet-500/20 text-violet-400',
+}
+
+function CapabilityCard({ href, icon: Icon, title, desc, color, badge }: {
+  href: string; icon: React.ElementType; title: string; desc: string; color: CapColor; badge: string
+}) {
+  return (
+    <Link href={href} className="card p-4 hover:bg-surface-700/50 transition-colors group flex flex-col gap-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${CAP_COLOR_MAP[color]}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <span className="text-xs bg-surface-700 text-surface-400 px-2 py-0.5 rounded-full shrink-0">{badge}</span>
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-surface-100 group-hover:text-white">{title}</p>
+        <p className="text-xs text-surface-500 mt-0.5 leading-relaxed">{desc}</p>
+      </div>
+    </Link>
+  )
+}
+
+function QuickAction({ href, icon: Icon, title, desc, color, disabled }: {
   href: string; icon: React.ElementType; title: string; desc: string;
-  color: 'brand' | 'blue' | 'green' | 'purple'; disabled?: boolean
+  color: 'brand' | 'blue' | 'green'; disabled?: boolean
 }) {
   const colorMap = {
-    brand:  'bg-brand-500/10  border-brand-500/20  text-brand-400',
-    blue:   'bg-blue-500/10   border-blue-500/20   text-blue-400',
-    green:  'bg-green-500/10  border-green-500/20  text-green-400',
-    purple: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
+    brand: 'bg-brand-500/10 border-brand-500/20 text-brand-400',
+    blue:  'bg-blue-500/10  border-blue-500/20  text-blue-400',
+    green: 'bg-green-500/10 border-green-500/20 text-green-400',
   }
   const base = `card p-5 flex flex-col gap-3 transition-colors ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-surface-700/50 cursor-pointer'}`
   return (

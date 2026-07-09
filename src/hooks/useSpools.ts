@@ -67,12 +67,13 @@ export function useSpools(filters: {
   })
 }
 
-export function useSpool(id: string) {
+export function useSpool(id: string, initialData?: SpoolWithRelations) {
   return useQuery({
     queryKey: ['spool', id],
     staleTime: 30 * 1000,
     queryFn: () => fetchSpool(id),
     enabled: !!id,
+    ...(initialData ? { initialData, initialDataUpdatedAt: 0 } : {}),
   })
 }
 

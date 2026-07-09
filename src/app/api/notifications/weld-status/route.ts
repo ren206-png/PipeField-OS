@@ -12,6 +12,8 @@ import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWeldStatusEmail } from '@/lib/email'
 
+export const dynamic = 'force-dynamic'
+
 // Only send emails for these status transitions — don't spam on every change
 const NOTIFY_ON: string[] = ['accepted', 'failed', 'fit_up_approved', 'visual_pass']
 
@@ -24,7 +26,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     const body   = await req.json()

@@ -7,15 +7,17 @@ import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const createSchema = z.object({
   label:     z.string().min(1).max(300),
   projectId: z.string().uuid().optional().nullable(),
   expiresAt: z.string().datetime().optional().nullable(),
 })
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     if (!caller.organization_id) {
@@ -44,7 +46,7 @@ export async function GET(_req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     if (!caller.organization_id) {

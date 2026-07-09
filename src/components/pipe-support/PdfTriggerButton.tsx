@@ -4,6 +4,7 @@
 // opens the resulting PDF in a new tab (or triggers download).
 // ============================================================
 import { useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { FileDown, Loader2, AlertCircle } from 'lucide-react'
 
 interface Props {
@@ -28,7 +29,7 @@ export function PdfTriggerButton({
         ? { calculation_id: calculationId }
         : { name: calcName, inputs, result }
 
-      const res = await fetch('/api/pipe-support/pdf', {
+      const res = await apiFetch('/api/pipe-support/pdf', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(body),

@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { apiFetch } from '@/lib/apiFetch'
 import { Flame, Building2, Users, FolderOpen, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
 
 const STEPS = [
@@ -31,7 +32,7 @@ export default function OnboardingPage() {
     if (step === 1 && projectName.trim()) {
       setLoading(true)
       try {
-        await fetch('/api/projects', {
+        await apiFetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: projectName.trim(), status: 'active' }),
@@ -47,7 +48,7 @@ export default function OnboardingPage() {
     if (!inviteEmail.trim()) return
     setLoading(true)
     try {
-      await fetch('/api/organization/invite', {
+      await apiFetch('/api/organization/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: inviteEmail.trim(), role: 'member' }),

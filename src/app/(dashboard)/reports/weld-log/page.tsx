@@ -9,6 +9,7 @@ import { WeldStatusBadge } from '@/components/welds/WeldStatusBadge'
 import { downloadCSV, todayISO } from '@/lib/reports/csv-export'
 import { WELD_STATUS_LABELS, type WeldStatus } from '@/types'
 import { formatDate } from '@/lib/utils'
+import { apiFetch } from '@/lib/apiFetch'
 
 const ALL_STATUSES = Object.keys(WELD_STATUS_LABELS) as WeldStatus[]
 
@@ -93,7 +94,7 @@ export default function WeldLogReportPage() {
   async function exportPDF() {
     setPdfLoading(true)
     try {
-      const res = await fetch('/api/reports/weld-log-pdf', {
+      const res = await apiFetch('/api/reports/weld-log-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, status, welderStamp, dateFrom, dateTo, search }),

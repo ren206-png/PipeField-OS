@@ -1,33 +1,36 @@
 // ============================================================
-// Next.js Middleware — Route Protection
+// Next.js Middleware — Session refresh + Route Protection
+//
+// CRITICAL: The session refresh (supabase.auth.getUser()) MUST
+// run on EVERY request — including API routes. Skipping API
+// routes was the root cause of persistent 401s: the access token
+// expires after 1 hour, and without middleware refreshing it and
+// writing the new token back to the response cookies, every API
+// call fails permanently until the user manually signs out/in.
+//
+// API routes are NOT redirected to /login — they get a pass-through
+// after the refresh so they receive a valid session cookie.
 // ============================================================
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Routes anyone can visit without being logged in
+// Routes that skip redirect-to-login (but still get session refresh)
 const PUBLIC_ROUTES = [
   '/',
   '/login',
   '/register',
   '/forgot-password',
   '/reset-password',
-  '/invite',           // invite acceptance page
-  '/share/',           // public client share portal — no login required
-  '/billing',          // public pricing/billing page
-  '/api/organization/invite/', // token validation (public)
+  '/invite',
+  '/share/',
+  '/billing',
+  '/api/',             // API routes: refresh session but never redirect to /login
 ]
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // ── Never touch API routes ─────────────────────────────────
-  // API routes handle their own auth. Redirecting them to /login
-  // returns HTML instead of JSON and breaks the client.
-  if (pathname.startsWith('/api/')) {
-    return NextResponse.next()
-  }
-
-  // ── Static assets — skip immediately ──────────────────────
+  // ── Static assets — skip entirely ─────────────────────────
   if (
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon') ||
@@ -36,6 +39,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // ── Session refresh — runs on EVERY non-static request ────
+  // This is the Supabase SSR recommended pattern. The setAll
+  // callback writes refreshed tokens back to both the request
+  // and response so all downstream code sees a valid session.
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -47,9 +54,11 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          // Write refreshed tokens to the request (so route handlers see them)
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
+          // Rebuild response with updated cookies so the browser gets them
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options as Record<string, unknown>)
@@ -59,35 +68,34 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh the session — must happen on every request
+  // getUser() validates + refreshes the session. Must not be removed.
   const { data: { user } } = await supabase.auth.getUser()
+
+  // ── API routes: never redirect, always pass through ────────
+  if (pathname.startsWith('/api/')) {
+    return supabaseResponse
+  }
 
   const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r))
 
-  // Not logged in + protected page → go to login
+  // Not logged in + protected page → redirect to login
   if (!user && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  // Already logged in + visiting login/register → go to dashboard
+  // Already logged in + auth pages → redirect to dashboard
   if (user && (pathname.startsWith('/login') || pathname.startsWith('/register'))) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // /admin/* — additional role check
-  // The (admin) layout also enforces this server-side, but middleware
-  // catches it earlier and avoids rendering the layout at all.
-  if (pathname.startsWith('/admin')) {
-    if (!user) {
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
-    }
-    // Role check happens in the layout (service role query) — middleware
-    // only ensures the user is authenticated at this point.
-    // The layout renders the 403 screen for non-platform-admins.
+  // /admin/* — middleware ensures user is authenticated
+  // (role check happens in the layout)
+  if (pathname.startsWith('/admin') && !user) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
   return supabaseResponse

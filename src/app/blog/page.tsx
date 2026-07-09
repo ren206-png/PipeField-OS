@@ -36,9 +36,14 @@ const posts = [
   },
 ]
 
+import { SITE_URL } from '@/lib/site-url'
+
 export const metadata = {
   title: 'Blog — Pipeline QC & Pipefitter Field Guides',
   description: 'Practical guides for pipeline construction teams and pipefitters — weld inspection, field calculations, QC compliance, and more.',
+  alternates: {
+    canonical: `${SITE_URL}/blog`,
+  },
 }
 
 export default function BlogPage() {

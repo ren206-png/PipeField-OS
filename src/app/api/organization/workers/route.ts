@@ -11,6 +11,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireOrgAdmin } from '@/lib/api-auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const patchSchema = z.object({
   worker_profile_id: z.string().uuid(),
   role:   z.string().optional(),

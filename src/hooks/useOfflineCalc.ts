@@ -13,6 +13,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import type { CalcResult } from '@/components/pipe-support/SupportCalculator'
 import { runOfflineCalc, type OfflineCalcInput } from '@/lib/offline/pipeCalc'
+import { apiFetch } from '@/lib/apiFetch'
 
 type NetworkStatus = 'online' | 'offline' | 'unknown'
 
@@ -113,7 +114,7 @@ export function useOfflineCalc(): UseOfflineCalcReturn {
     // ── Attempt server-side calculation ────────────────────
     if (isOnline()) {
       try {
-        const res = await fetch('/api/pipe-support/calculate', {
+        const res = await apiFetch('/api/pipe-support/calculate', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify(formData),

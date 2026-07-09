@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
+
+export const dynamic = 'force-dynamic'
 import { v4 as uuidv4 } from 'uuid'
 
 const MAX_FILE_SIZE   = 10 * 1024 * 1024 // 10 MB
@@ -17,9 +20,9 @@ interface RouteContext {
 }
 
 // ── GET ───────────────────────────────────────────────────────
-export async function GET(_req: NextRequest, { params }: RouteContext) {
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     if (!caller.organization_id) {
@@ -60,7 +63,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json(withUrls)
   } catch (err) {
-    console.error('GET /api/welds/[id]/photos error:', err)
+    logger.error('welds.photos.get.failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -68,7 +71,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 // ── POST ──────────────────────────────────────────────────────
 export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     if (!caller.organization_id) {
@@ -115,9 +118,17 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       )
     }
 
+    // Extension comes from the validated MIME type — never from user input —
+    // to prevent double-extension attacks (e.g. "photo.php.jpg").
+    const MIME_TO_EXT: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png':  'png',
+      'image/webp': 'webp',
+      'image/heic': 'heic',
+    }
     const fileId      = uuidv4()
-    const ext         = file.name.split('.').pop() ?? 'jpg'
-    const storagePath = `${caller.organization_id}/${weldId}/${fileId}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}.${ext}`
+    const ext         = MIME_TO_EXT[file.type] ?? 'jpg'
+    const storagePath = `${caller.organization_id}/${weldId}/${fileId}.${ext}`
 
     // Upload to storage using admin client
     const arrayBuffer = await file.arrayBuffer()
@@ -160,7 +171,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ ...photo, public_url: urlData.publicUrl }, { status: 201 })
   } catch (err) {
-    console.error('POST /api/welds/[id]/photos error:', err)
+    logger.error('welds.photos.post.failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

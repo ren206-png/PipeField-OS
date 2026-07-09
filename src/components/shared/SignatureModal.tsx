@@ -76,7 +76,7 @@ export default function SignatureModal({
               {existing ? 'Signature on file' : `Sign as ${role}`}
             </h2>
           </div>
-          <button onClick={onClose} className="text-surface-400 hover:text-surface-200 transition-colors">
+          <button onClick={onClose} aria-label="Close" className="text-surface-400 hover:text-surface-200 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

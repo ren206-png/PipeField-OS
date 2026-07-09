@@ -4,6 +4,7 @@
 // Only visible to organization administrators.
 // ============================================================
 import { useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useQuery } from '@tanstack/react-query'
 import {
   Star, MessageSquare, TrendingUp, Users,
@@ -60,7 +61,7 @@ export default function FeedbackAdminPage() {
   const { data, isLoading, error } = useQuery<{ feedback: FeedbackRow[] }>({
     queryKey: ['admin-feedback'],
     queryFn:  async () => {
-      const res = await fetch('/api/feedback')
+      const res = await apiFetch('/api/feedback')
       if (!res.ok) {
         const body = await res.json()
         throw new Error(body.error ?? 'Failed to load feedback')

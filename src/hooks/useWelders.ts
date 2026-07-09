@@ -1,6 +1,7 @@
 'use client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
+import { apiFetch } from '@/lib/apiFetch'
 import { useAuth } from './useAuth'
 import type { Welder } from '@/types'
 
@@ -50,20 +51,22 @@ export function useWelder(id: string) {
 }
 
 export function useCreateWelder() {
-  const { profile } = useAuth()
-  const supabase    = createClient()
-  const qc          = useQueryClient()
+  const qc = useQueryClient()
 
+  // P0-FIX-2: creation routes through /api/welders so the server-side
+  // plan-seat limit (checkWelderLimit) is enforced before any DB write.
   return useMutation({
     mutationFn: async (values: Omit<Welder, 'id' | 'organization_id' | 'created_by' | 'created_at' | 'updated_at'>) => {
-      if (!profile?.organization_id) throw new Error('No org')
-      const { data, error } = await supabase
-        .from('welders')
-        .insert({ ...values, organization_id: profile.organization_id, created_by: profile.id })
-        .select()
-        .single()
-      if (error) throw error
-      return data
+      const res = await apiFetch('/api/welders', {
+        method: 'POST',
+        body: JSON.stringify(values),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(json.error ?? 'Failed to create welder')
+      }
+      const json = await res.json() as { welder: Welder }
+      return json.welder
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['welders'] }),
   })

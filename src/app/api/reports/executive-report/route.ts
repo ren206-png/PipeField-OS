@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/api-auth'
+
+export const dynamic = 'force-dynamic'
 import {
   Document, Page, Text as PdfText, View, StyleSheet, renderToBuffer,
 } from '@react-pdf/renderer'
@@ -755,7 +757,7 @@ function buildPdf(
 // ── Route handler ──────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organisation found' }, { status: 400 })

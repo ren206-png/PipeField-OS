@@ -1,13 +1,12 @@
 import { MetadataRoute } from 'next'
-
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pipefield-os.com'
+import { SITE_URL, siteUrl } from '@/lib/site-url'
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/login', '/register'],
+        allow: ['/', '/login', '/register', '/blog', '/calculators'],
         disallow: [
           '/dashboard',
           '/projects',
@@ -22,7 +21,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${APP_URL}/sitemap.xml`,
-    host: APP_URL,
+    sitemap: siteUrl('/sitemap.xml'),
+    host: SITE_URL,
   }
 }

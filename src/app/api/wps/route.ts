@@ -3,6 +3,8 @@ import { requireAuth } from '@/lib/api-auth'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const wpsSchema = z.object({
   wps_number:           z.string().min(1).max(50),
   revision:             z.string().max(10).default('0'),
@@ -16,9 +18,9 @@ const wpsSchema = z.object({
   notes:                z.string().max(500).optional().nullable(),
 })
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     const supabase = await createClient()
     const { data, error } = await supabase
@@ -36,7 +38,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     const body = await req.json()
     const parsed = wpsSchema.safeParse(body)

@@ -113,6 +113,32 @@ export function PageErrorBoundary({
 }
 
 /**
+ * Compact inline fallback for sidebar items or small widgets.
+ * Shows a subtle error chip instead of a full card so the rest of the UI stays intact.
+ */
+export function WidgetErrorBoundary({
+  children,
+  label,
+}: {
+  children: ReactNode
+  label?: string
+}) {
+  return (
+    <ErrorBoundary
+      label={label}
+      fallback={
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
+          <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+          <span className="text-xs text-red-400">{label ?? 'Widget'} failed to load</span>
+        </div>
+      }
+    >
+      {children}
+    </ErrorBoundary>
+  )
+}
+
+/**
  * Higher-order component that wraps a component with ErrorBoundary.
  *
  * @example

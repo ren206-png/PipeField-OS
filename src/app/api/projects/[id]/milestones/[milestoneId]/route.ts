@@ -7,6 +7,8 @@ import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const patchSchema = z.object({
   name:         z.string().min(1).max(200).optional(),
   description:  z.string().max(500).optional().nullable(),
@@ -43,7 +45,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; milestoneId: string }> }
 ) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     const { id: projectId, milestoneId } = await params
@@ -78,11 +80,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; milestoneId: string }> }
 ) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     const { id: projectId, milestoneId } = await params

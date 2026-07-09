@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { InviteWorkerModal } from './InviteWorkerModal'
 import { useOrganization } from '@/hooks/useOrganization'
 import { getPlanCapabilities } from '@/lib/auth/permissions'
+import { apiFetch } from '@/lib/apiFetch'
 
 interface Worker {
   id:              string
@@ -67,11 +68,12 @@ export function WorkerList() {
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['workers', search, roleFilter],
+    staleTime: 30_000,
     queryFn: async () => {
       const params = new URLSearchParams()
       if (search)     params.set('search', search)
       if (roleFilter) params.set('role',   roleFilter)
-      const res = await fetch(`/api/organization/workers?${params}`)
+      const res = await apiFetch(`/api/organization/workers?${params}`)
       if (!res.ok) throw new Error('Failed to load workers')
       return res.json() as Promise<{ workers: Worker[] }>
     },
@@ -79,7 +81,7 @@ export function WorkerList() {
 
   const updateWorker = useMutation({
     mutationFn: async (payload: { worker_profile_id: string; role?: string; status?: string }) => {
-      const res = await fetch('/api/organization/workers', {
+      const res = await apiFetch('/api/organization/workers', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(payload),
@@ -95,7 +97,7 @@ export function WorkerList() {
 
   const removeWorker = useMutation({
     mutationFn: async (workerId: string) => {
-      const res = await fetch(`/api/organization/workers?id=${workerId}`, { method: 'DELETE' })
+      const res = await apiFetch(`/api/organization/workers?id=${workerId}`, { method: 'DELETE' })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error) }
     },
     onSuccess: () => {
@@ -119,7 +121,7 @@ export function WorkerList() {
             className="input pl-9 w-full"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <button onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2">
               <X className="w-3.5 h-3.5 text-surface-500" />
             </button>
           )}
@@ -136,7 +138,7 @@ export function WorkerList() {
           ))}
         </select>
 
-        <button onClick={() => refetch()} className="btn-ghost p-2" title="Refresh">
+        <button onClick={() => refetch()} aria-label="Refresh member list" className="btn-ghost p-2" title="Refresh">
           <RefreshCw className="w-4 h-4" />
         </button>
 
@@ -202,6 +204,8 @@ export function WorkerList() {
                       <>
                         <button
                           onClick={() => setMenuId(menuId === w.id ? null : w.id)}
+                          aria-label={`Actions for ${w.full_name}`}
+                          aria-expanded={menuId === w.id}
                           className="p-1 text-surface-500 hover:text-surface-300 rounded"
                         >
                           <MoreVertical className="w-4 h-4" />
@@ -257,7 +261,7 @@ export function WorkerList() {
           <div className="bg-surface-900 border border-surface-700 rounded-2xl w-full max-w-sm p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-surface-50">Change Role</h3>
-              <button onClick={() => setEditWorker(null)} className="text-surface-500 hover:text-surface-300">
+              <button onClick={() => setEditWorker(null)} aria-label="Close" className="text-surface-500 hover:text-surface-300">
                 <X className="w-4 h-4" />
               </button>
             </div>

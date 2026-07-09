@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { UpgradePrompt } from '@/components/billing/UpgradePrompt'
+import { apiFetch } from '@/lib/apiFetch'
 
 const projectSchema = z.object({
   name:           z.string().min(1, 'Project name is required').max(200),
@@ -51,7 +52,7 @@ export default function NewProjectPage() {
     setLimitError(null)
 
     try {
-      const res = await fetch('/api/projects', {
+      const res = await apiFetch('/api/projects', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(values),

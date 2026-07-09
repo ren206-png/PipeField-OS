@@ -6,15 +6,17 @@
 // - Download invoices
 // ============================================================
 import { APP_URL } from '@/env'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAuth } from '@/lib/api-auth'
 
-export async function POST() {
+export const dynamic = 'force-dynamic'
+
+export async function POST(req: NextRequest) {
   try {
     // ── Auth ───────────────────────────────────────────────────
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     // ── Billing admin check ────────────────────────────────────

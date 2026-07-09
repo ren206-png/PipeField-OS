@@ -1,4 +1,5 @@
 'use client'
+import { apiFetch } from '@/lib/apiFetch'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from './useAuth'
@@ -62,7 +63,7 @@ export function useCreateDfr() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['dfr'] })
       // fire-and-forget notification
-      fetch('/api/notifications/daily-report', {
+      apiFetch('/api/notifications/daily-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

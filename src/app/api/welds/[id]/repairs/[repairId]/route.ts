@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const patchSchema = z.object({
   repair_number:        z.number().int().min(1).optional(),
   failure_mode:         z.string().max(200).optional().nullable(),
@@ -81,7 +83,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: RouteContext) {
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
     const supabase = await createClient()
     const { data: { user }, error: authErr } = await supabase.auth.getUser()

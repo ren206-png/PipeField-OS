@@ -46,7 +46,7 @@ export default function KnowledgeSourcesPage() {
   const [status,       setStatus]       = useState(searchParams.get('status') ?? '')
   const [openMenu,     setOpenMenu]     = useState<string | null>(null)
 
-  const { data, isLoading } = useKnowledgeSources({
+  const { data, isLoading, isError } = useKnowledgeSources({
     q:             q     || undefined,
     category_id:   categoryId || undefined,
     document_type: docType    || undefined,
@@ -167,6 +167,12 @@ export default function KnowledgeSourcesPage() {
               <div className="h-3 bg-surface-700 rounded w-1/2" />
             </div>
           ))}
+        </div>
+      ) : isError ? (
+        <div className="text-center py-16">
+          <Brain className="w-10 h-10 text-surface-700 mx-auto mb-3" />
+          <p className="text-sm text-surface-500 font-medium">Could not load documents</p>
+          <p className="text-xs text-surface-600 mt-1">Check your connection and try refreshing the page.</p>
         </div>
       ) : sources.length === 0 ? (
         <div className="text-center py-16">

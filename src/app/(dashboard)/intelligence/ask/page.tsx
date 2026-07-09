@@ -9,6 +9,7 @@ import { useAskKnowledge, type KnowledgeAnswer } from '@/hooks/useKnowledge'
 // ── Types ─────────────────────────────────────────────────────
 
 interface Message {
+  id:         string
   role:       'user' | 'assistant'
   content:    string
   sources?:   KnowledgeAnswer['sources']
@@ -98,31 +99,26 @@ export default function AskPage() {
     setInput('')
 
     // Add user message + placeholder assistant message
-    const userMsg:   Message = { role: 'user',      content: query }
-    const loadingMsg: Message = { role: 'assistant', content: '', isLoading: true }
+    const assistantId = crypto.randomUUID()
+    const userMsg:    Message = { id: crypto.randomUUID(), role: 'user',      content: query }
+    const loadingMsg: Message = { id: assistantId,         role: 'assistant', content: '', isLoading: true }
     setMessages(prev => [...prev, userMsg, loadingMsg])
 
     try {
       const result = await askAI({ query })
-      setMessages(prev => {
-        const updated = [...prev]
-        // Replace the loading placeholder
-        updated[updated.length - 1] = {
-          role:    'assistant',
-          content: result.answer,
-          sources: result.sources,
-        }
-        return updated
-      })
+      setMessages(prev =>
+        prev.map(m => m.id === assistantId
+          ? { ...m, content: result.answer, sources: result.sources, isLoading: false }
+          : m
+        )
+      )
     } catch (err) {
-      setMessages(prev => {
-        const updated = [...prev]
-        updated[updated.length - 1] = {
-          role:    'assistant',
-          content: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
-        }
-        return updated
-      })
+      setMessages(prev =>
+        prev.map(m => m.id === assistantId
+          ? { ...m, content: err instanceof Error ? err.message : 'Something went wrong. Please try again.', isLoading: false }
+          : m
+        )
+      )
     }
   }
 
@@ -176,8 +172,8 @@ export default function AskPage() {
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <MessageBubble key={i} msg={msg} />
+        {messages.map((msg) => (
+          <MessageBubble key={msg.id} msg={msg} />
         ))}
         <div ref={bottomRef} />
       </div>

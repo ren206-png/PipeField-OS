@@ -15,8 +15,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 function mapStatus(stripeStatus: string): string {
   const map: Record<string, string> = {
@@ -50,7 +52,7 @@ function tierFromPriceId(priceId: string): string | null {
   if (priceId === process.env.STRIPE_PRICE_ENTERPRISE)        return 'enterprise'
   // Unknown price ID — log a warning and leave the tier unchanged (return null).
   // Previously this silently fell back to 'starter' which could downgrade a paid org.
-  console.warn(`[webhook] Unknown price ID: ${priceId} — tier not updated`)
+  logger.warn('billing.webhook.unknown_price', { priceId })
   return null
 }
 
@@ -80,7 +82,7 @@ async function updateOrg(
     .from('organizations')
     .update(payload)
     .eq('stripe_customer_id', customerId)
-  if (error) console.error('[webhook] updateOrg failed:', error.message)
+  if (error) logger.error('billing.webhook.update_org_failed', new Error(error.message))
 }
 
 export async function POST(req: NextRequest) {
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest) {
   try {
     event = getStripe().webhooks.constructEvent(body, signature, webhookSecret)
   } catch (err) {
-    console.error('[webhook] Signature verification failed:', err)
+    logger.error('billing.webhook.signature_failed', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -128,11 +130,7 @@ export async function POST(req: NextRequest) {
               .eq('is_active', true)
 
             if ((count ?? 0) > 1) {
-              console.error(
-                `[webhook] field_pro checkout rejected for org ${orgId}: ` +
-                `${count} active seats exceed the 1-seat limit. ` +
-                `Cancelling subscription ${subscriptionId}.`
-              )
+              logger.error('billing.webhook.event_handler_failed', new Error(`field_pro checkout rejected for org ${orgId}: ${count} active seats exceed the 1-seat limit. Cancelling subscription ${subscriptionId}.`))
               await getStripe().subscriptions.cancel(subscriptionId)
               break
             }
@@ -156,7 +154,7 @@ export async function POST(req: NextRequest) {
         const sub        = event.data.object as Stripe.Subscription
         const customerId = sub.customer as string
         const priceId    = sub.items.data[0]?.price.id ?? ''
-        const periodEnd  = (sub as unknown as { current_period_end: number }).current_period_end
+        const periodEnd  = getPeriodEnd(sub)
         const tier2      = tierFromPriceId(priceId)
 
         if (tier2) {
@@ -213,7 +211,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
 
   } catch (err) {
-    console.error('[webhook] Handler error:', err)
+    logger.error('billing.webhook.handler_failed', err)
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 }

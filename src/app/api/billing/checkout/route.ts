@@ -10,6 +10,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const schema = z.object({
   planKey: z.enum(['field_pro', 'starter', 'professional', 'enterprise']),
 })
@@ -17,7 +19,7 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   try {
     // ── Auth ───────────────────────────────────────────────────
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     // ── Validate body ──────────────────────────────────────────

@@ -10,7 +10,7 @@
 // Visible only when PFOS_INTELLIGENCE_WELDING_GUIDANCE is ON
 // (the API will return 503 otherwise — panel stays hidden).
 // ============================================================
-import { useState }                         from 'react'
+import { useState, useEffect, useRef }       from 'react'
 import { Brain, ChevronDown, ChevronUp, AlertTriangle, CheckCircle, Loader2, Sparkles } from 'lucide-react'
 import { apiFetch }                          from '@/lib/apiFetch'
 import type { WpsRecord }                    from '@/hooks/useWps'
@@ -59,6 +59,7 @@ export function WeldingGuidancePanel({
   const [loading, setLoading] = useState(false)
   const [result,  setResult ] = useState<GuidanceResult | null>(null)
   const [error,   setError  ] = useState<string | null>(null)
+  const autoOpenedRef = useRef(false)
 
   // Don't render if no meaningful weld context yet
   const hasContext = weldProcess || pipeSize || material
@@ -119,6 +120,16 @@ export function WeldingGuidancePanel({
       setLoading(false)
     }
   }
+
+  // Auto-open and fetch once both process AND material are selected
+  useEffect(() => {
+    if (weldProcess && material && !autoOpenedRef.current) {
+      autoOpenedRef.current = true
+      setOpen(true)
+      fetchGuidance()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weldProcess, material])
 
   function handleToggle() {
     const next = !open

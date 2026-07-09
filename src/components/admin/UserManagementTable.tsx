@@ -4,6 +4,7 @@
 // Fetches from /api/admin/users with search + filter support.
 // ============================================================
 import { useState, useCallback } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Search, Filter, X, ChevronDown, RefreshCw, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -63,16 +64,16 @@ export function UserManagementTable() {
       if (role)   params.set('role',   role)
       if (status) params.set('status', status)
 
-      const res = await fetch(`/api/admin/users?${params}`)
+      const res = await apiFetch(`/api/admin/users?${params}`)
       if (!res.ok) throw new Error('Failed to load users')
       return res.json() as Promise<{ users: AdminUser[]; total: number; page: number; per_page: number }>
     },
-    staleTime: 30_000,
+    staleTime: 2 * 60_000,
   })
 
   const updateUser = useMutation({
     mutationFn: async (payload: { user_profile_id: string; role?: string; status?: string }) => {
-      const res = await fetch('/api/admin/users', {
+      const res = await apiFetch('/api/admin/users', {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(payload),
@@ -281,7 +282,7 @@ function EditUserModal({
       <div className="bg-surface-900 border border-surface-700 rounded-2xl w-full max-w-sm p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-surface-50">Edit User</h3>
-          <button onClick={onClose} className="text-surface-500 hover:text-surface-300">
+          <button onClick={onClose} aria-label="Close" className="text-surface-500 hover:text-surface-300">
             <X className="w-4 h-4" />
           </button>
         </div>

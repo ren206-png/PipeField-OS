@@ -195,10 +195,10 @@ function MilestoneRow({
             )}
             {canEdit && (
               <>
-                <button onClick={() => setEditing(true)} className="p-1 text-surface-500 hover:text-brand-400">
+                <button onClick={() => setEditing(true)} aria-label="Edit milestone" className="p-1 text-surface-500 hover:text-brand-400">
                   <Edit2 className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={handleDelete} disabled={remove.isPending} className="p-1 text-surface-500 hover:text-red-400">
+                <button onClick={handleDelete} aria-label="Delete milestone" disabled={remove.isPending} className="p-1 text-surface-500 hover:text-red-400">
                   {remove.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 </button>
               </>

@@ -10,6 +10,7 @@ import { useOrganization } from '@/hooks/useOrganization'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 import { PlanBadge } from '@/components/billing/PlanBadge'
 import type { PlanKey } from '@/lib/plans'
+import { apiFetch } from '@/lib/apiFetch'
 
 // ── Plan definitions (mirrors src/lib/stripe.ts — client-safe, no secret) ──
 const PLANS = [
@@ -133,7 +134,7 @@ function BillingContent() {
     setLoadingPlan(planKey)
     setError(null)
     try {
-      const res = await fetch('/api/billing/checkout', {
+      const res = await apiFetch('/api/billing/checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ planKey }),
@@ -151,7 +152,7 @@ function BillingContent() {
     setLoadingPortal(true)
     setError(null)
     try {
-      const res = await fetch('/api/billing/portal', { method: 'POST' })
+      const res = await apiFetch('/api/billing/portal', { method: 'POST' })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? 'Could not open portal')
       window.location.href = body.url

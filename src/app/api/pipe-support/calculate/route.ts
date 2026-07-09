@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const inputSchema = z.object({
   nps:         z.string().min(1).max(20),
   schedule:    z.string().min(1).max(20),
@@ -20,7 +22,7 @@ const inputSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(request)
     if (authError) return authError
 
     if (!caller.organization_id) {

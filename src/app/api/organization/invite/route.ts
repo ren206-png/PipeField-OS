@@ -12,6 +12,8 @@ import { requireOrgAdmin } from '@/lib/api-auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const VALID_ROLES = [
   'organization_owner','administrator','project_manager',
   'foreman','qa_inspector','shop_fabricator','pipefitter','client_viewer',
@@ -124,7 +126,7 @@ export async function POST(req: NextRequest) {
 }
 
 // ── GET — list pending invites for caller's org ───────────────
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const getAuth = await requireOrgAdmin()
     if (getAuth.error) return getAuth.error

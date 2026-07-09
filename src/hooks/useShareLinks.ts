@@ -1,4 +1,5 @@
 'use client'
+import { apiFetch } from '@/lib/apiFetch'
 // ============================================================
 // Share Link hooks — CRUD for /api/share-links
 // ============================================================
@@ -29,14 +30,14 @@ export interface CreateShareLinkInput {
 
 // ── Fetch helpers ────────────────────────────────────────────
 async function fetchLinks(): Promise<ShareLink[]> {
-  const res = await fetch('/api/share-links')
+  const res = await apiFetch('/api/share-links')
   if (!res.ok) throw new Error('Failed to fetch share links')
   const json = await res.json() as { links: ShareLink[] }
   return json.links
 }
 
 async function createLink(input: CreateShareLinkInput): Promise<ShareLink> {
-  const res = await fetch('/api/share-links', {
+  const res = await apiFetch('/api/share-links', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(input),
@@ -50,7 +51,7 @@ async function createLink(input: CreateShareLinkInput): Promise<ShareLink> {
 }
 
 async function deleteLink(id: string): Promise<void> {
-  const res = await fetch(`/api/share-links/${id}`, { method: 'DELETE' })
+  const res = await apiFetch(`/api/share-links/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     const json = await res.json() as { error: string }
     throw new Error(json.error ?? 'Failed to delete share link')

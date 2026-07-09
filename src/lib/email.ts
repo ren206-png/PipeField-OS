@@ -251,6 +251,72 @@ export async function sendShareViewEmail({
   return getResend().emails.send({ from: FROM, to, subject, html })
 }
 
+// ── Welder cert expiry alert ──────────────────────────────────
+
+export async function sendCertExpiryEmail({
+  to,
+  orgName,
+  expiringWelders,
+}: {
+  to: string[]
+  orgName: string
+  expiringWelders: Array<{ name: string; stamp: string; certExpiry: string; daysLeft: number }>
+}): Promise<void> {
+  if (!to.length || !expiringWelders.length) return
+  const resend = getResend()
+
+  const rows = expiringWelders.map(w => `
+    <tr>
+      <td style="padding:10px 16px;border-bottom:1px solid #1e293b;color:#e2e8f0;">${esc(w.name)}</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #1e293b;color:#94a3b8;font-family:monospace;">${esc(w.stamp)}</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #1e293b;color:#94a3b8;">${esc(w.certExpiry)}</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #1e293b;font-weight:700;color:${w.daysLeft <= 7 ? '#f87171' : '#fb923c'};">
+        ${w.daysLeft <= 0 ? 'EXPIRED' : `${w.daysLeft}d`}
+      </td>
+    </tr>
+  `).join('')
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:system-ui,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;padding:40px 24px;">
+    <div style="background:#f97316;width:48px;height:6px;border-radius:3px;margin-bottom:24px;"></div>
+    <h1 style="color:#f97316;font-size:22px;font-weight:700;margin:0 0 8px;">Welder Certification Alert</h1>
+    <p style="color:#94a3b8;font-size:14px;margin:0 0 28px;">${esc(orgName)} — ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+    <p style="color:#e2e8f0;font-size:14px;margin:0 0 20px;">
+      The following welders have certifications expiring within <strong style="color:#fb923c;">30 days</strong> or already expired.
+      Expired certifications must be renewed before the welder can continue working.
+    </p>
+    <table style="width:100%;border-collapse:collapse;background:#1e293b;border-radius:12px;overflow:hidden;">
+      <thead>
+        <tr style="background:#0f172a;">
+          <th style="padding:10px 16px;text-align:left;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">Welder</th>
+          <th style="padding:10px 16px;text-align:left;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">Stamp</th>
+          <th style="padding:10px 16px;text-align:left;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">Expiry Date</th>
+          <th style="padding:10px 16px;text-align:left;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;">Status</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:28px;">
+      <a href="${APP_URL}/welders" style="display:inline-block;padding:12px 24px;background:#f97316;color:#fff;font-weight:600;font-size:14px;text-decoration:none;border-radius:8px;">
+        Manage Welders →
+      </a>
+    </div>
+    <p style="color:#334155;font-size:12px;margin-top:32px;">PipeField OS · Automated certification alert</p>
+  </div>
+</body>
+</html>`
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `⚠️ Welder Cert Alert — ${expiringWelders.length} certification${expiringWelders.length > 1 ? 's' : ''} expiring soon · ${esc(orgName)}`,
+    html,
+  })
+}
+
 // ── New user / welcome ────────────────────────────────────────
 
 export async function sendWelcomeEmail({

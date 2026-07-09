@@ -11,6 +11,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { X, Upload, Download, CheckCircle2, AlertCircle, Loader2, FileText } from 'lucide-react'
 import { useProjects } from '@/hooks/useProjects'
+import { apiFetch } from '@/lib/apiFetch'
 
 interface ParsedRow {
   weld_id_number: string
@@ -150,7 +151,7 @@ export function ImportWeldsModal({ onClose, onSuccess }: Props) {
     setError(null)
 
     try {
-      const res = await fetch('/api/welds/import', {
+      const res = await apiFetch('/api/welds/import', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -188,7 +189,7 @@ export function ImportWeldsModal({ onClose, onSuccess }: Props) {
             <h2 className="text-lg font-bold text-surface-50">Bulk Import Welds</h2>
             <p className="text-sm text-surface-500 mt-0.5">Upload a CSV to create multiple welds at once</p>
           </div>
-          <button onClick={onClose} className="text-surface-500 hover:text-surface-300 transition-colors">
+          <button onClick={onClose} aria-label="Close" className="text-surface-500 hover:text-surface-300 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>

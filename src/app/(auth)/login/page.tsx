@@ -22,7 +22,12 @@ type LoginFormData = z.infer<typeof loginSchema>
 function LoginForm() {
   const searchParams = useSearchParams()
   const rawRedirect  = searchParams.get('redirect') ?? '/dashboard'
-  const redirectTo   = rawRedirect.startsWith('/') ? rawRedirect : '/dashboard'
+  // Reject protocol-relative URLs (//evil.com) and anything that isn't
+  // a plain same-origin path. startsWith('/') passes '//…' so we add
+  // an explicit check for the double-slash pattern.
+  const redirectTo   = (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//'))
+    ? rawRedirect
+    : '/dashboard'
 
   const [showPassword, setShowPassword]   = useState(false)
   const [isSubmitting, setIsSubmitting]   = useState(false)

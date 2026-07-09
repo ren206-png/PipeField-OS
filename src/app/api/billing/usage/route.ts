@@ -2,7 +2,7 @@
 // GET /api/billing/usage
 // Returns current org's plan, usage counts, and plan limits.
 // ============================================================
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PLANS } from '@/lib/plans'
@@ -12,9 +12,9 @@ export const dynamic = 'force-dynamic'
 
 const DEFAULT_PLAN: PlanKey = 'starter'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     const orgId = caller.organization_id
@@ -35,7 +35,8 @@ export async function GET() {
     // are treated as 'starter' for limit purposes.
     const tierRaw = org?.subscription_tier ?? 'starter'
     const planKey: PlanKey =
-      tierRaw === 'pro' || tierRaw === 'enterprise'
+      tierRaw === 'field_pro' || tierRaw === 'starter' ||
+      tierRaw === 'professional' || tierRaw === 'enterprise'
         ? (tierRaw as PlanKey)
         : DEFAULT_PLAN
 

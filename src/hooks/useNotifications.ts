@@ -1,4 +1,5 @@
 'use client'
+import { apiFetch } from '@/lib/apiFetch'
 // ============================================================
 // useNotifications — React Query + Supabase Realtime
 // Returns: { notifications, unreadCount, markRead, markAllRead, isLoading }
@@ -49,7 +50,7 @@ export function useNotifications() {
     enabled:  !!orgId,
     staleTime: 60 * 1000, // 1 min
     queryFn: async () => {
-      const res = await fetch('/api/notifications')
+      const res = await apiFetch('/api/notifications')
       if (!res.ok) throw new Error('Failed to fetch notifications')
       return res.json() as Promise<NotificationsResponse>
     },
@@ -60,33 +61,44 @@ export function useNotifications() {
     if (!orgId) return
 
     const supabase = createClient()
+    // Use a unique channel name per mount to avoid "subscribe after subscribe" errors
+    // that occur in React StrictMode or rapid re-renders.
+    const channelName = `notifications:org:${orgId}:${Date.now()}`
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
-    const channel = supabase
-      .channel(`notifications:org:${orgId}`)
-      .on(
-        'postgres_changes',
-        {
-          event:  'INSERT',
-          schema: 'public',
-          table:  'notifications',
-          filter: `organization_id=eq.${orgId}`,
-        },
-        (payload) => {
-          queryClient.invalidateQueries({ queryKey: ['notifications', orgId] })
-          const n = payload.new as DbNotification
-          toast(n.title, { description: n.body })
-        }
-      )
-      .subscribe()
+    try {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event:  'INSERT',
+            schema: 'public',
+            table:  'notifications',
+            filter: `organization_id=eq.${orgId}`,
+          },
+          (payload) => {
+            queryClient.invalidateQueries({ queryKey: ['notifications', orgId] })
+            const n = payload.new as DbNotification
+            toast(n.title, { description: n.body })
+          }
+        )
+        .subscribe()
+    } catch (err) {
+      // Non-fatal: real-time notifications won't update live, but the page still works.
+      console.warn('[useNotifications] Realtime subscription failed:', err)
+    }
 
     return () => {
-      supabase.removeChannel(channel)
+      if (channel) {
+        supabase.removeChannel(channel).catch(() => {/* ignore cleanup errors */})
+      }
     }
   }, [orgId, queryClient])
 
   // ── Mark single read ───────────────────────────────────────
   async function markRead(id: string) {
-    await fetch(`/api/notifications/${id}`, {
+    await apiFetch(`/api/notifications/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_read: true }),
@@ -96,7 +108,7 @@ export function useNotifications() {
 
   // ── Mark all read ──────────────────────────────────────────
   async function markAllRead() {
-    await fetch('/api/notifications', {
+    await apiFetch('/api/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ markAllRead: true }),

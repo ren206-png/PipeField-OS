@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { USER_ROLE_LABELS } from '@/types'
 import { getInitials } from '@/lib/utils'
+import { apiFetch } from '@/lib/apiFetch'
 
 // ── Schemas ──────────────────────────────────────────────────
 
@@ -118,7 +119,7 @@ export default function SettingsPage() {
     setEmailSaved(false)
     setEmailLoading(true)
 
-    const res = await fetch('/api/settings/email', {
+    const res = await apiFetch('/api/settings/email', {
       method:  'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ email: newEmail }),

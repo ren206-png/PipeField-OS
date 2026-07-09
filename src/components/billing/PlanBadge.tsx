@@ -10,9 +10,10 @@ interface PlanBadgeProps {
 }
 
 const PLAN_COLORS: Record<PlanKey, string> = {
-  starter:    'bg-surface-700 text-surface-300',
-  pro:        'bg-brand-500/20 text-brand-300 border border-brand-500/30',
-  enterprise: 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
+  field_pro:    'bg-surface-700 text-surface-300',
+  starter:      'bg-surface-600 text-surface-200',
+  professional: 'bg-brand-500/20 text-brand-300 border border-brand-500/30',
+  enterprise:   'bg-purple-500/20 text-purple-300 border border-purple-500/30',
 }
 
 export function PlanBadge({ plan, className }: PlanBadgeProps) {

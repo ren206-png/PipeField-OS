@@ -11,7 +11,11 @@ import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkWelderRejectionRate } from '@/lib/welder-alerts'
 import { createNotification } from '@/lib/notifications'
+import { sendWeldStatusEmail } from '@/lib/email'
+import { autoReleaseSpoolIfComplete } from '@/lib/spool-auto-release'
 import { z } from 'zod'
+
+export const dynamic = 'force-dynamic'
 
 const schema = z.object({
   status: z.string().min(1).optional(),
@@ -24,7 +28,7 @@ interface RouteContext {
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     if (!caller.organization_id) {
@@ -101,6 +105,60 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         body:  `Weld ${weldNumber} failed inspection`,
         href:  `/welds/${id}`,
       }).catch(() => {})
+
+      // Email: welder + org admins/PMs
+      if (existing.welder_id) {
+        ;(async () => {
+          try {
+            const emailAdmin = createAdminClient()
+
+            // Welder profile
+            const { data: welderProfile } = await emailAdmin
+              .from('user_profiles')
+              .select('full_name, email')
+              .eq('id', existing.welder_id as string)
+              .maybeSingle()
+
+            // Org admin/PM emails
+            const { data: adminProfiles } = await emailAdmin
+              .from('user_profiles')
+              .select('email')
+              .eq('organization_id', caller.organization_id)
+              .in('role', ['organization_owner', 'administrator', 'project_manager'])
+
+            const recipients = [
+              welderProfile?.email,
+              ...(adminProfiles ?? []).map((p: { email: string }) => p.email),
+            ].filter((e): e is string => Boolean(e))
+
+            if (recipients.length > 0) {
+              await sendWeldStatusEmail({
+                to:            recipients[0] as string,
+                welderName:    welderProfile?.full_name ?? 'Unknown',
+                weldNumber,
+                oldStatus:     existing.status as string,
+                newStatus:     'failed',
+                weldId:        id,
+                notes:         parsed.data.notes ?? null,
+                changedByName: caller.full_name ?? 'Inspector',
+              })
+              // Send to remaining recipients individually
+              for (const email of recipients.slice(1)) {
+                await sendWeldStatusEmail({
+                  to:            email,
+                  welderName:    welderProfile?.full_name ?? 'Unknown',
+                  weldNumber,
+                  oldStatus:     existing.status as string,
+                  newStatus:     'failed',
+                  weldId:        id,
+                  notes:         parsed.data.notes ?? null,
+                  changedByName: caller.full_name ?? 'Inspector',
+                })
+              }
+            }
+          } catch { /* non-critical */ }
+        })()
+      }
     } else if (parsed.data.status === 'accepted') {
       createNotification({
         organizationId: caller.organization_id,
@@ -109,6 +167,62 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         body:  `Weld ${weldNumber} accepted`,
         href:  `/welds/${id}`,
       }).catch(() => {})
+
+      // Email: welder + org admins/PMs
+      if (existing.welder_id) {
+        ;(async () => {
+          try {
+            const emailAdmin = createAdminClient()
+
+            const { data: welderProfile } = await emailAdmin
+              .from('user_profiles')
+              .select('full_name, email')
+              .eq('id', existing.welder_id as string)
+              .maybeSingle()
+
+            const { data: adminProfiles } = await emailAdmin
+              .from('user_profiles')
+              .select('email')
+              .eq('organization_id', caller.organization_id)
+              .in('role', ['organization_owner', 'administrator', 'project_manager'])
+
+            const recipients = [
+              welderProfile?.email,
+              ...(adminProfiles ?? []).map((p: { email: string }) => p.email),
+            ].filter((e): e is string => Boolean(e))
+
+            if (recipients.length > 0) {
+              await sendWeldStatusEmail({
+                to:            recipients[0] as string,
+                welderName:    welderProfile?.full_name ?? 'Unknown',
+                weldNumber,
+                oldStatus:     existing.status as string,
+                newStatus:     'accepted',
+                weldId:        id,
+                notes:         parsed.data.notes ?? null,
+                changedByName: caller.full_name ?? 'Inspector',
+              })
+              for (const email of recipients.slice(1)) {
+                await sendWeldStatusEmail({
+                  to:            email,
+                  welderName:    welderProfile?.full_name ?? 'Unknown',
+                  weldNumber,
+                  oldStatus:     existing.status as string,
+                  newStatus:     'accepted',
+                  weldId:        id,
+                  notes:         parsed.data.notes ?? null,
+                  changedByName: caller.full_name ?? 'Inspector',
+                })
+              }
+            }
+          } catch { /* non-critical */ }
+        })()
+      }
+
+      // ── Spool auto-release check ───────────────────────────────
+      // If this weld belongs to a spool, check if all welds on that
+      // spool are now accepted. If so, auto-release the spool.
+      autoReleaseSpoolIfComplete({ weldId: id, orgId: caller.organization_id, admin }).catch(() => {})
     }
 
     return NextResponse.json(updated)
@@ -118,9 +232,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   }
 }
 
-export async function GET(_req: NextRequest, { params }: RouteContext) {
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
 
     if (!caller.organization_id) {

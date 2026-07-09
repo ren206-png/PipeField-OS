@@ -291,6 +291,7 @@ export default function ClientPortalPage() {
   // Load projects
   const { data: projects = [], isLoading: loadingProjects } = useQuery({
     queryKey: ['client-portal-projects', organizationId],
+    staleTime: 5 * 60_000,
     enabled: !!organizationId,
     queryFn: async () => {
       const { data } = await createClient()
@@ -307,6 +308,7 @@ export default function ClientPortalPage() {
   // Load project metrics
   const { data: metrics, isLoading: loadingMetrics } = useQuery({
     queryKey: ['client-portal-metrics', selectedProject],
+    staleTime: 5 * 60_000,
     enabled: !!selectedProject,
     queryFn: async () => {
       const db = createClient()
@@ -347,6 +349,7 @@ export default function ClientPortalPage() {
   // Load recent weld activity
   const { data: recentWelds = [] } = useQuery({
     queryKey: ['client-portal-activity', selectedProject],
+    staleTime: 60_000,
     enabled: !!selectedProject,
     queryFn: async () => {
       const { data } = await createClient()

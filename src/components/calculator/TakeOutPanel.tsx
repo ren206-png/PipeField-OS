@@ -4,15 +4,14 @@
 // ============================================================
 'use client'
 
-import { useState, useCallback } from 'react'
-import { ChevronDown, Scissors, RotateCcw } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, Scissors, RotateCcw, Plus, X } from 'lucide-react'
 import {
   FITTING_TYPES, WELD_GAP_OPTIONS,
   type FittingType, type NpsSize, type WeldGapOption,
 } from '@/config/pipe-data'
 import {
   calculateTakeOut,
-  calculateCutLength,
   parseFraction,
   toFeetInches,
   roundToSixteenth,
@@ -21,45 +20,70 @@ import {
 import { ResultCard } from './ResultCard'
 import { WarningBanner } from './WarningBanner'
 
+// ── Helpers ───────────────────────────────────────────────────
+function makeId(): string {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `fit-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+// Returns the parsed, clamped quantity for a row.
+// blank / NaN / negative / non-finite → 0; decimals → floored integer.
+function parseQuantity(raw: string): number {
+  const n = Number.parseInt(raw, 10)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+// ── Types ─────────────────────────────────────────────────────
+interface FittingRow {
+  id: string
+  type: FittingType | ''
+  quantity: string
+  customCtf: string   // only used when type === 'custom'
+}
+
 interface TakeOutPanelProps {
   nps: NpsSize
 }
 
 export function TakeOutPanel({ nps }: TakeOutPanelProps) {
-  const [fittingA, setFittingA]         = useState<FittingType>('elbow_90_lr')
-  const [fittingB, setFittingB]         = useState<FittingType>('elbow_90_lr')
-  const [hasFittingB, setHasFittingB]   = useState(false)
+  const [fittings, setFittings] = useState<FittingRow[]>(() => [
+    { id: makeId(), type: '', quantity: '1', customCtf: '' },
+  ])
   const [weldGapOpt, setWeldGapOpt]     = useState<WeldGapOption>('1/8')
   const [customGap, setCustomGap]       = useState('')
-  const [customCTFA, setCustomCTFA]     = useState('')
-  const [customCTFB, setCustomCTFB]     = useState('')
   const [totalRun, setTotalRun]         = useState('')
   const [totalRunUnit, setTotalRunUnit] = useState<'inches' | 'feet'>('inches')
 
-  // Resolve weld gap
+  // Resolve weld gap — UNCHANGED from original
   const weldGapInches: number = (() => {
     if (weldGapOpt === 'custom') return parseFloat(customGap) || 0
     return WELD_GAP_OPTIONS.find(o => o.value === weldGapOpt)?.inches ?? 0.125
   })()
 
-  // Calculate take-outs
-  const resultA = calculateTakeOut({
-    nps,
-    fittingType: fittingA,
-    weldGapInches,
-    customCTF: fittingA === 'custom' ? parseFloat(customCTFA) || undefined : undefined,
+  // Per-row take-out results (parallel array to fittings)
+  const rowResults = fittings.map(row => {
+    if (!row.type) return { centerToFace: 0, takeOut: 0, takeOutPerFitting: 0, warnings: [] as string[] }
+    return calculateTakeOut({
+      nps,
+      fittingType: row.type as FittingType,
+      weldGapInches,
+      customCTF: row.type === 'custom' ? parseFloat(row.customCtf) || undefined : undefined,
+    })
   })
 
-  const resultB = hasFittingB
-    ? calculateTakeOut({
-        nps,
-        fittingType: fittingB,
-        weldGapInches,
-        customCTF: fittingB === 'custom' ? parseFloat(customCTFB) || undefined : undefined,
-      })
-    : null
+  // Σ (centerToFace × quantity) across all rows
+  const totalFittingTakeout = fittings.reduce((sum, row, i) => {
+    return sum + rowResults[i].centerToFace * parseQuantity(row.quantity)
+  }, 0)
 
-  // Resolve total run in inches
+  // Total number of individual fittings (for weld gap count)
+  const totalFittingCount = fittings.reduce((sum, row) => {
+    if (!row.type) return sum
+    return sum + parseQuantity(row.quantity)
+  }, 0)
+
+  // Resolve total run in inches — UNCHANGED from original
   const totalRunRaw = totalRun.trim()
   let totalRunInches = 0
   if (totalRunRaw) {
@@ -69,106 +93,109 @@ export function TakeOutPanel({ nps }: TakeOutPanelProps) {
     }
   }
 
-  // Calculate cut length if run is provided
-  const cutResult = totalRunInches > 0
-    ? calculateCutLength({
-        totalRunInches,
-        takeOutA: resultA.centerToFace,
-        takeOutB: resultB?.centerToFace ?? 0,
-        weldGapA: weldGapInches,
-        weldGapB: hasFittingB ? weldGapInches : 0,
-      })
-    : null
+  const totalWeldGap       = totalFittingCount * weldGapInches
+  const cutLengthInches    = totalRunInches - totalFittingTakeout + totalWeldGap
+  const hasCutResult       = totalRunInches > 0
+  const takeoutExceedsRun  = hasCutResult && totalFittingTakeout > totalRunInches
 
-  const allWarnings = [...resultA.warnings, ...(resultB?.warnings ?? [])]
+  const allWarnings = rowResults.flatMap(r => r.warnings)
+
+  // ── Row mutators (all immutable) ──────────────────────────────
+  function addRow() {
+    setFittings(prev => [...prev, { id: makeId(), type: '', quantity: '1', customCtf: '' }])
+  }
+
+  function removeRow(id: string) {
+    setFittings(prev => {
+      if (prev.length <= 1) return [{ id: makeId(), type: '', quantity: '1', customCtf: '' }]
+      return prev.filter(r => r.id !== id)
+    })
+  }
+
+  function updateRow(id: string, patch: Partial<Pick<FittingRow, 'type' | 'quantity' | 'customCtf'>>) {
+    setFittings(prev => prev.map(r => r.id === id ? { ...r, ...patch } : r))
+  }
 
   function reset() {
+    setFittings([{ id: makeId(), type: '', quantity: '1', customCtf: '' }])
     setTotalRun('')
     setCustomGap('')
-    setCustomCTFA('')
-    setCustomCTFB('')
   }
 
   return (
     <div className="space-y-6">
-      {/* Fitting A */}
+      {/* Fitting Rows */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="label mb-0">
-            {hasFittingB ? 'Fitting — End A' : 'Fitting Type'}
-          </label>
-          <button
-            type="button"
-            onClick={() => setHasFittingB(v => !v)}
-            className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              hasFittingB
-                ? 'bg-brand-500/20 text-brand-300'
-                : 'bg-surface-700 text-surface-400 hover:text-surface-200'
-            }`}
-          >
-            {hasFittingB ? '✓ Two Fittings' : '+ Add End B Fitting'}
-          </button>
-        </div>
+        <p className="label mb-0">Fittings</p>
 
-        <div className="relative">
-          <select
-            value={fittingA}
-            onChange={e => setFittingA(e.target.value as FittingType)}
-            className="input appearance-none pr-10 cursor-pointer"
-          >
-            {FITTING_TYPES.map(f => (
-              <option key={f.value} value={f.value}>{f.label}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
-        </div>
+        {fittings.map((row, i) => (
+          <div key={row.id} className="space-y-2">
+            <div className="flex gap-2 items-start">
+              {/* Type select — populated from existing FITTING_TYPES constant */}
+              <div className="relative flex-1">
+                <select
+                  value={row.type}
+                  onChange={e => updateRow(row.id, { type: e.target.value as FittingType | '' })}
+                  className="input appearance-none pr-10 cursor-pointer"
+                >
+                  <option value="">— Select fitting —</option>
+                  {FITTING_TYPES.map(f => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
+              </div>
 
-        {fittingA === 'custom' && (
-          <div>
-            <label className="label">Custom Center-to-Face — End A (inches)</label>
-            <input
-              type="number" step="0.0625" min="0"
-              placeholder='e.g. 6.000"'
-              value={customCTFA}
-              onChange={e => setCustomCTFA(e.target.value)}
-              className="input font-mono"
-            />
+              {/* Quantity */}
+              <input
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                value={row.quantity}
+                onChange={e => updateRow(row.id, { quantity: e.target.value })}
+                className="input font-mono w-20 flex-shrink-0"
+                aria-label="Quantity"
+              />
+
+              {/* Remove */}
+              <button
+                type="button"
+                onClick={() => removeRow(row.id)}
+                aria-label="Remove fitting row"
+                className="p-2.5 rounded-lg bg-surface-700 text-surface-400 hover:bg-surface-600 hover:text-surface-200 transition-colors flex-shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Custom CTF input — only when type is 'custom' */}
+            {row.type === 'custom' && (
+              <div className="pl-0">
+                <label className="label">Custom Center-to-Face (inches)</label>
+                <input
+                  type="number" step="0.0625" min="0"
+                  placeholder='e.g. 6.000"'
+                  value={row.customCtf}
+                  onChange={e => updateRow(row.id, { customCtf: e.target.value })}
+                  className="input font-mono"
+                />
+              </div>
+            )}
           </div>
-        )}
+        ))}
+
+        <button
+          type="button"
+          onClick={addRow}
+          className="btn-ghost text-xs gap-1.5"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add Fitting
+        </button>
       </div>
 
-      {/* Fitting B */}
-      {hasFittingB && (
-        <div className="space-y-3 pl-4 border-l-2 border-brand-500/30">
-          <label className="label">Fitting — End B</label>
-          <div className="relative">
-            <select
-              value={fittingB}
-              onChange={e => setFittingB(e.target.value as FittingType)}
-              className="input appearance-none pr-10 cursor-pointer"
-            >
-              {FITTING_TYPES.map(f => (
-                <option key={f.value} value={f.value}>{f.label}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400 pointer-events-none" />
-          </div>
-          {fittingB === 'custom' && (
-            <div>
-              <label className="label">Custom Center-to-Face — End B (inches)</label>
-              <input
-                type="number" step="0.0625" min="0"
-                placeholder='e.g. 6.000"'
-                value={customCTFB}
-                onChange={e => setCustomCTFB(e.target.value)}
-                className="input font-mono"
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Weld Gap */}
+      {/* Weld Gap — UNCHANGED from original */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">Weld Gap (Root Opening)</label>
@@ -203,43 +230,33 @@ export function TakeOutPanel({ nps }: TakeOutPanelProps) {
         </div>
       </div>
 
-      {/* Take-out results */}
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider">
-          Take-Out Results
-        </p>
-        <div className={`grid gap-3 ${hasFittingB ? 'grid-cols-2' : 'grid-cols-2'}`}>
-          <ResultCard
-            label={hasFittingB ? 'CTF — End A' : 'Center-to-Face'}
-            value={resultA.centerToFace > 0 ? formatInches(resultA.centerToFace, 4) : '—'}
-            subValue={resultA.centerToFace > 0 ? toFeetInches(resultA.centerToFace) : undefined}
-            highlight={!hasFittingB}
-          />
-          <ResultCard
-            label={hasFittingB ? 'Take-Out — End A' : 'Take-Out'}
-            value={resultA.takeOut > 0 ? formatInches(resultA.takeOut, 4) : '—'}
-            subValue={resultA.takeOut > 0 ? toFeetInches(resultA.takeOut) : undefined}
-            highlight
-          />
-          {hasFittingB && resultB && (
-            <>
-              <ResultCard
-                label="CTF — End B"
-                value={resultB.centerToFace > 0 ? formatInches(resultB.centerToFace, 4) : '—'}
-                subValue={resultB.centerToFace > 0 ? toFeetInches(resultB.centerToFace) : undefined}
-              />
-              <ResultCard
-                label="Take-Out — End B"
-                value={resultB.takeOut > 0 ? formatInches(resultB.takeOut, 4) : '—'}
-                subValue={resultB.takeOut > 0 ? toFeetInches(resultB.takeOut) : undefined}
-                highlight
-              />
-            </>
-          )}
+      {/* Take-out results per row */}
+      {fittings.some(r => r.type) && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider">
+            Take-Out Results
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {fittings.map((row, i) => {
+              if (!row.type) return null
+              const res = rowResults[i]
+              const qty = parseQuantity(row.quantity)
+              const shortLabel = FITTING_TYPES.find(f => f.value === row.type)?.shortLabel ?? row.type
+              return (
+                <ResultCard
+                  key={row.id}
+                  label={`${shortLabel} ×${qty}`}
+                  value={res.centerToFace > 0 ? formatInches(res.centerToFace * qty, 4) : '—'}
+                  subValue={res.centerToFace > 0 ? `${formatInches(res.centerToFace, 4)} each` : undefined}
+                  highlight={i === 0}
+                />
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Total Run Input → Pipe Cut Length */}
+      {/* Total Run Input → Pipe Cut Length — display format UNCHANGED */}
       <div className="space-y-3 pt-2 border-t border-surface-700">
         <p className="text-xs font-semibold text-surface-500 uppercase tracking-wider flex items-center gap-2">
           <Scissors className="w-3.5 h-3.5" />
@@ -248,8 +265,8 @@ export function TakeOutPanel({ nps }: TakeOutPanelProps) {
 
         <div>
           <label className="label">
-            {hasFittingB ? 'Face-to-Face Distance' : 'Total Run Length'}
-            <span className="ml-1 text-surface-500 font-normal normal-case">(face to face, or overall dimension)</span>
+            Total Run Length
+            <span className="ml-1 text-surface-500 font-normal normal-case">(center-to-center or face-to-face dimension)</span>
           </label>
           <div className="flex gap-2">
             <input
@@ -276,42 +293,65 @@ export function TakeOutPanel({ nps }: TakeOutPanelProps) {
           </p>
         </div>
 
-        {cutResult && (
+        {hasCutResult && (
           <div className="space-y-3">
-            <ResultCard
-              label="PIPE CUT LENGTH"
-              value={toFeetInches(roundToSixteenth(Math.max(0, cutResult.cutLengthInches)))}
-              subValue={`${cutResult.cutLengthInches.toFixed(4)}" exact  |  rounded to nearest 1/16"`}
-              highlight
-            />
-            <div className="grid grid-cols-3 gap-3">
-              <ResultCard
-                label="Run"
-                value={formatInches(totalRunInches, 4)}
-                subValue={toFeetInches(totalRunInches)}
-              />
-              <ResultCard
-                label="Total Take-Out"
-                value={formatInches(cutResult.totalTakeOut, 4)}
-              />
-              <ResultCard
-                label="Total Weld Gap"
-                value={formatInches(cutResult.totalWeldGap, 4)}
-              />
-            </div>
-
-            {/* Formula display */}
-            <div className="rounded-xl bg-surface-900 border border-surface-700 p-4 font-mono text-xs text-surface-400 space-y-1">
-              <p className="text-surface-300 font-semibold mb-2">Calculation:</p>
-              <p>Run           = {totalRunInches.toFixed(4)}&quot;</p>
-              <p>- Take-Out A  = {resultA.centerToFace.toFixed(4)}&quot;</p>
-              {resultB && <p>- Take-Out B  = {resultB.centerToFace.toFixed(4)}&quot;</p>}
-              <p>+ Weld Gap A  = {weldGapInches.toFixed(4)}&quot;</p>
-              {hasFittingB && <p>+ Weld Gap B  = {weldGapInches.toFixed(4)}&quot;</p>}
-              <div className="border-t border-surface-700 pt-1 mt-1">
-                <p className="text-surface-100 font-semibold">= Cut Length  = {cutResult.cutLengthInches.toFixed(4)}&quot;</p>
+            {takeoutExceedsRun ? (
+              <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/30 px-4 py-3">
+                <p className="text-yellow-400 text-sm font-medium">
+                  ⚠ Take-out exceeds center-to-center length — check your inputs.
+                </p>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Primary result — same format as original */}
+                <ResultCard
+                  label="PIPE CUT LENGTH"
+                  value={toFeetInches(roundToSixteenth(Math.max(0, cutLengthInches)))}
+                  subValue={`${cutLengthInches.toFixed(4)}" exact  |  rounded to nearest 1/16"`}
+                  highlight
+                />
+                <div className="grid grid-cols-3 gap-3">
+                  <ResultCard
+                    label="Run"
+                    value={formatInches(totalRunInches, 4)}
+                    subValue={toFeetInches(totalRunInches)}
+                  />
+                  <ResultCard
+                    label="Total Take-Out"
+                    value={formatInches(totalFittingTakeout, 4)}
+                  />
+                  <ResultCard
+                    label="Total Weld Gap"
+                    value={formatInches(totalWeldGap, 4)}
+                  />
+                </div>
+
+                {/* Formula display — same style as original */}
+                <div className="rounded-xl bg-surface-900 border border-surface-700 p-4 font-mono text-xs text-surface-400 space-y-1">
+                  <p className="text-surface-300 font-semibold mb-2">Calculation:</p>
+                  <p>Run = {totalRunInches.toFixed(4)}&quot;</p>
+                  {fittings.map((row, i) => {
+                    if (!row.type) return null
+                    const res = rowResults[i]
+                    const qty = parseQuantity(row.quantity)
+                    const shortLabel = FITTING_TYPES.find(f => f.value === row.type)?.shortLabel ?? row.type
+                    return (
+                      <p key={row.id}>
+                        - {shortLabel} ×{qty} = {formatInches(res.centerToFace * qty, 4)}&quot;
+                      </p>
+                    )
+                  })}
+                  {totalFittingCount > 0 && (
+                    <p>+ Weld Gaps ({totalFittingCount}×) = {totalWeldGap.toFixed(4)}&quot;</p>
+                  )}
+                  <div className="border-t border-surface-700 pt-1 mt-1">
+                    <p className="text-surface-100 font-semibold">
+                      = Cut Length = {cutLengthInches.toFixed(4)}&quot;
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

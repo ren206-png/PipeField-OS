@@ -43,6 +43,7 @@ import {
   Brain,
   Upload,
   MessageCircle,
+  Layers,
 } from 'lucide-react'
 import { cn, getInitials, truncate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -128,6 +129,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Ask AI',             href: '/intelligence/ask',                  icon: MessageCircle },
       { label: 'Field Assistant',    href: '/intelligence/field-assistant',      icon: HardHat       },
       { label: 'Welding Guidance',   href: '/intelligence/welding-guidance',     icon: Flame         },
+      { label: 'Drawing Analysis',   href: '/intelligence/drawing-analysis',     icon: Layers        },
       { label: 'Upload Knowledge',   href: '/intelligence/upload',               icon: Upload        },
       { label: 'Knowledge Library',  href: '/intelligence/sources',              icon: BookOpen      },
     ],

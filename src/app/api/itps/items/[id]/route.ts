@@ -8,6 +8,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createNotification } from '@/lib/notifications'
+
+export const dynamic = 'force-dynamic'
 import { z } from 'zod'
 import type { ItpItemStatus } from '@/types'
 
@@ -24,7 +26,7 @@ interface RouteContext {
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })

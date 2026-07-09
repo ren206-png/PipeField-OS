@@ -8,6 +8,7 @@ import {
   Users, Building2, TrendingUp, RefreshCw,
   CheckCircle2, AlertCircle, Clock, XCircle,
 } from 'lucide-react'
+import { apiFetch } from '@/lib/apiFetch'
 
 const TIER_LABELS: Record<string, string> = {
   free_trial:   'Free Trial',
@@ -50,7 +51,7 @@ export default function AdminOverviewPage() {
   const { data, isLoading, isError, refetch, isFetching } = useQuery<Stats>({
     queryKey: ['admin-stats'],
     queryFn:  async () => {
-      const res = await fetch('/api/admin/stats')
+      const res = await apiFetch('/api/admin/stats')
       if (!res.ok) throw new Error('Failed to load stats')
       return res.json()
     },

@@ -45,9 +45,14 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         }),
         defaultOptions: {
           queries: {
-            staleTime:           60 * 1000, // fresh for 1 minute
-            retry:               1,         // retry failed requests once
-            refetchOnWindowFocus: true,     // re-fetch when tab regains focus
+            staleTime:            60 * 1000,  // fresh for 1 minute globally
+            // gcTime: how long inactive (unmounted) query data stays in memory.
+            // Default is 5 min. We keep 10 min so navigating back to a page
+            // reuses cache instead of showing a loading skeleton.
+            gcTime:               10 * 60 * 1000,
+            retry:                1,           // retry failed requests once
+            refetchOnWindowFocus: true,        // re-fetch when tab regains focus
+            refetchOnReconnect:   true,        // re-fetch after network comes back
           },
           mutations: {
             // Re-throw so callers using mutateAsync + try/catch still work.

@@ -13,8 +13,10 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { useProjects } from '@/hooks/useProjects'
 import { WELD_STATUS_LABELS, type WeldStatus } from '@/types'
 import { QRScanButton } from '@/components/shared/QRScanButton'
-import { ImportWeldsModal } from '@/components/welds/ImportWeldsModal'
-import { QuickAddWeldPanel } from '@/components/welds/QuickAddWeldPanel'
+import dynamic from 'next/dynamic'
+import { apiFetch } from '@/lib/apiFetch'
+const ImportWeldsModal  = dynamic(() => import('@/components/welds/ImportWeldsModal').then(m => m.ImportWeldsModal),   { ssr: false })
+const QuickAddWeldPanel = dynamic(() => import('@/components/welds/QuickAddWeldPanel').then(m => m.QuickAddWeldPanel), { ssr: false })
 import type { QRScanResult } from '@/hooks/useQRScanner'
 import { cn } from '@/lib/utils'
 
@@ -104,7 +106,7 @@ export default function WeldsPage() {
     setBulkLoading(true)
     setBulkError(null)
     try {
-      const res = await fetch('/api/welds/bulk-status', {
+      const res = await apiFetch('/api/welds/bulk-status', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({

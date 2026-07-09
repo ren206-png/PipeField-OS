@@ -5,6 +5,7 @@
 // useDeleteWeldPhoto — mutation: DELETE /photos/:photoId
 // ============================================================
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { apiFetch } from '@/lib/apiFetch'
 
 // ── Types ─────────────────────────────────────────────────────
 export interface WeldPhoto {
@@ -31,7 +32,7 @@ export function useWeldPhotos(weldId: string) {
     queryKey: photoKeys.list(weldId),
     staleTime: 30_000,
     queryFn: async () => {
-      const res = await fetch(`/api/welds/${weldId}/photos`)
+      const res = await apiFetch(`/api/welds/${weldId}/photos`)
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error((body as { error?: string }).error ?? 'Failed to load photos')
@@ -58,7 +59,7 @@ export function useUploadWeldPhoto() {
       fd.append('file', file)
       if (caption) fd.append('caption', caption)
 
-      const res = await fetch(`/api/welds/${weldId}/photos`, {
+      const res = await apiFetch(`/api/welds/${weldId}/photos`, {
         method: 'POST',
         body:   fd,
       })
@@ -85,7 +86,7 @@ export function useDeleteWeldPhoto() {
 
   return useMutation<{ success: boolean }, Error, DeletePhotoArgs>({
     mutationFn: async ({ weldId, photoId }) => {
-      const res = await fetch(`/api/welds/${weldId}/photos/${photoId}`, {
+      const res = await apiFetch(`/api/welds/${weldId}/photos/${photoId}`, {
         method: 'DELETE',
       })
       if (!res.ok) {

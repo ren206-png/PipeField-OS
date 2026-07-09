@@ -47,10 +47,18 @@ export async function getOrgUsage(organizationId: string): Promise<OrgUsage> {
   ])
 
   const tierRaw = orgRes.data?.subscription_tier ?? DEFAULT_PLAN
-  const plan: PlanKey =
-    tierRaw === 'pro' || tierRaw === 'enterprise'
-      ? (tierRaw as PlanKey)
-      : DEFAULT_PLAN
+
+  // Map every DB tier string to a valid PlanKey.
+  // 'pro' is the legacy alias for 'professional'.
+  // Anything unrecognised falls back to DEFAULT_PLAN (starter).
+  const TIER_MAP: Record<string, PlanKey> = {
+    field_pro:    'field_pro',
+    starter:      'starter',
+    professional: 'professional',
+    pro:          'professional',   // legacy alias
+    enterprise:   'enterprise',
+  }
+  const plan: PlanKey = TIER_MAP[tierRaw] ?? DEFAULT_PLAN
 
   return {
     plan,

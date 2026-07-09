@@ -206,6 +206,7 @@ export default function WeldMapPage() {
   // Load spools + welds for selected project
   const { data: rawSpools = [], isLoading } = useQuery({
     queryKey: ['weld-map', organizationId, selectedProject],
+    staleTime: 60_000,
     enabled: !!organizationId && !!selectedProject,
     queryFn: async () => {
       const { data, error } = await createClient()

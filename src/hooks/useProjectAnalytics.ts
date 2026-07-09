@@ -1,5 +1,6 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
+import { apiFetch } from '@/lib/apiFetch'
 
 export interface WeldByStatus {
   status: string
@@ -45,7 +46,7 @@ export function useProjectAnalytics(projectId: string) {
     staleTime: 5 * 60_000,
     enabled: !!projectId,
     queryFn: async () => {
-      const res = await fetch(`/api/projects/${projectId}/analytics`)
+      const res = await apiFetch(`/api/projects/${projectId}/analytics`)
       if (!res.ok) throw new Error('Failed to fetch analytics')
       return res.json() as Promise<ProjectAnalytics>
     },

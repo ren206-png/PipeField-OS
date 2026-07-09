@@ -8,6 +8,8 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+
+export const dynamic = 'force-dynamic'
 import { slugify } from '@/lib/utils'
 import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import { sendWelcomeEmail } from '@/lib/email'
@@ -100,7 +102,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: profileError.message }, { status: 500 })
       }
 
-      sendWelcomeEmail({ to: email, fullName, orgName: '' }).catch(() => {})
+      // Fetch org name for the welcome email
+      const { data: inviteOrg } = await admin
+        .from('organizations')
+        .select('name')
+        .eq('id', invite.organization_id)
+        .maybeSingle()
+
+      sendWelcomeEmail({
+        to:       email,
+        fullName,
+        orgName:  inviteOrg?.name ?? 'PipeField OS',
+      }).catch(() => {})
 
       // Mark invite accepted
       await admin

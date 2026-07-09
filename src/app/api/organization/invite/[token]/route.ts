@@ -7,6 +7,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+/** Supabase join shape from `invites.select('*, organizations(id, name)')` */
+interface InviteOrg { id: string; name: string }
+
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ token: string }> }
@@ -61,7 +66,7 @@ export async function GET(
       )
     }
 
-    const org = invite.organizations as unknown as { id: string; name: string } | null
+    const org = invite.organizations as unknown as InviteOrg | null
 
     return NextResponse.json({
       valid:     true,

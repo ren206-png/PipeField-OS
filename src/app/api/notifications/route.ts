@@ -6,9 +6,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-export async function GET(_req: NextRequest) {
+export const dynamic = 'force-dynamic'
+
+export async function GET(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })
@@ -24,7 +26,14 @@ export async function GET(_req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(20)
 
-    if (error) throw error
+    // Gracefully handle missing columns (body / is_read) if migration not yet applied
+    if (error) {
+      if (error.code === '42703') {
+        // Column doesn't exist — return empty state until migration is applied
+        return NextResponse.json({ notifications: [], unreadCount: 0 })
+      }
+      throw error
+    }
 
     const rows = (data ?? []) as Array<{
       id: string; type: string; title: string; body: string
@@ -41,7 +50,7 @@ export async function GET(_req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth()
+    const { caller, error: authError } = await requireAuth(req)
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })

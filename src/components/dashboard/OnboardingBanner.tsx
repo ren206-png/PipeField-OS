@@ -47,7 +47,7 @@ export function OnboardingBanner({ steps }: Props) {
           <Rocket className="w-4 h-4 text-brand-400" />
           <span className="font-semibold text-surface-100 text-sm">Getting Started with PipeField OS</span>
         </div>
-        <button onClick={dismiss} className="text-surface-500 hover:text-surface-300 transition-colors">
+        <button onClick={dismiss} aria-label="Dismiss" className="text-surface-500 hover:text-surface-300 transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>

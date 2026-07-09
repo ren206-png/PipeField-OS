@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { X, Copy, Check, Mail } from 'lucide-react'
+import { apiFetch } from '@/lib/apiFetch'
 
 const ROLES = [
   { value: 'administrator',   label: 'Administrator' },
@@ -30,7 +31,7 @@ export function InviteWorkerModal({ onClose, onSuccess }: Props) {
     setSending(true)
     setError(null)
 
-    const res = await fetch('/api/organization/invite', {
+    const res = await apiFetch('/api/organization/invite', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ email, role }),
@@ -61,7 +62,7 @@ export function InviteWorkerModal({ onClose, onSuccess }: Props) {
 
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-surface-50">Invite Team Member</h3>
-          <button onClick={onClose} className="text-surface-500 hover:text-surface-300">
+          <button onClick={onClose} aria-label="Close" className="text-surface-500 hover:text-surface-300">
             <X className="w-4 h-4" />
           </button>
         </div>

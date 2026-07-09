@@ -7,10 +7,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 
 interface Photo {
-  id:         string
-  public_url: string
-  file_name:  string
-  caption:    string | null
+  id:           string
+  public_url:   string
+  file_name:    string
+  caption:      string | null
+  storage_path: string
 }
 
 interface PhotoUploadProps {
@@ -123,7 +124,7 @@ export function PhotoUpload({ weldId, photos, orgId }: PhotoUploadProps) {
               {/* Delete overlay */}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <button
-                  onClick={() => handleDelete(photo.id, (photo as unknown as { storage_path: string }).storage_path)}
+                  onClick={() => handleDelete(photo.id, photo.storage_path)}
                   disabled={deleting === photo.id}
                   className="p-2 bg-red-500/80 hover:bg-red-500 rounded-full transition-colors"
                   aria-label="Delete photo"

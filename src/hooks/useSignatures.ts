@@ -1,4 +1,5 @@
 'use client'
+import { apiFetch } from '@/lib/apiFetch'
 // ============================================================
 // useSignatures — fetch and create signatures for a record
 // ============================================================
@@ -36,7 +37,7 @@ async function fetchSignatures(recordType: string, recordId: string): Promise<Si
 }
 
 async function createSignature(input: CreateSignatureInput): Promise<Signature> {
-  const res = await fetch('/api/signatures', {
+  const res = await apiFetch('/api/signatures', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({

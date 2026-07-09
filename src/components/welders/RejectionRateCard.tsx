@@ -10,6 +10,7 @@
 //   🔴 Alert — rate > 10%
 // ============================================================
 import { useEffect, useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 
 interface WelderRejectionRate {
   welderId:   string
@@ -46,7 +47,7 @@ export function RejectionRateCard() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    fetch('/api/welders/rejection-rates')
+    apiFetch('/api/welders/rejection-rates')
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json() as Promise<WelderRejectionRate[]>

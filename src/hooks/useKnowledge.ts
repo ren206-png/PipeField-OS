@@ -1,4 +1,5 @@
 'use client'
+import { apiFetch } from '@/lib/apiFetch'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 // ── Types ─────────────────────────────────────────────────────
@@ -49,8 +50,13 @@ export interface KnowledgeSource {
 export function useKnowledgeCategories() {
   return useQuery<KnowledgeCategory[]>({
     queryKey: ['knowledge-categories'],
-    queryFn:  () => fetch('/api/knowledge/categories').then(r => r.json()),
+    queryFn:  () => apiFetch('/api/knowledge/categories').then(async r => {
+      const json = await r.json()
+      if (!r.ok) throw new Error(json.error ?? 'Failed to fetch categories')
+      return json
+    }),
     staleTime: 1000 * 60 * 10,
+    retry: false,
   })
 }
 
@@ -58,7 +64,7 @@ export function useCreateKnowledgeCategory() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: { name: string; description?: string; color?: string }) =>
-      fetch('/api/knowledge/categories', {
+      apiFetch('/api/knowledge/categories', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(data),
@@ -92,12 +98,13 @@ export function useKnowledgeSources(filters: SourceFilters = {}) {
   return useQuery<{ sources: KnowledgeSource[]; total: number }>({
     queryKey: ['knowledge-sources', filters],
     queryFn:  () =>
-      fetch(`/api/knowledge/sources?${params}`).then(async r => {
+      apiFetch(`/api/knowledge/sources?${params}`).then(async r => {
         const json = await r.json()
         if (!r.ok) throw new Error(json.error ?? 'Failed')
         return json
       }),
     staleTime: 1000 * 30,
+    retry: false,
   })
 }
 
@@ -105,7 +112,7 @@ export function useKnowledgeSource(id: string | null) {
   return useQuery<KnowledgeSource>({
     queryKey: ['knowledge-source', id],
     queryFn:  () =>
-      fetch(`/api/knowledge/sources/${id}`).then(async r => {
+      apiFetch(`/api/knowledge/sources/${id}`).then(async r => {
         const json = await r.json()
         if (!r.ok) throw new Error(json.error ?? 'Failed')
         return json
@@ -118,7 +125,7 @@ export function useUpdateKnowledgeSource() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, ...data }: { id: string; [k: string]: unknown }) =>
-      fetch(`/api/knowledge/sources/${id}`, {
+      apiFetch(`/api/knowledge/sources/${id}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(data),
@@ -138,7 +145,7 @@ export function useDeleteKnowledgeSource() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) =>
-      fetch(`/api/knowledge/sources/${id}`, { method: 'DELETE' }).then(async r => {
+      apiFetch(`/api/knowledge/sources/${id}`, { method: 'DELETE' }).then(async r => {
         const json = await r.json()
         if (!r.ok) throw new Error(json.error ?? 'Failed')
         return json
@@ -181,7 +188,7 @@ export interface KnowledgeAnswer {
 export function useAskKnowledge() {
   return useMutation({
     mutationFn: async (payload: { query: string; project_id?: string }): Promise<KnowledgeAnswer> => {
-      const res = await fetch('/api/knowledge/ask', {
+      const res = await apiFetch('/api/knowledge/ask', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify(payload),
@@ -213,7 +220,7 @@ export function useUploadKnowledge() {
       if (payload.visibility)     fd.append('visibility',     payload.visibility)
       if (payload.version)        fd.append('version',        payload.version)
 
-      const res = await fetch('/api/knowledge/upload', { method: 'POST', body: fd })
+      const res = await apiFetch('/api/knowledge/upload', { method: 'POST', body: fd })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Upload failed')
       return json as KnowledgeSource

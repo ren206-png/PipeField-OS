@@ -1,6 +1,7 @@
 'use client'
 import { CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
+import { apiFetch } from '@/lib/apiFetch'
 
 interface Props {
   plan: string
@@ -17,7 +18,7 @@ export function PricingCard({ plan, planData, features, isCurrentPlan, organizat
     if (!planData.priceId) return
     setLoading(true)
     try {
-      const res = await fetch('/api/billing/checkout', {
+      const res = await apiFetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId: planData.priceId, organizationId }),

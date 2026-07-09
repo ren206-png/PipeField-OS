@@ -65,7 +65,10 @@ export default function EditWeldPage({ params }: PageProps) {
         notes:           'Weld details updated',
       })
 
+      // Invalidate both the detail and the list so navigating back
+      // to /welds shows the updated values immediately.
       queryClient.invalidateQueries({ queryKey: ['weld', id] })
+      queryClient.invalidateQueries({ queryKey: ['welds'] })
       router.push(`/welds/${id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save changes')
@@ -89,13 +92,13 @@ export default function EditWeldPage({ params }: PageProps) {
     welder_stamp:   weld.welder_stamp ?? '',
     welder_name:    weld.welder_name  ?? '',
     weld_date:      weld.weld_date    ?? '',
-    spool_number:   weld.spool_number ?? '',
-    line_number:    (weld as unknown as { line_number?: string }).line_number  ?? '',
-    pipe_size:      (weld as unknown as { pipe_size?: string }).pipe_size      ?? '',
-    wall_thickness: (weld as unknown as { wall_thickness?: string }).wall_thickness ?? '',
-    material:       (weld as unknown as { material?: string }).material        ?? '',
-    weld_process:   (weld as unknown as { weld_process?: string }).weld_process ?? '',
-    wps_id:         (weld as unknown as { wps_id?: string | null }).wps_id ?? null,
+    spool_number:   weld.spool_number   ?? '',
+    line_number:    weld.line_number    ?? '',
+    pipe_size:      weld.pipe_size      ?? '',
+    wall_thickness: weld.wall_thickness ?? '',
+    material:       weld.material       ?? '',
+    weld_process:   weld.weld_process   ?? '',
+    wps_id:         weld.wps_id         ?? null,
     notes:          weld.notes        ?? '',
   }
 

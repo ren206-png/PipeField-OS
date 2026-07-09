@@ -10,7 +10,9 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getResend } from '@/lib/email'
+import { getResend, sendCertExpiryEmail } from '@/lib/email'
+
+export const dynamic = 'force-dynamic'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -263,6 +265,41 @@ async function processOrg(
     ),
   )
 
+  // ── Cert expiry alerts ──────────────────────────────────────
+  // Query welders expiring within 30 days (or already expired)
+  const thirtyDaysFromNow = new Date(new Date(now).getTime() + 30 * 24 * 60 * 60 * 1000)
+  const { data: expiringRows } = await admin
+    .from('welders')
+    .select('id, name, stamp, cert_expiry')
+    .eq('organization_id', org.id)
+    .eq('is_active', true)
+    .lte('cert_expiry', thirtyDaysFromNow.toISOString().split('T')[0])
+
+  if (expiringRows && expiringRows.length > 0) {
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+
+    const expiringWelders = expiringRows.map((w) => {
+      const expiry    = new Date(w.cert_expiry)
+      const daysLeft  = Math.floor((expiry.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+      return {
+        name:       w.name ?? '',
+        stamp:      w.stamp ?? '',
+        certExpiry: w.cert_expiry ?? '',
+        daysLeft,
+      }
+    })
+
+    const adminEmails = users.map((u) => u.email)
+    await sendCertExpiryEmail({
+      to:      adminEmails,
+      orgName: org.name,
+      expiringWelders,
+    }).catch((err: unknown) => {
+      console.error(`[daily-digest] Failed to send cert expiry alert for org ${org.id}:`, err)
+    })
+  }
+
   return { orgId: org.id, emailsSent: users.length }
 }
 
@@ -321,7 +358,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  console.log(`[daily-digest] Done. sent=${totalSent} skipped=${totalSkipped} errors=${totalErrors}`)
+  console.warn(`[daily-digest] Done. sent=${totalSent} skipped=${totalSkipped} errors=${totalErrors}`)
 
   return NextResponse.json({
     message:  'Daily digest complete',

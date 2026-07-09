@@ -88,8 +88,8 @@ export function MobileNav() {
           </button>
 
           {/* Sign Out — always visible in bottom bar */}
-          <button
-            onClick={signOut}
+          <a
+            href="/api/auth/signout"
             className={cn(
               'flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1',
               'min-h-[56px] transition-colors duration-150',
@@ -99,7 +99,7 @@ export function MobileNav() {
           >
             <LogOut className="w-5 h-5" />
             <span className="text-[10px] font-medium leading-none">Sign Out</span>
-          </button>
+          </a>
         </div>
       </nav>
 

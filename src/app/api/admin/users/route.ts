@@ -10,6 +10,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requirePlatformAdmin } from '@/lib/api-auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const patchSchema = z.object({
   user_profile_id: z.string().uuid(),
   role:   z.string().optional(),
