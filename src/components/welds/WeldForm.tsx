@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
 import type { WeldStatus } from '@/types'
 import type { WpsRecord } from '@/hooks/useWps'
+import { WeldingGuidancePanel } from '@/components/ai/WeldingGuidancePanel'
 
 const weldSchema = z.object({
   project_id:   z.string().min(1, 'Project is required'),
@@ -66,6 +67,7 @@ export function WeldForm({
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<WeldFormValues>({
     resolver:      zodResolver(weldSchema),
@@ -181,6 +183,17 @@ export function WeldForm({
           ))}
         </select>
       </div>
+
+      {/* ── AI Welding Guidance ── */}
+      <WeldingGuidancePanel
+        weldProcess={watch('weld_process')}
+        pipeSize={watch('pipe_size')}
+        wallThickness={watch('wall_thickness')}
+        material={watch('material')}
+        welderStamp={watch('welder_stamp')}
+        wpsList={wpsList}
+        projectId={watch('project_id')}
+      />
 
       {/* ── Notes ── */}
       <div>

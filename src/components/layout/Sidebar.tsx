@@ -50,6 +50,7 @@ import { useOrganization } from '@/hooks/useOrganization'
 import { USER_ROLE_LABELS, type UserRole } from '@/types'
 import { hasPermission } from '@/lib/auth/permissions'
 import { NotificationBell } from './NotificationBell'
+import { WidgetErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { PlanBadge } from '@/components/billing/PlanBadge'
 import { UsageBar } from '@/components/billing/UsageBar'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
@@ -122,12 +123,12 @@ const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Intelligence',
-    requirePermission: 'knowledge:query',
     items: [
-      { label: 'Intelligence Center', href: '/intelligence',         icon: Brain         },
-      { label: 'Ask AI',             href: '/intelligence/ask',     icon: MessageCircle },
-      { label: 'Upload Knowledge',   href: '/intelligence/upload',  icon: Upload        },
-      { label: 'Knowledge Library',  href: '/intelligence/sources', icon: BookOpen      },
+      { label: 'Intelligence Center', href: '/intelligence',                   icon: Brain         },
+      { label: 'Ask AI',             href: '/intelligence/ask',               icon: MessageCircle },
+      { label: 'Field Assistant',    href: '/intelligence/field-assistant',   icon: HardHat       },
+      { label: 'Upload Knowledge',   href: '/intelligence/upload',            icon: Upload        },
+      { label: 'Knowledge Library',  href: '/intelligence/sources',           icon: BookOpen      },
     ],
   },
   {
@@ -167,10 +168,13 @@ export function Sidebar() {
     return pathname.startsWith(path)
   }
 
-  // Section-level permission check — only filter when the profile is loaded.
+  // Section-level permission check.
+  // While loading, hide gated sections (they'll appear once profile arrives).
+  // Once loaded, check the role permission.
   function sectionVisible(section: NavSection): boolean {
     if (!section.requirePermission) return true
-    if (!profile?.role) return false
+    if (isLoading) return false          // still fetching — hide until ready
+    if (!profile?.role) return false     // not authenticated
     return hasPermission(profile.role as UserRole, section.requirePermission as Parameters<typeof hasPermission>[1])
   }
 
@@ -217,6 +221,8 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+
+        <WidgetErrorBoundary label="Navigation">
         {NAV_SECTIONS.filter(sectionVisible).map(section => (
           <div key={section.title}>
             <p className={cn(
@@ -257,11 +263,14 @@ export function Sidebar() {
             </ul>
           </div>
         ))}
+        </WidgetErrorBoundary>
       </nav>
 
       {/* Usage meter */}
       <div className="px-3 pb-3">
-        <UsageBar />
+        <WidgetErrorBoundary label="Usage">
+          <UsageBar />
+        </WidgetErrorBoundary>
       </div>
 
       {/* Bottom: Notifications + User */}
@@ -282,7 +291,9 @@ export function Sidebar() {
         )}
 
         {/* Notifications */}
-        <NotificationBell />
+        <WidgetErrorBoundary label="Notifications">
+          <NotificationBell />
+        </WidgetErrorBoundary>
 
         {/* User profile */}
         <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
@@ -314,14 +325,14 @@ export function Sidebar() {
           </div>
         </div>
 
-        {/* Sign Out — full-width button, clearly visible */}
-        <button
-          onClick={signOut}
+        {/* Sign Out — server-side route clears cookies reliably */}
+        <a
+          href="/api/auth/signout"
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 hover:text-red-300 border border-red-500/20 transition-colors"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
           Sign Out
-        </button>
+        </a>
       </div>
     </aside>
   )

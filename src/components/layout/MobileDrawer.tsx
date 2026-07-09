@@ -38,6 +38,9 @@ import {
   BookOpen,
   HardHat,
   FileCheck2,
+  Brain,
+  Upload,
+  MessageCircle,
 } from 'lucide-react'
 import { cn, getInitials, truncate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -94,6 +97,16 @@ const NAV_GROUPS: DrawerNavGroup[] = [
     items: [
       { label: 'Commissioning',  href: '/commissioning', icon: Zap },
       { label: 'Weld Map',       href: '/weld-map',      icon: Map },
+    ],
+  },
+  {
+    title: 'Intelligence',
+    items: [
+      { label: 'Intelligence Center', href: '/intelligence',                 icon: Brain         },
+      { label: 'Ask AI',             href: '/intelligence/ask',             icon: MessageCircle },
+      { label: 'Field Assistant',    href: '/intelligence/field-assistant', icon: HardHat       },
+      { label: 'Upload Knowledge',   href: '/intelligence/upload',          icon: Upload        },
+      { label: 'Knowledge Library',  href: '/intelligence/sources',         icon: BookOpen      },
     ],
   },
   {
@@ -256,13 +269,13 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
             <div className="rounded-xl bg-surface-800 border border-surface-700 overflow-hidden">
               <NotificationBell />
             </div>
-            <button
-              onClick={signOut}
+            <a
+              href="/api/auth/signout"
               className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-danger/10 text-red-400 text-sm font-medium hover:bg-danger/20 transition-colors border border-danger/20"
             >
               <LogOut className="w-4 h-4" />
               Sign Out
-            </button>
+            </a>
           </div>
 
           {/* Platform Admin — only visible to platform_admin role */}
