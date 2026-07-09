@@ -19,6 +19,7 @@ import { isFlagEnabled, getFlagSnapshot } from './flags'
 import { getOrgTier, isTierAllowed, tierBlockedMessage } from './tier'
 import { getDailyUsage, budgetExhaustedMessage } from './accounting'
 import { logInvocation } from './audit'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // ── Adapter imports ───────────────────────────────────────────
 // Phase 1 — active adapters
@@ -99,6 +100,25 @@ export async function invoke<TInput, TOutput>(
       reason:  'not_implemented',
       message: `Capability "${capability}" is not yet implemented. It will be available in a future release.`,
     }
+  }
+
+  // ── 3b. Capability override check (self-healing auto-disable) ──
+  try {
+    const adminClient = createAdminClient()
+    const { data: override } = await adminClient
+      .from('capability_overrides')
+      .select('disabled, disabled_reason')
+      .eq('capability', capability)
+      .single()
+    if (override?.disabled) {
+      return {
+        ok:      false,
+        reason:  'error' as const,
+        message: override.disabled_reason ?? `Capability "${capability}" is temporarily disabled.`,
+      }
+    }
+  } catch {
+    // Non-fatal: if the table doesn't exist yet, proceed normally
   }
 
   // ── 4. Tier gating (reuses existing plans.ts/usage.ts) ───

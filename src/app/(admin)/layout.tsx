@@ -9,6 +9,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { ShieldCheck } from 'lucide-react'
 
 export default function AdminLayout({
   children,
@@ -79,6 +80,13 @@ export default function AdminLayout({
               className="px-3 py-1.5 text-xs font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors"
             >
               Users
+            </a>
+            <a
+              href="/admin/system"
+              className="px-3 py-1.5 text-xs font-medium text-surface-400 hover:text-surface-100 hover:bg-surface-800 rounded-lg transition-colors flex items-center gap-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              System Health
             </a>
           </nav>
         </div>
