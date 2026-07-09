@@ -1,217 +1,403 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/lib/apiFetch'
-import { Flame, Building2, Users, FolderOpen, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
+import {
+  Flame,
+  ArrowRight,
+  CheckCircle2,
+  Users,
+  Zap,
+  FileSearch,
+  BarChart3,
+  Wrench,
+  ChevronRight,
+} from 'lucide-react'
 
-const STEPS = [
-  { id: 'company', title: 'Company Setup', icon: Building2, description: 'Tell us about your organization' },
-  { id: 'project', title: 'First Project', icon: FolderOpen, description: 'Create your first project' },
-  { id: 'team', title: 'Invite Team', icon: Users, description: 'Add your QC team members' },
-  { id: 'done', title: 'All Set!', icon: CheckCircle2, description: "You're ready to go" },
-]
+// ── Types ─────────────────────────────────────────────────────
+type Step = 0 | 1 | 2 | 3
 
-export default function OnboardingPage() {
-  const router = useRouter()
-  const [step, setStep] = useState(0)
-  const [companyForm, setCompanyForm] = useState({ industry: 'oil_gas', size: '1-10' })
-  const [projectName, setProjectName] = useState('')
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [inviteSent, setInviteSent] = useState(false)
+// ── Step indicators ───────────────────────────────────────────
+const STEP_LABELS = ['Welcome', 'First Project', 'Invite Team', "You're Ready"]
 
-  const currentStep = STEPS[step]
-  const progress = (step / (STEPS.length - 1)) * 100
+function StepDots({ step }: { step: Step }) {
+  return (
+    <div className="flex items-center gap-2 mb-10">
+      {STEP_LABELS.map((label, i) => (
+        <div key={label} className="flex items-center gap-2">
+          <div className={`flex items-center gap-1.5 ${i === step ? '' : ''}`}>
+            <div
+              className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                i < step
+                  ? 'bg-brand-500'
+                  : i === step
+                  ? 'bg-brand-500 w-4'
+                  : 'bg-surface-700'
+              }`}
+            />
+          </div>
+          {i < STEP_LABELS.length - 1 && (
+            <div className="h-px w-8 bg-surface-700" />
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 
-  const handleNext = async () => {
-    if (step === STEPS.length - 1) {
-      router.push('/dashboard')
-      return
-    }
+// ── Step 0: Welcome ───────────────────────────────────────────
+function StepWelcome({ onNext }: { onNext: () => void }) {
+  return (
+    <div className="text-center">
+      <div className="flex items-center justify-center gap-3 mb-6">
+        <div className="w-16 h-16 rounded-2xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center">
+          <Flame className="h-8 w-8 text-brand-500" />
+        </div>
+      </div>
+      <h1 className="text-3xl font-bold text-surface-50 mb-3">
+        Welcome to PipeField OS
+      </h1>
+      <p className="text-surface-400 text-base mb-2">
+        The field intelligence platform for piping contractors
+      </p>
+      <p className="text-surface-500 text-sm mb-10">
+        Let&apos;s get you set up in 2 minutes
+      </p>
 
-    if (step === 1 && projectName.trim()) {
-      setLoading(true)
-      try {
-        await apiFetch('/api/projects', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: projectName.trim(), status: 'active' }),
-        })
-      } catch { /* non-fatal */ }
+      <div className="grid grid-cols-1 gap-3 mb-10 text-left">
+        {[
+          { icon: Wrench,      label: 'Weld tracking & QC management' },
+          { icon: FileSearch,  label: 'AI-powered drawing analysis' },
+          { icon: BarChart3,   label: 'Field intelligence & reporting' },
+          { icon: Users,       label: 'Team collaboration & invites' },
+        ].map(({ icon: Icon, label }) => (
+          <div key={label} className="flex items-center gap-3 rounded-xl border border-surface-700 bg-surface-800/40 px-4 py-3">
+            <Icon className="h-4 w-4 text-brand-400 shrink-0" />
+            <span className="text-sm text-surface-300">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={onNext}
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-base font-semibold text-white hover:bg-brand-600 transition-colors"
+      >
+        Get started
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
+// ── Step 1: Create first project ──────────────────────────────
+function StepProject({ onNext }: { onNext: () => void }) {
+  const [name, setName]         = useState('')
+  const [client, setClient]     = useState('')
+  const [location, setLocation] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) return
+
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await apiFetch('/api/projects', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          name:        name.trim(),
+          client_name: client.trim() || undefined,
+          location:    location.trim() || undefined,
+          start_date:  startDate || undefined,
+          status:      'active',
+        }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({})) as { error?: string }
+        setError(json.error ?? 'Failed to create project. Please try again.')
+        setLoading(false)
+        return
+      }
+      onNext()
+    } catch {
+      setError('Could not connect. Please try again.')
       setLoading(false)
     }
-
-    setStep(s => s + 1)
   }
 
-  const handleInvite = async () => {
-    if (!inviteEmail.trim()) return
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-surface-50 mb-1">Create your first project</h2>
+      <p className="text-surface-400 text-sm mb-8">Projects are the foundation of PipeField OS — welds, reports, and drawings all live inside a project.</p>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-surface-300 mb-1.5">
+            Project name <span className="text-brand-400">*</span>
+          </label>
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="e.g. Line 12A Compressor Station"
+            required
+            className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-surface-300 mb-1.5">Client name <span className="text-surface-600">(optional)</span></label>
+          <input
+            value={client}
+            onChange={e => setClient(e.target.value)}
+            placeholder="e.g. Acme Petrochemical"
+            className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-surface-300 mb-1.5">Location <span className="text-surface-600">(optional)</span></label>
+          <input
+            value={location}
+            onChange={e => setLocation(e.target.value)}
+            placeholder="e.g. Baytown, TX"
+            className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-surface-300 mb-1.5">Start date <span className="text-surface-600">(optional)</span></label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 focus:outline-none focus:border-brand-500 transition-colors"
+          />
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-400 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || !name.trim()}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-base font-semibold text-white hover:bg-brand-600 disabled:opacity-50 transition-colors mt-2"
+        >
+          {loading ? 'Creating…' : 'Create project & continue'}
+          {!loading && <ArrowRight className="h-4 w-4" />}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+// ── Step 2: Invite team ───────────────────────────────────────
+function StepInvite({ onNext }: { onNext: () => void }) {
+  const [email, setEmail]       = useState('')
+  const [role, setRole]         = useState('pipefitter')
+  const [loading, setLoading]   = useState(false)
+  const [inviteSent, setInviteSent] = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email.trim()) return
     setLoading(true)
+    setError(null)
     try {
-      await apiFetch('/api/organization/invite', {
-        method: 'POST',
+      const res = await apiFetch('/api/organization/invite', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail.trim(), role: 'member' }),
+        body:    JSON.stringify({ email: email.trim(), role }),
       })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({})) as { error?: string }
+        setError(json.error ?? 'Failed to send invite.')
+        setLoading(false)
+        return
+      }
       setInviteSent(true)
-      setInviteEmail('')
-    } catch { /* non-fatal */ }
+      setEmail('')
+    } catch {
+      setError('Could not connect. Please try again.')
+    }
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-surface-900 flex flex-col items-center justify-center px-4 py-12">
-      {/* Logo */}
-      <div className="flex items-center gap-2 mb-12">
-        <Flame className="h-8 w-8 text-brand-500" />
-        <span className="text-xl font-bold text-surface-50">PipeField OS</span>
+    <div>
+      <h2 className="text-2xl font-bold text-surface-50 mb-1">Invite your team</h2>
+      <p className="text-surface-400 text-sm mb-8">Add your QC inspectors, foremen, and project managers. They&apos;ll get an email invite to join your organization.</p>
+
+      <form onSubmit={handleInvite} className="space-y-4 mb-6">
+        <div>
+          <label className="block text-sm font-medium text-surface-300 mb-1.5">Email address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="colleague@company.com"
+            className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 placeholder:text-surface-600 focus:outline-none focus:border-brand-500 transition-colors"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-surface-300 mb-1.5">Role</label>
+          <select
+            value={role}
+            onChange={e => setRole(e.target.value)}
+            className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 focus:outline-none focus:border-brand-500 transition-colors"
+          >
+            <option value="project_manager">Project Manager</option>
+            <option value="foreman">Foreman</option>
+            <option value="qa_inspector">QA Inspector</option>
+            <option value="pipefitter">Pipefitter</option>
+            <option value="shop_fabricator">Shop Fabricator</option>
+            <option value="client_viewer">Client Viewer</option>
+          </select>
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-400 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2">
+            {error}
+          </p>
+        )}
+
+        {inviteSent && (
+          <div className="flex items-center gap-2 text-sm text-green-400 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            Invite sent! Add another or continue.
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || !email.trim()}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
+        >
+          {loading ? 'Sending…' : 'Send invite'}
+        </button>
+      </form>
+
+      <button
+        onClick={onNext}
+        className="w-full flex items-center justify-center gap-2 rounded-xl border border-surface-700 py-3 text-sm font-medium text-surface-400 hover:bg-surface-800 hover:text-surface-200 transition-colors"
+      >
+        Skip for now
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
+// ── Step 3: You're ready ──────────────────────────────────────
+function StepReady() {
+  const router = useRouter()
+  return (
+    <div className="text-center">
+      <div className="flex items-center justify-center mb-6">
+        <div className="w-16 h-16 rounded-2xl bg-green-500/15 border border-green-500/30 flex items-center justify-center">
+          <CheckCircle2 className="h-8 w-8 text-green-400" />
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold text-surface-50 mb-2">You&apos;re all set!</h2>
+      <p className="text-surface-400 text-sm mb-8">Here&apos;s what&apos;s available in PipeField OS:</p>
+
+      <div className="grid grid-cols-1 gap-3 mb-10 text-left">
+        {[
+          { icon: Zap,        label: 'Intelligence Center', desc: 'AI-powered field analytics' },
+          { icon: FileSearch, label: 'Drawing Analysis',    desc: 'Upload ISO & P&ID drawings for AI review' },
+          { icon: Wrench,     label: 'Weld Tracking',       desc: 'Log, inspect, and track every weld' },
+          { icon: BarChart3,  label: 'Daily Reports',       desc: 'Field reports and progress tracking' },
+          { icon: Users,      label: 'Team Management',     desc: 'Roles, permissions, and invites' },
+        ].map(({ icon: Icon, label, desc }) => (
+          <div key={label} className="flex items-center gap-3 rounded-xl border border-surface-700 bg-surface-800/40 px-4 py-3">
+            <div className="w-8 h-8 rounded-lg bg-brand-500/15 flex items-center justify-center shrink-0">
+              <Icon className="h-4 w-4 text-brand-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-surface-200">{label}</p>
+              <p className="text-xs text-surface-500">{desc}</p>
+            </div>
+            <CheckCircle2 className="h-4 w-4 text-green-400 ml-auto shrink-0" />
+          </div>
+        ))}
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full max-w-md mb-8">
-        <div className="flex justify-between mb-2">
-          {STEPS.map((s, i) => (
-            <div key={s.id} className="flex flex-col items-center gap-1">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                i < step ? 'bg-brand-500 border-brand-500' :
-                i === step ? 'border-brand-500 bg-brand-500/20' :
-                'border-surface-700 bg-surface-800'
-              }`}>
-                {i < step ? (
-                  <CheckCircle2 className="h-4 w-4 text-white" />
-                ) : (
-                  <s.icon className={`h-4 w-4 ${i === step ? 'text-brand-400' : 'text-surface-600'}`} />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="h-1.5 bg-surface-800 rounded-full">
-          <div className="h-1.5 bg-brand-500 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
-        </div>
+      <div className="space-y-3">
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-base font-semibold text-white hover:bg-brand-600 transition-colors"
+        >
+          Go to Dashboard
+          <ArrowRight className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => router.push('/intelligence')}
+          className="w-full flex items-center justify-center gap-2 rounded-xl border border-surface-700 py-3 text-sm font-medium text-surface-300 hover:bg-surface-800 transition-colors"
+        >
+          Explore Intelligence Center
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────
+export default function OnboardingPage() {
+  const router = useRouter()
+  const [step, setStep]           = useState<Step>(0)
+  const [checking, setChecking]   = useState(true)
+
+  // Redirect to dashboard if user already has projects
+  useEffect(() => {
+    async function checkProjects() {
+      try {
+        const res = await apiFetch('/api/projects')
+        if (res.ok) {
+          const json = await res.json() as { projects?: unknown[] }
+          if (Array.isArray(json.projects) && json.projects.length > 0) {
+            router.replace('/dashboard')
+            return
+          }
+        }
+      } catch { /* non-fatal — just show onboarding */ }
+      setChecking(false)
+    }
+    checkProjects()
+  }, [router])
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-surface-900 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  const next = () => setStep(s => (s < 3 ? (s + 1) as Step : s))
+
+  return (
+    <div className="min-h-screen bg-surface-900 flex flex-col items-center justify-center px-4 py-12">
+      {/* Logo */}
+      <div className="flex items-center gap-2 mb-10">
+        <Flame className="h-7 w-7 text-brand-500" />
+        <span className="text-lg font-bold text-surface-50">PipeField OS</span>
       </div>
 
       {/* Card */}
       <div className="w-full max-w-md rounded-2xl border border-surface-700 bg-surface-800 p-8">
-        <h2 className="text-2xl font-bold text-surface-50 mb-1">{currentStep.title}</h2>
-        <p className="text-surface-400 mb-8">{currentStep.description}</p>
+        <StepDots step={step} />
 
-        {/* Step content */}
-        {step === 0 && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-surface-300 mb-2">Industry</label>
-              <select
-                value={companyForm.industry}
-                onChange={e => setCompanyForm(f => ({ ...f, industry: e.target.value }))}
-                className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 focus:outline-none focus:border-brand-500"
-              >
-                <option value="oil_gas">Oil &amp; Gas</option>
-                <option value="petrochemical">Petrochemical</option>
-                <option value="power">Power Generation</option>
-                <option value="industrial">Industrial / Manufacturing</option>
-                <option value="water">Water &amp; Wastewater</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-surface-300 mb-2">Team Size</label>
-              <select
-                value={companyForm.size}
-                onChange={e => setCompanyForm(f => ({ ...f, size: e.target.value }))}
-                className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 focus:outline-none focus:border-brand-500"
-              >
-                <option value="1-10">1–10 people</option>
-                <option value="11-50">11–50 people</option>
-                <option value="51-200">51–200 people</option>
-                <option value="200+">200+ people</option>
-              </select>
-            </div>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div>
-            <label className="block text-sm font-medium text-surface-300 mb-2">Project Name</label>
-            <input
-              value={projectName}
-              onChange={e => setProjectName(e.target.value)}
-              placeholder="e.g. Line 12A Compressor Station"
-              className="w-full rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 placeholder:text-surface-600 focus:outline-none focus:border-brand-500"
-            />
-            <p className="mt-2 text-xs text-surface-500">You can add more projects anytime from your dashboard.</p>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <input
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                placeholder="colleague@company.com"
-                type="email"
-                className="flex-1 rounded-xl border border-surface-700 bg-surface-900 px-4 py-3 text-surface-50 placeholder:text-surface-600 focus:outline-none focus:border-brand-500"
-              />
-              <button
-                onClick={handleInvite}
-                disabled={loading || !inviteEmail}
-                className="rounded-xl bg-brand-500 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
-              >
-                Invite
-              </button>
-            </div>
-            {inviteSent && (
-              <div className="flex items-center gap-2 text-sm text-green-400">
-                <CheckCircle2 className="h-4 w-4" />
-                Invite sent!
-              </div>
-            )}
-            <button
-              onClick={() => setStep(s => s + 1)}
-              className="text-sm text-surface-500 hover:text-surface-300 transition-colors"
-            >
-              Skip for now →
-            </button>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-4">
-            {[
-              '✅ Your organization is set up',
-              '✅ Your first project is ready',
-              '✅ Field calculators available immediately',
-              '✅ Start logging welds right away',
-            ].map(item => (
-              <div key={item} className="text-sm text-surface-300">{item}</div>
-            ))}
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex gap-3 mt-8">
-          {step > 0 && step < STEPS.length - 1 && (
-            <button
-              onClick={() => setStep(s => s - 1)}
-              className="flex items-center gap-2 rounded-xl border border-surface-700 px-4 py-3 text-sm font-medium text-surface-300 hover:bg-surface-700"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </button>
-          )}
-          <button
-            onClick={handleNext}
-            disabled={loading}
-            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-3 text-base font-semibold text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
-          >
-            {step === STEPS.length - 1 ? 'Go to Dashboard' : 'Continue'}
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
+        {step === 0 && <StepWelcome  onNext={next} />}
+        {step === 1 && <StepProject  onNext={next} />}
+        {step === 2 && <StepInvite   onNext={next} />}
+        {step === 3 && <StepReady />}
       </div>
 
-      <p className="mt-6 text-xs text-surface-600">Step {step + 1} of {STEPS.length}</p>
+      <p className="mt-6 text-xs text-surface-600">Step {step + 1} of 4</p>
     </div>
   )
 }

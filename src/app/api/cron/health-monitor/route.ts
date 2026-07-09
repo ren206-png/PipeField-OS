@@ -12,6 +12,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getResend } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 
@@ -199,11 +200,16 @@ export async function POST(req: NextRequest) {
     if (criticalAlerts && criticalAlerts.length > 0) {
       const { data: admins } = await supabase
         .from('user_profiles')
-        .select('id, organization_id')
+        .select('id, organization_id, email')
         .eq('role', 'platform_admin')
+
+      const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pipefield-os.com'
+      const FROM    = process.env.EMAIL_FROM ?? 'PipeField OS <onboarding@resend.dev>'
+      const resend  = getResend()
 
       for (const admin of admins ?? []) {
         for (const alert of criticalAlerts) {
+          // In-app notification
           await supabase.from('notifications').insert({
             user_id:         admin.id,
             organization_id: admin.organization_id,
@@ -214,6 +220,67 @@ export async function POST(req: NextRequest) {
             read:            false,
           })
           jobs.notifications.sent++
+
+          // Email alert for critical alerts
+          if (alert.severity === 'critical' && admin.email) {
+            const severityBadgeColor = '#ef4444'
+            const timestamp = new Date(alert.created_at ?? Date.now()).toLocaleString('en-US', {
+              weekday: 'short', month: 'short', day: 'numeric',
+              hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+            })
+            const alertTitle  = String(alert.title  ?? '')
+            const alertBody   = String(alert.body   ?? '')
+            const alertType   = String(alert.alert_type ?? '')
+            const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f1117;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:520px;margin:40px auto;background:#1a1d27;border-radius:16px;overflow:hidden;border:1px solid #2a2d3a;">
+    <div style="background:${severityBadgeColor}15;border-bottom:2px solid ${severityBadgeColor}40;padding:24px 32px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;background:${severityBadgeColor}20;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;">⚠️</div>
+        <div>
+          <p style="margin:0;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">PipeField OS · Platform Alert</p>
+          <h1 style="margin:4px 0 0;font-size:18px;font-weight:700;color:#f9fafb;">Critical System Alert</h1>
+        </div>
+      </div>
+    </div>
+    <div style="padding:32px;">
+      <div style="background:#111318;border-radius:12px;padding:20px;margin-bottom:24px;border:1px solid #2a2d3a;">
+        <div style="margin-bottom:14px;">
+          <span style="display:inline-block;padding:4px 10px;background:${severityBadgeColor}20;color:${severityBadgeColor};border-radius:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">
+            CRITICAL
+          </span>
+        </div>
+        <p style="margin:0 0 8px;font-size:16px;font-weight:600;color:#f9fafb;">${alertTitle.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+        <p style="margin:0 0 16px;font-size:14px;color:#9ca3af;line-height:1.6;">${alertBody.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+        <div style="padding-top:14px;border-top:1px solid #2a2d3a;">
+          <p style="margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">Alert Type</p>
+          <p style="margin:0 0 12px;font-size:13px;color:#d1d5db;font-family:monospace;">${alertType.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+          <p style="margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">Timestamp</p>
+          <p style="margin:0;font-size:13px;color:#d1d5db;">${timestamp}</p>
+        </div>
+      </div>
+      <a href="${APP_URL}/admin/system"
+         style="display:block;text-align:center;background:${severityBadgeColor};color:#fff;text-decoration:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;margin-bottom:24px;">
+        View System Health →
+      </a>
+      <p style="margin:0;font-size:12px;color:#4b5563;text-align:center;">
+        PipeField OS · <a href="${APP_URL}" style="color:#6b7280;">pipefield-os.com</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`
+            await resend.emails.send({
+              from:    FROM,
+              to:      admin.email as string,
+              subject: `⚠️ PipeField OS Alert: ${alertTitle}`,
+              html,
+            }).catch((err: unknown) => {
+              console.error(`[health-monitor] Failed to send alert email to ${admin.email}:`, err)
+            })
+          }
         }
       }
     }

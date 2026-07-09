@@ -6,7 +6,7 @@
 // drawing to /api/ai/iso-blueprint-3d and renders the
 // structured 3D spatial breakdown returned by GPT-4o.
 // ============================================================
-import { useState, useRef, useCallback, DragEvent, ChangeEvent } from 'react'
+import { useState, useRef, useCallback, useEffect, DragEvent, ChangeEvent } from 'react'
 import {
   Box,
   Upload,
@@ -18,6 +18,7 @@ import {
   ChevronRight,
   RotateCcw,
   Shield,
+  Printer,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/apiFetch'
 
@@ -85,6 +86,97 @@ function isVertical(direction: string) {
   return direction.toLowerCase().includes('vertical')
 }
 
+// ── Print stylesheet ──────────────────────────────────────────
+const PRINT_STYLE_ID = 'iso-blueprint-print-style'
+
+function usePrintStyle() {
+  useEffect(() => {
+    if (document.getElementById(PRINT_STYLE_ID)) return
+    const style = document.createElement('style')
+    style.id = PRINT_STYLE_ID
+    style.media = 'print'
+    style.textContent = `
+      /* Hide everything except results */
+      body { background: #fff !important; color: #111 !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+      /* Hide upload zone, nav, sidebar, reset button, export button */
+      [data-print-hide],
+      nav, aside, header, footer,
+      [class*="sidebar"], [class*="nav-"],
+      [data-iso-upload-zone],
+      [data-iso-reset],
+      [data-iso-export] { display: none !important; }
+
+      /* Show only results */
+      [data-iso-results] { display: block !important; }
+
+      /* Print header */
+      [data-iso-results]::before {
+        content: 'ISO Blueprint 3D Analysis — PipeField OS';
+        display: block;
+        font-size: 18px;
+        font-weight: 700;
+        color: #111;
+        margin-bottom: 4px;
+      }
+      [data-iso-results]::after {
+        content: attr(data-print-date);
+        display: block;
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 24px;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 12px;
+      }
+
+      /* Cards — white background, black border */
+      .card,
+      [class*="rounded-xl"],
+      [class*="rounded-2xl"] {
+        background: #fff !important;
+        border-color: #ccc !important;
+        color: #111 !important;
+        box-shadow: none !important;
+      }
+
+      /* Text colours */
+      [class*="text-surface-50"],
+      [class*="text-surface-100"],
+      [class*="text-surface-200"],
+      [class*="text-surface-300"] { color: #111 !important; }
+      [class*="text-surface-400"],
+      [class*="text-surface-500"],
+      [class*="text-surface-600"] { color: #555 !important; }
+
+      /* Pipe run cards — clean page breaks */
+      [data-iso-pipe-run] {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      /* Table */
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 6px 10px; color: #111 !important; background: #fff !important; }
+      th { background: #f5f5f5 !important; font-weight: 600; }
+
+      /* Confidence badge */
+      [class*="bg-emerald"], [class*="bg-amber"], [class*="bg-red-5"] {
+        background: #eee !important;
+        color: #111 !important;
+        border-color: #ccc !important;
+      }
+
+      /* Violet badges */
+      [class*="bg-violet"] { background: #eee !important; color: #333 !important; border-color: #ccc !important; }
+    `
+    document.head.appendChild(style)
+    return () => {
+      const el = document.getElementById(PRINT_STYLE_ID)
+      if (el) el.remove()
+    }
+  }, [])
+}
+
 // ── Result panel ──────────────────────────────────────────────
 function Iso3dResultPanel({
   result,
@@ -93,8 +185,29 @@ function Iso3dResultPanel({
   result: Iso3dResult
   onReset: () => void
 }) {
+  usePrintStyle()
+  const printDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  })
+
   return (
-    <div className="space-y-4 mt-6">
+    <div
+      className="space-y-4 mt-6"
+      data-iso-results
+      data-print-date={printDate}
+    >
+
+      {/* Export PDF button */}
+      <div className="flex justify-end" data-iso-export>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="flex items-center gap-2 rounded-xl border border-surface-700 bg-surface-800/60 px-4 py-2 text-sm font-medium text-surface-300 hover:bg-surface-700 hover:text-surface-100 transition-colors"
+        >
+          <Printer className="w-4 h-4" />
+          Export PDF
+        </button>
+      </div>
 
       {/* Summary */}
       <div className="card p-5">
@@ -133,6 +246,7 @@ function Iso3dResultPanel({
             {result.pipe_runs.map((run, i) => (
               <div
                 key={i}
+                data-iso-pipe-run
                 className="rounded-xl border border-surface-700 bg-surface-800/40 p-4 space-y-2"
               >
                 <div className="flex items-center justify-between">
@@ -307,7 +421,7 @@ function Iso3dResultPanel({
       </div>
 
       {/* Reset */}
-      <div className="flex justify-center pt-2">
+      <div className="flex justify-center pt-2" data-iso-reset>
         <button
           type="button"
           onClick={onReset}
@@ -425,6 +539,7 @@ export function IsoBlueprint3DPanel() {
       {/* Upload zone — only show when not done */}
       {uploadState !== 'done' && (
         <div
+          data-iso-upload-zone
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           onDrop={onDrop}
