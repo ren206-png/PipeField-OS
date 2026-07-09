@@ -124,11 +124,12 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Intelligence',
     items: [
-      { label: 'Intelligence Center', href: '/intelligence',                   icon: Brain         },
-      { label: 'Ask AI',             href: '/intelligence/ask',               icon: MessageCircle },
-      { label: 'Field Assistant',    href: '/intelligence/field-assistant',   icon: HardHat       },
-      { label: 'Upload Knowledge',   href: '/intelligence/upload',            icon: Upload        },
-      { label: 'Knowledge Library',  href: '/intelligence/sources',           icon: BookOpen      },
+      { label: 'Intelligence Center', href: '/intelligence',                        icon: Brain         },
+      { label: 'Ask AI',             href: '/intelligence/ask',                  icon: MessageCircle },
+      { label: 'Field Assistant',    href: '/intelligence/field-assistant',      icon: HardHat       },
+      { label: 'Welding Guidance',   href: '/intelligence/welding-guidance',     icon: Flame         },
+      { label: 'Upload Knowledge',   href: '/intelligence/upload',               icon: Upload        },
+      { label: 'Knowledge Library',  href: '/intelligence/sources',              icon: BookOpen      },
     ],
   },
   {
