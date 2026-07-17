@@ -20,6 +20,7 @@ export type CapabilityName =
   | 'scheduling'           // NOT_IMPLEMENTED
   | 'inspection'           // NOT_IMPLEMENTED
   | 'digital-twin'         // NOT_IMPLEMENTED
+  | 'support-photo-id'    // Phase 3 — pipe support component identification
 
 export type CapabilityStatus = 'ACTIVE' | 'NOT_IMPLEMENTED'
 

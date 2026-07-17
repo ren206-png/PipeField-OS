@@ -3,12 +3,13 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { User, Building2, Lock, CheckCircle2, Loader2, AlertCircle, CreditCard, ArrowRight, MessageSquare, Mail, ShieldAlert } from 'lucide-react'
+import { User, Building2, Lock, CheckCircle2, Loader2, AlertCircle, CreditCard, ArrowRight, MessageSquare, Mail, ShieldAlert, ShieldCheck, Bell } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { USER_ROLE_LABELS } from '@/types'
-import { getInitials } from '@/lib/utils'
+import { PushSubscribeButton } from '@/components/notifications/PushSubscribeButton'
+import { getInitials, cn } from '@/lib/utils'
 import { apiFetch } from '@/lib/apiFetch'
 
 // ── Schemas ──────────────────────────────────────────────────
@@ -54,6 +55,54 @@ function Section({ icon: Icon, title, children }: {
   )
 }
 
+// ── Digest Frequency Selector ─────────────────────────────────
+type DigestFrequency = 'daily' | 'weekly' | 'none'
+
+function DigestFrequencySelector() {
+  const [frequency, setFrequency] = useState<DigestFrequency>('daily')
+  const [saving, setSaving]       = useState(false)
+  const [saved,  setSaved]        = useState(false)
+
+  async function save(freq: DigestFrequency) {
+    setSaving(true); setSaved(false)
+    try {
+      await apiFetch('/api/me/digest-preference', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ frequency: freq }),
+      })
+      setFrequency(freq); setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {(['daily', 'weekly', 'none'] as DigestFrequency[]).map(f => (
+        <button
+          key={f}
+          onClick={() => void save(f)}
+          disabled={saving}
+          className={cn(
+            'px-4 py-2 rounded-lg text-sm font-medium border transition-colors capitalize',
+            frequency === f
+              ? 'bg-brand-500/15 border-brand-500/40 text-brand-400'
+              : 'bg-surface-800 border-surface-700 text-surface-400 hover:border-brand-500/30 hover:text-surface-200',
+            'disabled:opacity-50 disabled:cursor-not-allowed'
+          )}
+        >
+          {saving && frequency !== f ? f : f}
+        </button>
+      ))}
+      {saved && (
+        <span className="self-center flex items-center gap-1 text-xs text-green-400">
+          <CheckCircle2 className="w-3.5 h-3.5" /> Saved
+        </span>
+      )}
+    </div>
+  )
+}
+
 // ── Page ─────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -67,6 +116,13 @@ export default function SettingsPage() {
   const [emailError,    setEmailError]    = useState<string | null>(null)
   const [emailLoading,  setEmailLoading]  = useState(false)
   const [newEmail,      setNewEmail]      = useState('')
+
+  // ── QC Enforcement settings ───────────────────────────────────
+  const [enfMode,       setEnfMode]       = useState<'FLAG' | 'HARD_BLOCK' | 'OFF'>('FLAG')
+  const [contWindow,    setContWindow]    = useState<number>(6)
+  const [enfSaved,      setEnfSaved]      = useState(false)
+  const [enfError,      setEnfError]      = useState<string | null>(null)
+  const [enfLoading,    setEnfLoading]    = useState(false)
 
   // ── Profile form ─────────────────────────────────────────────
   const profileForm = useForm<ProfileValues>({
@@ -87,7 +143,8 @@ export default function SettingsPage() {
         welder_stamp: profile.welder_stamp ?? '',
       })
     }
-  }, [profile, profileForm])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile])
 
   async function saveProfile(values: ProfileValues) {
     if (!profile) return
@@ -136,6 +193,43 @@ export default function SettingsPage() {
       setTimeout(() => setEmailSaved(false), 4000)
     }
     setEmailLoading(false)
+  }
+
+  // ── Load enforcement settings ─────────────────────────────────
+  useEffect(() => {
+    if (!profile) return
+    const isAdmin = ['admin', 'platform_admin'].includes(profile.role)
+    if (!isAdmin) return
+    apiFetch('/api/settings/enforcement')
+      .then(r => r.json())
+      .then((d: { qual_enforcement_mode?: string; continuity_window_hours?: number }) => {
+        if (d.qual_enforcement_mode) setEnfMode(d.qual_enforcement_mode as 'FLAG' | 'HARD_BLOCK' | 'OFF')
+        if (d.continuity_window_hours !== undefined) setContWindow(Number(d.continuity_window_hours))
+      })
+      .catch(() => { /* ignore — defaults stay */ })
+  }, [profile])
+
+  async function saveEnforcement(e: React.FormEvent) {
+    e.preventDefault()
+    setEnfError(null)
+    setEnfSaved(false)
+    setEnfLoading(true)
+    const res = await apiFetch('/api/settings/enforcement', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        qual_enforcement_mode:    enfMode,
+        continuity_window_hours:  contWindow,
+      }),
+    })
+    const d = await res.json() as { error?: string }
+    if (!res.ok) {
+      setEnfError(d.error ?? 'Failed to save enforcement settings')
+    } else {
+      setEnfSaved(true)
+      setTimeout(() => setEnfSaved(false), 3000)
+    }
+    setEnfLoading(false)
   }
 
   // ── Password form ─────────────────────────────────────────────
@@ -384,6 +478,125 @@ export default function SettingsPage() {
           </form>
         </Section>
       )}
+
+      {/* ── QC Enforcement (admin only) ── */}
+      {profile && ['admin', 'platform_admin'].includes(profile.role) && (
+        <Section icon={ShieldCheck} title="QC Enforcement">
+          {/* Engineering disclaimer — always visible */}
+          <div className="flex items-start gap-2 mb-5 px-3 py-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+            <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-yellow-300 leading-relaxed">
+              <strong>Engineering Review Required</strong> — These parameters are tenant-configurable
+              placeholders. PipeField OS does not interpret or validate welding codes. Verify all
+              values against your governing code edition (ASME B31.3, B31.1, API 1104, or other
+              applicable standard) and your client or EPC specification before activating enforcement.
+              Incorrect parameters may cause non-conforming welds to pass or conforming welds to be blocked.
+            </p>
+          </div>
+
+          <form onSubmit={saveEnforcement} className="space-y-5">
+            {/* Qual Enforcement Mode */}
+            <div>
+              <label className="label">Qual Enforcement Mode</label>
+              <div className="space-y-2 mt-1">
+                {([
+                  { value: 'OFF',        label: 'OFF',        desc: 'Qualification checks are disabled. No checks run at weld creation.' },
+                  { value: 'FLAG',       label: 'FLAG',       desc: 'Weld is created but flagged when checks fail. Supervisor can override.' },
+                  { value: 'HARD_BLOCK', label: 'HARD BLOCK', desc: 'Weld creation is blocked entirely when checks fail. Cannot be overridden at creation time.' },
+                ] as const).map(opt => (
+                  <label
+                    key={opt.value}
+                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      enfMode === opt.value
+                        ? 'border-brand-500/60 bg-brand-500/10'
+                        : 'border-surface-700 bg-surface-800/40 hover:border-surface-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="enfMode"
+                      value={opt.value}
+                      checked={enfMode === opt.value}
+                      onChange={() => setEnfMode(opt.value)}
+                      className="mt-0.5 accent-brand-500"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-surface-100">{opt.label}</p>
+                      <p className="text-xs text-surface-500 mt-0.5">{opt.desc}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Continuity Window */}
+            <div>
+              <label className="label">
+                Continuity Window (hours)
+                <span className="ml-2 text-xs text-yellow-400 font-normal">⚠️ ENGINEERING_REVIEW_REQUIRED</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={8760}
+                step={0.5}
+                value={contWindow}
+                onChange={e => setContWindow(Number(e.target.value))}
+                className="input w-32"
+              />
+              <p className="text-xs text-surface-600 mt-1">
+                How long a welder can go without a weld before continuity is considered lapsed.
+                Default 6h is a placeholder — verify against ASME B31.3 cl.328.2, B31.1 cl.127.5,
+                or API 1104 S6 and your client specification.
+              </p>
+            </div>
+
+            {enfError && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {enfError}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={enfLoading}
+                className="btn-primary flex items-center gap-2"
+              >
+                {enfLoading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                  : 'Save Enforcement Settings'
+                }
+              </button>
+              {enfSaved && (
+                <span className="flex items-center gap-1.5 text-sm text-green-400">
+                  <CheckCircle2 className="w-4 h-4" /> Saved
+                </span>
+              )}
+            </div>
+          </form>
+        </Section>
+      )}
+
+      {/* ── Notifications ── */}
+      <Section icon={Bell} title="Notifications">
+        <div className="space-y-6">
+          {/* Email digest frequency */}
+          <div>
+            <label className="label">Email Digest Frequency</label>
+            <p className="text-xs text-surface-500 mb-3">Choose how often you receive a field activity summary email.</p>
+            <DigestFrequencySelector />
+          </div>
+
+          {/* Browser push */}
+          <div>
+            <label className="label">Browser Push Notifications</label>
+            <p className="text-xs text-surface-500 mb-3">Get instant alerts for weld failures, NDE results, and important updates even when the app is in the background.</p>
+            <PushSubscribeButton />
+          </div>
+        </div>
+      </Section>
 
       {/* ── Change password ── */}
       <Section icon={Lock} title="Change Password">

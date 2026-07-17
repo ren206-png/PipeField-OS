@@ -78,6 +78,9 @@ export interface Organization {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   stripe_current_period_end: string | null
+  trial_ends_at: string | null
+  plan_price_id: string | null
+  grace_period_ends_at: string | null
   created_at: string
   updated_at: string
 }

@@ -18,8 +18,12 @@ import { z } from 'zod'
 export const dynamic = 'force-dynamic'
 
 const schema = z.object({
-  status: z.string().min(1).optional(),
-  notes:  z.string().max(1000).optional().nullable(),
+  status:              z.string().min(1).optional(),
+  notes:               z.string().max(1000).optional().nullable(),
+  // Module 3: Material Traceability fields
+  base_metal_heat_a:   z.string().max(100).optional().nullable(),
+  base_metal_heat_b:   z.string().max(100).optional().nullable(),
+  filler_batch_number: z.string().max(100).optional().nullable(),
 })
 
 interface RouteContext {
@@ -63,8 +67,11 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const updatePayload: Record<string, string | null> = {
       updated_at: new Date().toISOString(),
     }
-    if (parsed.data.status !== undefined) updatePayload.status = parsed.data.status
-    if (parsed.data.notes  !== undefined) updatePayload.notes  = parsed.data.notes ?? null
+    if (parsed.data.status              !== undefined) updatePayload.status              = parsed.data.status ?? null
+    if (parsed.data.notes               !== undefined) updatePayload.notes               = parsed.data.notes  ?? null
+    if (parsed.data.base_metal_heat_a   !== undefined) updatePayload.base_metal_heat_a   = parsed.data.base_metal_heat_a   ?? null
+    if (parsed.data.base_metal_heat_b   !== undefined) updatePayload.base_metal_heat_b   = parsed.data.base_metal_heat_b   ?? null
+    if (parsed.data.filler_batch_number !== undefined) updatePayload.filler_batch_number = parsed.data.filler_batch_number ?? null
 
     const { data: updated, error: updateError } = await admin
       .from('welds')
@@ -86,7 +93,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         new_values:      updatePayload,
         performed_by:    caller.id,
       })
-    } catch { /* non-critical */ }
+    } catch (e) { console.warn('[welds/[id]] side-effect failed:', e) }
 
     // Fire-and-forget rejection rate check when a weld is marked failed
     if (parsed.data.status === 'failed' && existing.welder_id) {
@@ -156,7 +163,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
                 })
               }
             }
-          } catch { /* non-critical */ }
+          } catch (e) { console.warn('[welds/[id]] side-effect failed:', e) }
         })()
       }
     } else if (parsed.data.status === 'accepted') {
@@ -215,7 +222,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
                 })
               }
             }
-          } catch { /* non-critical */ }
+          } catch (e) { console.warn('[welds/[id]] side-effect failed:', e) }
         })()
       }
 

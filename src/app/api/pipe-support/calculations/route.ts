@@ -1,7 +1,8 @@
 // GET  /api/pipe-support/calculations   → list for org (optional ?project_id=)
 // POST /api/pipe-support/calculations   → save new calculation
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/api-auth'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -16,23 +17,17 @@ const saveSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('organization_id')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-    if (!profile?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
-
+    const admin = createAdminClient()
     const projectId = req.nextUrl.searchParams.get('project_id')
 
-    let q = supabase
+    let q = admin
       .from('pipe_support_calculations')
       .select('*')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', caller.organization_id)
       .order('created_at', { ascending: false })
 
     if (projectId) q = q.eq('project_id', projectId)
@@ -48,50 +43,40 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('organization_id')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-    if (!profile?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
     const body = await req.json()
     const parsed = saveSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.errors[0]?.message ?? 'Invalid request body' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: parsed.error.errors[0]?.message ?? 'Invalid request body' }, { status: 400 })
     }
     const { name, project_id, inputs, result, notes } = parsed.data
 
-    const { data, error } = await supabase
+    const admin = createAdminClient()
+    const { data, error } = await admin
       .from('pipe_support_calculations')
       .insert({
-        organization_id: profile.organization_id,
+        organization_id: caller.organization_id,
         project_id:      project_id ?? null,
         name,
         inputs,
         result,
         notes:           notes ?? null,
-        created_by:      user.id,
+        created_by:      caller.auth_user_id,
       })
       .select()
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    // Audit trail
-    await supabase.from('audit_logs').insert({
-      organization_id: profile.organization_id,
+    void admin.from('audit_logs').insert({
+      organization_id: caller.organization_id,
       table_name:      'pipe_support_calculations',
       record_id:       data.id,
       action:          'INSERT',
-      performed_by:    user.id,
+      performed_by:    caller.auth_user_id,
       new_values:      { name, project_id: project_id ?? null },
     })
 

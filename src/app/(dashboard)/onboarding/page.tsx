@@ -294,7 +294,17 @@ function StepInvite({ onNext }: { onNext: () => void }) {
 
 // ── Step 3: You're ready ──────────────────────────────────────
 function StepReady() {
-  const router = useRouter()
+  const router  = useRouter()
+  const [going, setGoing] = useState(false)
+
+  async function handleDone() {
+    setGoing(true)
+    try {
+      await apiFetch('/api/onboarding/complete', { method: 'POST' })
+    } catch { /* non-fatal */ }
+    router.push('/dashboard')
+  }
+
   return (
     <div className="text-center">
       <div className="flex items-center justify-center mb-6">
@@ -328,10 +338,11 @@ function StepReady() {
 
       <div className="space-y-3">
         <button
-          onClick={() => router.push('/dashboard')}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-base font-semibold text-white hover:bg-brand-600 transition-colors"
+          onClick={() => void handleDone()}
+          disabled={going}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-3.5 text-base font-semibold text-white hover:bg-brand-600 transition-colors disabled:opacity-70"
         >
-          Go to Dashboard
+          {going ? 'Loading…' : 'Go to Dashboard'}
           <ArrowRight className="h-4 w-4" />
         </button>
         <button

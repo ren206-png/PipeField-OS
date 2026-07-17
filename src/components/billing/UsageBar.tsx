@@ -2,10 +2,15 @@
 // ============================================================
 // UsageBar — visual usage meter shown in the sidebar.
 // Displays projects, users, and welds against plan limits.
+// Collapsible — user can dismiss it; state saved in localStorage.
 // ============================================================
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { X, ChevronUp } from 'lucide-react'
 import { useUsage } from '@/hooks/useUsage'
 import { limitLabel } from '@/lib/plans'
+
+const STORAGE_KEY = 'pipefield_usage_bar_open'
 
 function Bar({
   current,
@@ -48,7 +53,37 @@ function Bar({
 
 export function UsageBar() {
   const { data: usage } = useUsage()
+  const [open, setOpen] = useState(true)
+
+  // Rehydrate from localStorage after mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored !== null) setOpen(stored === 'true')
+    } catch {}
+  }, [])
+
+  function toggle(next: boolean) {
+    setOpen(next)
+    try { localStorage.setItem(STORAGE_KEY, String(next)) } catch {}
+  }
+
   if (!usage) return null
+
+  // Collapsed state — just a small pill to re-open
+  if (!open) {
+    return (
+      <button
+        onClick={() => toggle(true)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-surface-700 bg-surface-800 hover:bg-surface-700 transition-colors group"
+      >
+        <span className="text-xs font-semibold text-surface-400 group-hover:text-surface-300 uppercase tracking-wide">
+          Usage
+        </span>
+        <ChevronUp className="w-3.5 h-3.5 text-surface-500 group-hover:text-surface-300 rotate-180" />
+      </button>
+    )
+  }
 
   return (
     <div className="rounded-xl border border-surface-700 bg-surface-800 p-4 space-y-3">
@@ -56,9 +91,18 @@ export function UsageBar() {
         <span className="text-xs font-semibold text-surface-300 uppercase tracking-wide">
           Usage
         </span>
-        <span className="text-xs rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 font-semibold text-brand-400 capitalize">
-          {usage.plan}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 font-semibold text-brand-400 capitalize">
+            {usage.plan}
+          </span>
+          <button
+            onClick={() => toggle(false)}
+            className="p-0.5 rounded text-surface-500 hover:text-surface-200 hover:bg-surface-700 transition-colors"
+            aria-label="Collapse usage panel"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       <Bar

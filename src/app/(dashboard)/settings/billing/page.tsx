@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useOrganization } from '@/hooks/useOrganization'
 import { usePlanLimits } from '@/hooks/usePlanLimits'
 import { PlanBadge } from '@/components/billing/PlanBadge'
+import { BillingStatusBanner } from '@/components/billing/BillingStatusBanner'
+import { TrialSignupCard } from '@/components/billing/TrialSignupCard'
 import type { PlanKey } from '@/lib/plans'
 import { apiFetch } from '@/lib/apiFetch'
 
@@ -112,9 +114,11 @@ function BillingContent() {
   const [loadingPortal, setLoadingPortal] = useState(false)
   const [error,         setError]         = useState<string | null>(null)
 
-  const successParam = searchParams.get('success')
-  const cancelParam  = searchParams.get('canceled')
-  const planParam    = searchParams.get('plan')
+  const successParam      = searchParams.get('success')
+  const cancelParam       = searchParams.get('canceled')
+  const trialStartedParam = searchParams.get('trial_started')
+  const trialCanceledParam= searchParams.get('trial_canceled')
+  const planParam         = searchParams.get('plan')
 
   const isAdmin       = profile?.role === 'administrator'
                      || profile?.role === 'organization_owner'
@@ -124,10 +128,10 @@ function BillingContent() {
 
   // Clear search params after reading them (clean URL)
   useEffect(() => {
-    if (successParam || cancelParam) {
+    if (successParam || cancelParam || trialStartedParam || trialCanceledParam) {
       window.history.replaceState({}, '', '/settings/billing')
     }
-  }, [successParam, cancelParam])
+  }, [successParam, cancelParam, trialStartedParam, trialCanceledParam])
 
   async function handleSubscribe(planKey: string) {
     if (!isAdmin) return
@@ -186,7 +190,18 @@ function BillingContent() {
           </div>
         </div>
       )}
-      {cancelParam && (
+      {trialStartedParam && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-brand-500/10 border border-brand-500/30 text-brand-200">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-brand-400" />
+          <div>
+            <p className="font-semibold">Trial started!</p>
+            <p className="text-sm text-brand-300/80">
+              Your 14-day free trial is active. You won&apos;t be charged until it ends.
+            </p>
+          </div>
+        </div>
+      )}
+      {(cancelParam || trialCanceledParam) && (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-surface-800 border border-surface-700 text-surface-300">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <p className="text-sm">Checkout was cancelled. No charge was made.</p>
@@ -199,6 +214,19 @@ function BillingContent() {
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
+      )}
+
+      {/* Trial status banner (trialing countdown, canceled notice, past_due) */}
+      {organization && (
+        <BillingStatusBanner
+          organization={organization}
+          isAdmin={isAdmin}
+        />
+      )}
+
+      {/* Trial signup card — for orgs with no Stripe subscription yet */}
+      {currentTier === 'free_trial' && !organization?.stripe_subscription_id && (
+        <TrialSignupCard isAdmin={isAdmin} />
       )}
 
       {/* Current plan card */}
@@ -245,17 +273,6 @@ function BillingContent() {
           </div>
         )}
       </div>
-
-      {/* Trial notice */}
-      {currentTier === 'free_trial' && (
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-200 text-sm">
-          <Zap className="w-4 h-4 flex-shrink-0 text-brand-400" />
-          <span>
-            You&apos;re on a <strong>free trial</strong>. Choose a plan below to keep your data and unlock all features.
-            Every plan includes a <strong>14-day free trial</strong>.
-          </span>
-        </div>
-      )}
 
       {/* Non-admin notice */}
       {!isAdmin && (

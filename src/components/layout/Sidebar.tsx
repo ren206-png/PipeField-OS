@@ -30,6 +30,7 @@ import {
   List,
   FileSearch,
   CircleDot,
+  Disc,
   FolderOpen,
   ClipboardCheck,
   Zap,
@@ -44,6 +45,10 @@ import {
   Upload,
   MessageCircle,
   Layers,
+  Fingerprint,
+  FileSpreadsheet,
+  WifiOff,
+  BarChart3,
 } from 'lucide-react'
 import { cn, getInitials, truncate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -74,7 +79,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Operations',
     items: [
-      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { label: 'Dashboard',    href: '/dashboard', icon: LayoutDashboard },
+      { label: 'QC Analytics', href: '/analytics', icon: BarChart3 },
       { label: 'Projects',  href: '/projects',  icon: FolderKanban },
       { label: 'Welds',     href: '/welds',     icon: Flame },
       { label: 'Spools',    href: '/spools',    icon: Package },
@@ -88,7 +94,8 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'RFIs',             href: '/documents/rfis',           icon: MessageSquareMore },
       { label: 'NCRs',             href: '/documents/ncrs',           icon: AlertOctagon },
       { label: 'Pressure Tests',   href: '/documents/pressure-tests', icon: Gauge },
-      { label: 'Punch List',       href: '/punch-list',               icon: ListChecks },
+      { label: 'Punch List',        href: '/punch-list',               icon: ListChecks },
+      { label: 'Checklists',        href: '/checklists',               icon: ClipboardList },
       { label: 'Daily Reports',    href: '/daily-reports',            icon: ClipboardList },
     ],
   },
@@ -97,9 +104,16 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Line List',    href: '/documents/line-list', icon: List },
       { label: 'MTR Register', href: '/documents/mtrs',      icon: FileSearch },
-      { label: 'Flanges',      href: '/documents/flanges',   icon: CircleDot },
+      { label: 'Flanges',        href: '/documents/flanges',   icon: CircleDot },
+      { label: 'Flange Manager', href: '/flanges',             icon: Disc      },
       { label: 'WPS',          href: '/documents/wps',       icon: FileCheck2 },
-      { label: 'NDE Tracker',  href: '/nde-tracker',         icon: FlaskConical },
+      { label: 'NDE Tracker',    href: '/nde-tracker',      icon: FlaskConical },
+      { label: 'NDE Engine',     href: '/nde',              icon: FlaskConical },
+      { label: 'Material Trace',     href: '/material-trace',  icon: Fingerprint      },
+      { label: 'Excel I/O',          href: '/excel-io',         icon: FileSpreadsheet  },
+      { label: 'Turnover Packages',  href: '/turnover',         icon: Package          },
+      { label: 'Offline Queue',       href: '/offline-queue',    icon: WifiOff          },
+      { label: 'ISO Viewer',          href: '/iso-viewer',       icon: Map              },
     ],
   },
   {
@@ -119,7 +133,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Take-Off Calculator',    href: '/calculator',      icon: Calculator },
       { label: 'Rolling Offset Calc',    href: '/calculator?tab=offset', icon: ArrowLeftRight },
       { label: 'Pipe Support Calc',      href: '/pipe-support',    icon: HardHat },
-      { label: 'Piping Reference DB',    href: '/pipe-reference',  icon: BookOpen },
+      { label: 'Pipe Support Log',       href: '/pipe-reference',  icon: BookOpen },
     ],
   },
   {
@@ -184,22 +198,8 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex flex-col w-64 xl:w-72 bg-surface-950 border-r border-surface-800 h-screen sticky top-0 overflow-y-auto">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-800">
-        <div className="w-9 h-9 bg-brand-500 rounded-lg flex items-center justify-center shadow-glow flex-shrink-0">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-          </svg>
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-surface-50 leading-none">PipeField OS</p>
-          {isLoading ? (
-            <div className="h-3 w-28 bg-surface-700 rounded animate-pulse mt-0.5" />
-          ) : (
-            <p className="text-xs text-surface-500 mt-0.5 truncate">
-              {organization ? truncate(organization.name, 22) : 'No organization'}
-            </p>
-          )}
-        </div>
+      <div className="flex items-center justify-center px-4 py-5 border-b border-surface-800">
+        <img src="/logo.png" alt="PipeField OS" className="w-full max-w-[210px] h-auto" />
       </div>
 
       {/* Organization Switcher (future feature placeholder) */}
@@ -211,11 +211,10 @@ export function Sidebar() {
           {isLoading ? (
             <div className="h-3 w-32 bg-surface-700 rounded animate-pulse flex-1" />
           ) : (
-            <span className="flex-1 flex items-center gap-2 min-w-0">
+            <span className="flex-1 min-w-0">
               <span className="text-sm text-surface-300 group-hover:text-surface-100 transition-colors truncate text-left">
-                {organization?.name ?? 'Organization'}
+                {(organization?.name ?? 'Organization').replace(/ - /g, ' ')}
               </span>
-              {plan && <PlanBadge plan={plan} />}
             </span>
           )}
           <ChevronRight className="w-3.5 h-3.5 text-surface-600 flex-shrink-0" />

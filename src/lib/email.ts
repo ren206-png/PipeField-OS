@@ -358,3 +358,93 @@ export async function sendWelcomeEmail({
 
   return getResend().emails.send({ from: FROM, to, subject, html })
 }
+
+// ── Trial ending notification ─────────────────────────────────
+// Sent by the trial-notifications cron at day 7, 11, and 13.
+// Copy comes from src/lib/trial-notifications-copy.ts.
+
+export async function sendTrialNotificationEmail({
+  to,
+  orgName,
+  milestone,
+  trialEndsAt,
+}: {
+  to:          string
+  orgName:     string
+  milestone:   import('@/lib/trial-notifications-copy').TrialMilestone
+  trialEndsAt: string | null
+}) {
+  const endDate = trialEndsAt
+    ? new Date(trialEndsAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : 'soon'
+
+  // Split body on double newlines for paragraph rendering
+  const bodyParagraphs = milestone.body
+    .split('\n\n')
+    .map(p => `<p style="margin:0 0 16px;color:#9ca3af;font-size:14px;line-height:1.7;">${esc(p)}</p>`)
+    .join('')
+
+  const urgencyColor = milestone.daysLeft <= 1
+    ? '#ef4444'
+    : milestone.daysLeft <= 3
+    ? '#f97316'
+    : '#2E8AFF'
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+</head>
+<body style="margin:0;padding:0;background:#0f1117;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    ${esc(milestone.preheader)}
+  </div>
+  <div style="max-width:520px;margin:40px auto;background:#1a1d27;border-radius:16px;overflow:hidden;border:1px solid #2a2d3a;">
+    <!-- Header bar -->
+    <div style="background:${urgencyColor}15;border-bottom:3px solid ${urgencyColor};padding:24px 32px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;background:${urgencyColor}25;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;">
+          ${milestone.daysLeft <= 1 ? '🚨' : milestone.daysLeft <= 3 ? '⏰' : '🛠'}
+        </div>
+        <div>
+          <p style="margin:0;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">PipeField OS</p>
+          <h1 style="margin:4px 0 0;font-size:20px;font-weight:700;color:#f9fafb;">${esc(milestone.headline)}</h1>
+        </div>
+      </div>
+    </div>
+    <!-- Body -->
+    <div style="padding:32px;">
+      <p style="margin:0 0 20px;color:#d1d5db;font-size:15px;">Hi ${esc(orgName)} team,</p>
+      ${bodyParagraphs}
+      ${trialEndsAt ? `
+      <div style="background:#111318;border-radius:10px;padding:14px 18px;margin-bottom:24px;border:1px solid #2a2d3a;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px;">📅</span>
+        <div>
+          <p style="margin:0;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">Trial ends</p>
+          <p style="margin:2px 0 0;font-size:15px;font-weight:600;color:#f9fafb;">${endDate}</p>
+        </div>
+      </div>` : ''}
+      <a href="${APP_URL}/settings/billing"
+         style="display:block;text-align:center;background:${urgencyColor};color:#fff;text-decoration:none;padding:14px 24px;border-radius:12px;font-size:15px;font-weight:700;margin-bottom:24px;letter-spacing:0.01em;">
+        ${esc(milestone.cta)} →
+      </a>
+      <p style="margin:0 0 6px;font-size:12px;color:#4b5563;text-align:center;">
+        Questions? Reply to this email or visit <a href="${APP_URL}" style="color:#6b7280;">pipefield-os.com</a>
+      </p>
+      <p style="margin:0;font-size:11px;color:#374151;text-align:center;">
+        You're receiving this because your organization is in a free trial.
+        <a href="${APP_URL}/settings/billing" style="color:#4b5563;">Manage subscription</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`
+
+  return getResend().emails.send({
+    from:    FROM,
+    to,
+    subject: milestone.subject,
+    html,
+  })
+}

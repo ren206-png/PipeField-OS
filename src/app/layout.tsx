@@ -3,6 +3,7 @@ import Script from 'next/script'
 import { Toaster } from 'sonner'
 import { QueryProvider } from '@/providers/QueryProvider'
 import { AuthProvider } from '@/providers/AuthProvider'
+import { ThemeProvider } from '@/providers/ThemeProvider'
 import { NativeAppProvider } from '@/components/NativeAppProvider'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { PWAInstallBanner } from '@/components/shared/PWAInstallBanner'
@@ -106,29 +107,44 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} dark`} suppressHydrationWarning>
+      <head>
+        {/* Blocking script — reads saved theme and applies class before first paint
+            to prevent a flash of the wrong theme on page load.                    */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('pipefield-theme');
+                  var theme  = stored || 'dark';
+                  document.documentElement.classList.remove('dark', 'light');
+                  document.documentElement.classList.add(theme);
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-surface-900 text-surface-100">
         <ErrorBoundary label="RootLayout">
           <QueryProvider>
             <AuthProvider>
-              <NativeAppProvider>
-                {children}
-                <PWAInstallBanner />
-              </NativeAppProvider>
+              <ThemeProvider>
+                <NativeAppProvider>
+                  {children}
+                  <PWAInstallBanner />
+                </NativeAppProvider>
+              </ThemeProvider>
             </AuthProvider>
           </QueryProvider>
         </ErrorBoundary>
+        {/* Toaster — always dark since it sits outside ThemeProvider context.
+            It reads the class from <html> at render time.                  */}
         <Toaster
-          theme="dark"
+          theme="system"
           position="bottom-right"
           richColors
           closeButton
-          toastOptions={{
-            style: {
-              background: 'var(--color-surface-800, #1e293b)',
-              border:     '1px solid var(--color-surface-700, #334155)',
-              color:      'var(--color-surface-100, #f1f5f9)',
-            },
-          }}
         />
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <>

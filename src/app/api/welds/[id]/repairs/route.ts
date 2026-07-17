@@ -1,7 +1,8 @@
 // GET  /api/welds/[id]/repairs  → list all repairs for a weld
 // POST /api/welds/[id]/repairs  → create a repair record
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/api-auth'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -21,36 +22,27 @@ const repairSchema = z.object({
 })
 
 interface RouteContext {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('organization_id')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-    if (!profile?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+    const { id } = await params
+    const admin = createAdminClient()
 
-    // Verify the weld belongs to the caller's org
-    const { data: weld } = await supabase
-      .from('welds')
-      .select('id')
-      .eq('id', params.id)
-      .eq('organization_id', profile.organization_id)
-      .maybeSingle()
+    const { data: weld } = await admin
+      .from('welds').select('id').eq('id', id).eq('organization_id', caller.organization_id).maybeSingle()
     if (!weld) return NextResponse.json({ error: 'Weld not found' }, { status: 404 })
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from('weld_repairs')
       .select('*')
-      .eq('weld_id', params.id)
-      .eq('organization_id', profile.organization_id)
+      .eq('weld_id', id)
+      .eq('organization_id', caller.organization_id)
       .order('repair_number', { ascending: true })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -63,42 +55,30 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 
 export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('organization_id')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-    if (!profile?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+    const { id } = await params
+    const admin = createAdminClient()
 
-    // Verify the weld belongs to the caller's org
-    const { data: weld } = await supabase
-      .from('welds')
-      .select('id')
-      .eq('id', params.id)
-      .eq('organization_id', profile.organization_id)
-      .maybeSingle()
+    const { data: weld } = await admin
+      .from('welds').select('id').eq('id', id).eq('organization_id', caller.organization_id).maybeSingle()
     if (!weld) return NextResponse.json({ error: 'Weld not found' }, { status: 404 })
 
     const body = await req.json()
     const parsed = repairSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.errors[0]?.message ?? 'Invalid request body' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: parsed.error.errors[0]?.message ?? 'Invalid request body' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from('weld_repairs')
       .insert({
         ...parsed.data,
-        weld_id:         params.id,
-        organization_id: profile.organization_id,
-        created_by:      user.id,
+        weld_id:         id,
+        organization_id: caller.organization_id,
+        created_by:      caller.auth_user_id,
       })
       .select()
       .single()

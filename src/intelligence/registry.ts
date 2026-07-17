@@ -37,6 +37,8 @@ import { estimatingAdapter }          from './adapters/estimating'
 import { schedulingAdapter }          from './adapters/scheduling'
 import { drawingAnalysisAdapter }     from './adapters/drawing-analysis'
 import { digitalTwinAdapter }         from './adapters/digital-twin'
+// Phase 3
+import { supportPhotoIdAdapter }      from './adapters/support-photo-id'
 
 // ── Capability registry map ───────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,6 +58,8 @@ const REGISTRY = new Map<CapabilityName, CapabilityAdapter<any, any>>([
   ['scheduling',           schedulingAdapter],
   ['drawing-analysis',     drawingAnalysisAdapter],
   ['digital-twin',         digitalTwinAdapter],
+  // Phase 3
+  ['support-photo-id',    supportPhotoIdAdapter],
 ])
 
 /**

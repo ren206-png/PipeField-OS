@@ -9,6 +9,7 @@ import { MobileNav } from './MobileNav'
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { QuickAddWeld } from '@/components/shared/QuickAddWeld'
+import { BillingLockoutGate } from '@/components/billing/BillingLockoutGate'
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -55,6 +56,9 @@ export function DashboardShell({
 
       {/* Mobile quick-add weld FAB */}
       <QuickAddWeld />
+
+      {/* Billing lockout overlay — renders only when org is in read-only mode */}
+      <BillingLockoutGate />
     </div>
   )
 }

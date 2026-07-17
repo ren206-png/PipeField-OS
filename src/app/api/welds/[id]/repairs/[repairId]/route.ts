@@ -1,7 +1,8 @@
 // PATCH  /api/welds/[id]/repairs/[repairId]  → update a repair record
 // DELETE /api/welds/[id]/repairs/[repairId]  → hard delete
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/api-auth'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -21,57 +22,39 @@ const patchSchema = z.object({
 })
 
 interface RouteContext {
-  params: { id: string; repairId: string }
+  params: Promise<{ id: string; repairId: string }>
 }
 
-async function verifyOwnership(supabase: Awaited<ReturnType<typeof createClient>>, weldId: string, repairId: string, orgId: string) {
-  const { data: weld } = await supabase
-    .from('welds')
-    .select('id')
-    .eq('id', weldId)
-    .eq('organization_id', orgId)
-    .maybeSingle()
-  if (!weld) return false
-
-  const { data: repair } = await supabase
-    .from('weld_repairs')
-    .select('id')
-    .eq('id', repairId)
-    .eq('weld_id', weldId)
-    .eq('organization_id', orgId)
-    .maybeSingle()
-  return !!repair
+async function verifyOwnership(admin: ReturnType<typeof createAdminClient>, weldId: string, repairId: string, orgId: string) {
+  const [{ data: weld }, { data: repair }] = await Promise.all([
+    admin.from('welds').select('id').eq('id', weldId).eq('organization_id', orgId).maybeSingle(),
+    admin.from('weld_repairs').select('id').eq('id', repairId).eq('weld_id', weldId).eq('organization_id', orgId).maybeSingle(),
+  ])
+  return !!(weld && repair)
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('organization_id')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-    if (!profile?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+    const { id, repairId } = await params
+    const admin = createAdminClient()
 
-    const ok = await verifyOwnership(supabase, params.id, params.repairId, profile.organization_id)
+    const ok = await verifyOwnership(admin, id, repairId, caller.organization_id)
     if (!ok) return NextResponse.json({ error: 'Repair not found' }, { status: 404 })
 
     const body = await req.json()
     const parsed = patchSchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.errors[0]?.message ?? 'Invalid request body' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: parsed.error.errors[0]?.message ?? 'Invalid request body' }, { status: 400 })
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from('weld_repairs')
       .update({ ...parsed.data, updated_at: new Date().toISOString() })
-      .eq('id', params.repairId)
+      .eq('id', repairId)
       .select()
       .single()
 
@@ -85,25 +68,17 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('organization_id')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-    if (!profile?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 403 })
+    const { id, repairId } = await params
+    const admin = createAdminClient()
 
-    const ok = await verifyOwnership(supabase, params.id, params.repairId, profile.organization_id)
+    const ok = await verifyOwnership(admin, id, repairId, caller.organization_id)
     if (!ok) return NextResponse.json({ error: 'Repair not found' }, { status: 404 })
 
-    const { error } = await supabase
-      .from('weld_repairs')
-      .delete()
-      .eq('id', params.repairId)
-
+    const { error } = await admin.from('weld_repairs').delete().eq('id', repairId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return new NextResponse(null, { status: 204 })
   } catch (err) {

@@ -13,6 +13,9 @@ import { USER_ROLE_LABELS } from '@/types'
 import { NotificationPanel } from './NotificationPanel'
 import { GlobalSearch } from './GlobalSearch'
 import { cn } from '@/lib/utils'
+import { OfflineQueueWidget } from '@/components/offline/OfflineQueueWidget'
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { OFFLINE_FIELD_ENABLED } from '@/intelligence/flags'
 
 interface HeaderProps {
   title?: string
@@ -49,6 +52,12 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
           {/* Right actions cluster */}
           <div className="flex items-center gap-2">
             {actions}
+
+            {/* Offline Queue Widget */}
+            <OfflineQueueWidget enabled={OFFLINE_FIELD_ENABLED} />
+
+            {/* Theme toggle — dark / light */}
+            <ThemeToggle />
 
             {/* Search button — opens Cmd+K palette */}
             <button

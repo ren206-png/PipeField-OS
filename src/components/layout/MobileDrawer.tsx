@@ -31,6 +31,7 @@ import {
   List,
   FileSearch,
   CircleDot,
+  Disc,
   Zap,
   Map,
   Eye,
@@ -42,6 +43,10 @@ import {
   Upload,
   MessageCircle,
   Layers,
+  Fingerprint,
+  FileSpreadsheet,
+  WifiOff,
+  BarChart3,
 } from 'lucide-react'
 import { cn, getInitials, truncate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -66,6 +71,7 @@ const NAV_GROUPS: DrawerNavGroup[] = [
     title: 'Operations',
     items: [
       { label: 'Dashboard',      href: '/dashboard',   icon: LayoutDashboard },
+      { label: 'QC Analytics',   href: '/analytics',   icon: BarChart3 },
       { label: 'Projects',       href: '/projects',    icon: FolderKanban },
       { label: 'Welds',          href: '/welds',       icon: Flame },
       { label: 'Spools',         href: '/spools',      icon: Package },
@@ -80,6 +86,7 @@ const NAV_GROUPS: DrawerNavGroup[] = [
       { label: 'NCRs',           href: '/documents/ncrs',             icon: AlertOctagon },
       { label: 'Pressure Tests', href: '/documents/pressure-tests',   icon: Gauge },
       { label: 'Punch List',     href: '/punch-list',                 icon: ListChecks },
+      { label: 'Checklists',     href: '/checklists',                 icon: ClipboardList },
       { label: 'Daily Reports',  href: '/daily-reports',              icon: ClipboardList },
     ],
   },
@@ -89,8 +96,15 @@ const NAV_GROUPS: DrawerNavGroup[] = [
       { label: 'Line List',      href: '/documents/line-list',  icon: List },
       { label: 'MTR Register',   href: '/documents/mtrs',       icon: FileSearch },
       { label: 'Flanges',        href: '/documents/flanges',    icon: CircleDot },
+      { label: 'Flange Manager', href: '/flanges',              icon: Disc      },
       { label: 'WPS',            href: '/documents/wps',        icon: FileCheck2 },
       { label: 'NDE Tracker',    href: '/nde-tracker',          icon: FlaskConical },
+      { label: 'NDE Engine',     href: '/nde',                  icon: FlaskConical },
+      { label: 'Material Trace',    href: '/material-trace',   icon: Fingerprint      },
+      { label: 'Excel I/O',         href: '/excel-io',          icon: FileSpreadsheet  },
+      { label: 'Turnover Packages', href: '/turnover',          icon: Package          },
+      { label: 'Offline Queue',      href: '/offline-queue',     icon: WifiOff          },
+      { label: 'ISO Viewer',         href: '/iso-viewer',        icon: Map              },
     ],
   },
   {
@@ -119,7 +133,7 @@ const NAV_GROUPS: DrawerNavGroup[] = [
       { label: 'Take-Off Calculator',  href: '/calculator',              icon: Calculator },
       { label: 'Rolling Offset Calc',  href: '/calculator?tab=offset',   icon: ArrowLeftRight },
       { label: 'Pipe Support Calc',    href: '/pipe-support',            icon: HardHat },
-      { label: 'Piping Reference DB',  href: '/pipe-reference',          icon: BookOpen },
+      { label: 'Pipe Support Log',      href: '/pipe-reference',          icon: BookOpen },
     ],
   },
   {
@@ -192,17 +206,10 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
         {/* Handle */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center shadow-glow">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-surface-50">PipeField OS</p>
-              {organization && (
-                <p className="text-xs text-surface-500">{truncate(organization.name, 28)}</p>
-              )}
-            </div>
+            <img src="/logo.png" alt="PipeField OS" className="h-12 w-auto flex-shrink-0" />
+            {organization && (
+              <p className="text-xs text-surface-500">{truncate(organization.name, 28)}</p>
+            )}
           </div>
           <button
             onClick={onClose}

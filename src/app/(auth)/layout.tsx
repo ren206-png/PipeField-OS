@@ -45,14 +45,7 @@ export default function AuthLayout({
 
         {/* Logo */}
         <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-500 rounded-lg flex items-center justify-center shadow-glow">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <span className="text-xl font-bold text-surface-50 tracking-tight">PipeField OS</span>
-          </div>
+          <img src="/logo.png" alt="PipeField OS" className="h-14 w-auto" />
         </div>
 
         {/* Center hero content */}
@@ -96,13 +89,8 @@ export default function AuthLayout({
       {/* Right form panel */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 bg-surface-900">
         {/* Mobile logo — visible only on small screens */}
-        <div className="lg:hidden flex items-center gap-3 mb-10">
-          <div className="w-9 h-9 bg-brand-500 rounded-lg flex items-center justify-center shadow-glow">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <span className="text-lg font-bold text-surface-50">PipeField OS</span>
+        <div className="lg:hidden flex items-center justify-center mb-10">
+          <img src="/logo.png" alt="PipeField OS" className="h-12 w-auto" />
         </div>
 
         <div className="w-full max-w-md">

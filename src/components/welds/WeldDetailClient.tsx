@@ -16,6 +16,7 @@ const QRCode      = dynamic(() => import('@/components/shared/QRCode').then(m =>
 const QRCodeModal = dynamic(() => import('@/components/shared/QRCodeModal').then(m => m.QRCodeModal), { ssr: false })
 import { NdePanel } from '@/components/welds/NdePanel'
 import { RepairPanel } from '@/components/welds/RepairPanel'
+import { WeldChecklist } from '@/components/welds/WeldChecklist'
 import { useAuth } from '@/hooks/useAuth'
 import { WELD_STATUS_LABELS, type WeldStatus } from '@/types'
 import { formatDate } from '@/lib/utils'
@@ -216,6 +217,12 @@ export function WeldDetailClient({ id, initialData }: WeldDetailClientProps) {
             <p className="text-surface-600 pt-1 leading-relaxed">Print this sticker and apply it to the pipe or spool tag for instant field lookup.</p>
           </div>
         </div>
+      </div>
+
+      {/* ── Inspection Checklists ── */}
+      <div className="card p-5">
+        <h2 className="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-4">Inspection Checklists</h2>
+        <WeldChecklist weldId={id} />
       </div>
 
       {/* ── NDE / Inspections ── */}

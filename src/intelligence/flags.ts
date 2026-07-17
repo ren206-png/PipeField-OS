@@ -38,9 +38,34 @@ export const FLAGS = {
   // Auto-prefill NCR / daily report forms from existing records (Phase 3).
   PFOS_AUTOMATION_PREFILL:                 process.env.PFOS_AUTOMATION_PREFILL                 === 'true',
 
+  // ── Phase 1 Module flags ──────────────────────────────────
+  // Module 1: Welder Qualification + Continuity Enforcement
+  // Tenant modes: HARD_BLOCK or FLAG (configurable per org in org_settings)
+  PFOS_QUAL_ENFORCEMENT:                   process.env.PFOS_QUAL_ENFORCEMENT                   === 'true',
+
+  // Module 2: NDE Engine — deterministic weld selection for NDE programs
+  PFOS_NDE_ENGINE:                         process.env.PFOS_NDE_ENGINE                         === 'true',
+
+  // Module 3: Material Traceability — batch recall, heat number tracking
+  PFOS_MATERIAL_TRACE:                     process.env.PFOS_MATERIAL_TRACE                     === 'true',
+
   // Welder plan limit enforcement (P0-FIX-2 — defaults ON to close gap).
   // Set PFOS_BILLING_WELDER_LIMIT=false to disable during rollback.
   PFOS_BILLING_WELDER_LIMIT:           process.env.PFOS_BILLING_WELDER_LIMIT           !== 'false',
+
+  // Module 5A: Excel I/O — field-ready spreadsheet export + import
+  PFOS_OFFLINE_FIELD:                  process.env.PFOS_OFFLINE_FIELD                  === 'true',
+
+  // Module 4: Turnover Generator — package assembly with gap check + content hash
+  PFOS_TURNOVER_GEN:                   process.env.PFOS_TURNOVER_GEN                   === 'true',
+
+  // Phase 3: Pipe Support Photo-ID — advisory component identification from photo
+  PFOS_SUPPORT_PHOTO_ID:               process.env.PFOS_SUPPORT_PHOTO_ID               === 'true',
+
+  // ── Billing: Free Trial integration ──────────────────────────
+  // Phase 1: Trial billing fields, webhook hardening, idempotency.
+  // Phases 2-4: trial creation, cron notifications, grace period enforcement.
+  PFOS_TRIAL_BILLING:                  process.env.PFOS_TRIAL_BILLING                  === 'true',
 } as const
 
 export type FlagName = keyof typeof FLAGS
@@ -53,3 +78,11 @@ export function isFlagEnabled(flag: FlagName): boolean {
 export function getFlagSnapshot(): Record<FlagName, boolean> {
   return { ...FLAGS }
 }
+
+export const SUPPORT_PHOTO_ID_ENABLED    = isFlagEnabled('PFOS_SUPPORT_PHOTO_ID')
+export const NDE_ENGINE_ENABLED          = isFlagEnabled('PFOS_NDE_ENGINE')
+export const OFFLINE_FIELD_ENABLED       = isFlagEnabled('PFOS_OFFLINE_FIELD')
+export const TURNOVER_GEN_ENABLED        = isFlagEnabled('PFOS_TURNOVER_GEN')
+export const MATERIAL_TRACE_ENABLED      = isFlagEnabled('PFOS_MATERIAL_TRACE')
+export const QUAL_ENFORCEMENT_ENABLED    = isFlagEnabled('PFOS_QUAL_ENFORCEMENT')
+export const TRIAL_BILLING_ENABLED       = isFlagEnabled('PFOS_TRIAL_BILLING')

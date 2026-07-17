@@ -8,18 +8,22 @@ import type { WpsRecord } from '@/hooks/useWps'
 import { WeldingGuidancePanel } from '@/components/ai/WeldingGuidancePanel'
 
 const weldSchema = z.object({
-  project_id:   z.string().min(1, 'Project is required'),
-  welder_stamp: z.string().min(1, 'Welder stamp is required').max(10),
-  welder_name:  z.string().min(1, 'Welder name is required').max(100),
-  weld_date:    z.string().min(1, 'Weld date is required'),
-  spool_number: z.string().max(50).optional(),
-  line_number:  z.string().max(50).optional(),
-  pipe_size:    z.string().max(20).optional(),
-  wall_thickness: z.string().max(20).optional(),
-  material:     z.string().max(100).optional(),
-  weld_process: z.string().max(50).optional(),
-  wps_id:       z.string().nullable().optional(),
-  notes:        z.string().max(1000).optional(),
+  project_id:          z.string().min(1, 'Project is required'),
+  welder_stamp:        z.string().min(1, 'Welder stamp is required').max(10),
+  welder_name:         z.string().min(1, 'Welder name is required').max(100),
+  weld_date:           z.string().min(1, 'Weld date is required'),
+  spool_number:        z.string().max(50).optional(),
+  line_number:         z.string().max(50).optional(),
+  pipe_size:           z.string().max(20).optional(),
+  wall_thickness:      z.string().max(20).optional(),
+  material:            z.string().max(100).optional(),
+  weld_process:        z.string().max(50).optional(),
+  wps_id:              z.string().nullable().optional(),
+  notes:               z.string().max(1000).optional(),
+  // Material Traceability fields (Module 3 — MATERIAL_TRACE flag)
+  base_metal_heat_a:   z.string().max(100).optional().nullable(),
+  base_metal_heat_b:   z.string().max(100).optional().nullable(),
+  filler_batch_number: z.string().max(100).optional().nullable(),
 })
 
 export type WeldFormValues = z.infer<typeof weldSchema>
@@ -30,12 +34,16 @@ interface Project {
 }
 
 interface WeldFormProps {
-  projects:      Project[]
-  wpsList?:      WpsRecord[]
-  defaultValues?: Partial<WeldFormValues>
-  onSubmit:      (values: WeldFormValues) => Promise<void>
-  submitLabel?:  string
-  isLoading?:    boolean
+  projects:           Project[]
+  wpsList?:           WpsRecord[]
+  defaultValues?:     Partial<WeldFormValues>
+  onSubmit:           (values: WeldFormValues) => Promise<void>
+  submitLabel?:       string
+  isLoading?:         boolean
+  /** Pass true when the MATERIAL_TRACE feature flag is enabled */
+  materialTraceEnabled?: boolean
+  /** Existing heat numbers from org MTRs for autocomplete */
+  heatNumbers?:       string[]
 }
 
 const WELD_PROCESSES = ['SMAW', 'GTAW', 'GMAW', 'FCAW', 'SAW', 'MCAW', 'OAW']
@@ -61,8 +69,10 @@ export function WeldForm({
   wpsList = [],
   defaultValues,
   onSubmit,
-  submitLabel = 'Save Weld',
-  isLoading   = false,
+  submitLabel          = 'Save Weld',
+  isLoading            = false,
+  materialTraceEnabled = false,
+  heatNumbers          = [],
 }: WeldFormProps) {
   const {
     register,
@@ -183,6 +193,48 @@ export function WeldForm({
           ))}
         </select>
       </div>
+
+      {/* ── Material Traceability (Module 3 — MATERIAL_TRACE flag) ── */}
+      {materialTraceEnabled && (
+        <div className="card p-4">
+          <h3 className="text-sm font-semibold text-surface-300 mb-4 uppercase tracking-wide">
+            Material Traceability
+          </h3>
+          {/* Autocomplete datalist for heat number inputs */}
+          <datalist id="heat-number-list">
+            {heatNumbers.map(h => <option key={h} value={h} />)}
+          </datalist>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="label">Base Metal Heat A</label>
+              <input
+                {...register('base_metal_heat_a')}
+                className="input font-mono uppercase"
+                placeholder="e.g. A1234B"
+                list="heat-number-list"
+              />
+            </div>
+            <div>
+              <label className="label">Base Metal Heat B</label>
+              <input
+                {...register('base_metal_heat_b')}
+                className="input font-mono uppercase"
+                placeholder="Butt welds only"
+                list="heat-number-list"
+              />
+            </div>
+            <div>
+              <label className="label">Filler Batch / Lot</label>
+              <input
+                {...register('filler_batch_number')}
+                className="input font-mono uppercase"
+                placeholder="e.g. LOT-9988"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── AI Welding Guidance ── */}
       <WeldingGuidancePanel

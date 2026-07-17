@@ -1,0 +1,28 @@
+<svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg">
+  <!-- PipeField OS — flat vector mark: P formed by a pipe with flange collar -->
+  <g transform="translate(-18,0)">
+    <!-- Bowl of the P (blue pipe) -->
+    <path d="M 420 118 H 548 Q 656 118 656 212 Q 656 306 548 306 H 420"
+          fill="none" stroke="#2E8AFF" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Stem of the P (light pipe) -->
+    <path d="M 420 118 V 448"
+          fill="none" stroke="#FFFFFF" stroke-width="64" stroke-linecap="round"/>
+    <!-- Flange collar on the stem -->
+    <rect x="368" y="352" width="104" height="26" rx="5" fill="#7C8592"/>
+    <circle cx="392" cy="365" r="4.5" fill="#FFFFFF"/>
+    <circle cx="420" cy="365" r="4.5" fill="#FFFFFF"/>
+    <circle cx="448" cy="365" r="4.5" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="500" y="580" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="92" letter-spacing="1">
+    <tspan fill="#FFFFFF">PIPEFIELD</tspan><tspan fill="#2E8AFF" dx="18">OS</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="500" y="648" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="28" letter-spacing="9" fill="#7C8592">
+    PLAN. FABRICATE. OPERATE.
+  </text>
+</svg>

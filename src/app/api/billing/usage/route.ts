@@ -24,6 +24,20 @@ export async function GET(req: NextRequest) {
 
     const admin = createAdminClient()
 
+    // ── Platform admins get unlimited access — no plan restrictions ──
+    if (caller.role === 'platform_admin') {
+      const [projectsRes, usersRes, weldsRes] = await Promise.all([
+        admin.from('projects').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+        admin.from('user_profiles').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('is_active', true),
+        admin.from('welds').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
+      ])
+      return NextResponse.json({
+        plan:  'enterprise' as PlanKey,
+        usage: { projects: projectsRes.count ?? 0, users: usersRes.count ?? 0, welds: weldsRes.count ?? 0 },
+        limits: { projects: null, users: null, welds: null },
+      })
+    }
+
     // ── Fetch org to get plan ────────────────────────────────
     const { data: org } = await admin
       .from('organizations')

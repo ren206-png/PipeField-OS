@@ -24,6 +24,9 @@ import {
   inToMm, ftToM,
   type FlangeClass, type ValveType,
 } from '@/config/reference-data'
+import { SupportSpecTable } from '@/components/pipe-support/SupportSpecTable'
+import { SupportPhotoIdentifier } from '@/components/pipe-support/SupportPhotoIdentifier'
+import { SUPPORT_PHOTO_ID_ENABLED } from '@/intelligence/flags'
 
 // ── Types ─────────────────────────────────────────────────────
 type Tab = 'dims' | 'fittings' | 'flanges' | 'valves' | 'spans'
@@ -564,6 +567,64 @@ export default function PipeReferencePage() {
           </div>
         </div>
       )}
+
+      {/* Pipe Support Visual Matrix */}
+      <div className="support-visual-grid my-8">
+        <h2 className="text-2xl font-bold text-slate-900 border-b pb-2 mb-6">Pipe Support Visual Matrix</h2>
+        <p className="text-sm text-slate-500 mb-6">High-level graphical reference for quick field component identification.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:border-indigo-500 transition">
+            <div className="h-40 bg-slate-50 border-b border-slate-100 flex items-center justify-center p-4">
+              <svg viewBox="0 0 140 100" className="w-32 h-32 stroke-slate-700 stroke-2 fill-none">
+                <line x1="20" y1="80" x2="120" y2="80" strokeWidth={4} className="stroke-slate-800" />
+                <path d="M25,90 L35,80 M50,90 L60,80 M75,90 L85,80 M100,90 L110,80" strokeDasharray="2,2" />
+                <rect x="55" y="40" width="30" height="40" className="fill-slate-200 stroke-slate-800" />
+                <circle cx="70" cy="28" r="14" className="fill-white stroke-indigo-600" strokeWidth={3} />
+              </svg>
+            </div>
+            <div className="p-4">
+              <span className="text-xs font-bold uppercase text-slate-400">Rigid Restraint</span>
+              <h4 className="font-bold text-base text-slate-900 mt-1">Rigid Base Anchor</h4>
+              <p className="text-xs text-slate-600 mt-2">Full fixity: restrains all six degrees of freedom — translation and rotation. Establishes a fixed point in the piping system.</p>
+            </div>
+          </div>
+          <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:border-indigo-500 transition">
+            <div className="h-40 bg-slate-50 border-b border-slate-100 flex items-center justify-center p-4">
+              <svg viewBox="0 0 140 100" className="w-32 h-32 stroke-slate-700 stroke-2 fill-none">
+                <rect x="50" y="10" width="40" height="60" rx={3} className="fill-slate-100 stroke-slate-800" />
+                <path d="M70,15 L70,22 L56,26 L84,32 L56,38 L84,44 L56,50 L84,56 L70,60 L70,85" strokeWidth={3} className="stroke-blue-600" strokeLinejoin="round" />
+                <circle cx="70" cy="85" r="5" className="fill-slate-800" />
+              </svg>
+            </div>
+            <div className="p-4">
+              <span className="text-xs font-bold uppercase text-blue-500">Thermal Control</span>
+              <h4 className="font-bold text-base text-slate-900 mt-1">Variable Spring Hanger</h4>
+              <p className="text-xs text-slate-600 mt-2">Supports load while accommodating vertical thermal movement on hot lines; supporting force varies through travel.</p>
+            </div>
+          </div>
+          <div className="flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:border-indigo-500 transition">
+            <div className="h-40 bg-slate-50 border-b border-slate-100 flex items-center justify-center p-4">
+              <svg viewBox="0 0 140 100" className="w-32 h-32 stroke-slate-700 stroke-2 fill-none">
+                <circle cx="25" cy="50" r="6" className="stroke-slate-800" />
+                <rect x="45" y="35" width="50" height="30" rx={2} className="fill-slate-100 stroke-slate-800" />
+                <line x1="95" y1="50" x2="120" y2="50" strokeWidth={4} className="stroke-teal-600" />
+                <circle cx="126" cy="50" r="6" className="stroke-teal-600" />
+              </svg>
+            </div>
+            <div className="p-4">
+              <span className="text-xs font-bold uppercase text-teal-600">Dynamic Restraint</span>
+              <h4 className="font-bold text-base text-slate-900 mt-1">Hydraulic Shock Snubber</h4>
+              <p className="text-xs text-slate-600 mt-2">Allows slow thermal movement but locks under rapid dynamic loads such as seismic events or water hammer.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Engineering Specifications Inventory */}
+      <SupportSpecTable />
+
+      {/* Phase 4 — Photo Identification (flag-gated) */}
+      <SupportPhotoIdentifier enabled={SUPPORT_PHOTO_ID_ENABLED} />
 
       {/* Source citation footer */}
       <p className="text-[10px] text-surface-600 text-center pb-4">

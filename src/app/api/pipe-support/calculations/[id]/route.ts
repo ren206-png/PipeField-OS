@@ -2,41 +2,30 @@
 // PATCH  /api/pipe-support/calculations/[id]  → update name/notes
 // DELETE /api/pipe-support/calculations/[id]  → delete record
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/api-auth'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
-async function getAuthContext(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) return null
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('organization_id')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!profile?.organization_id) return null
-  return { user, orgId: profile.organization_id }
-}
+interface RouteContext { params: Promise<{ id: string }> }
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = await params
-    const supabase = await createClient()
-    const ctx = await getAuthContext(supabase)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-    const { data, error } = await supabase
+    const { id } = await params
+    const admin = createAdminClient()
+    const { data, error } = await admin
       .from('pipe_support_calculations')
       .select('*')
       .eq('id', id)
-      .eq('organization_id', ctx.orgId)
+      .eq('organization_id', caller.organization_id)
       .maybeSingle()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    if (!data) return NextResponse.json({ error: 'Calculation not found' }, { status: 404 })
+    if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json(data)
   } catch (err) {
     console.error('[/api/pipe-support/calculations/[id] GET]', err)
@@ -44,40 +33,37 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = await params
-    const supabase = await createClient()
-    const ctx = await getAuthContext(supabase)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-    const patch = await req.json()
+    const { id } = await params
+    const patch = await req.json() as Record<string, unknown>
     const allowed = ['name', 'notes', 'project_id']
-    const update: Record<string, unknown> = {}
+    const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
     for (const k of allowed) {
       if (k in patch) update[k] = patch[k]
     }
-    update.updated_at = new Date().toISOString()
 
-    const { data, error } = await supabase
+    const admin = createAdminClient()
+    const { data, error } = await admin
       .from('pipe_support_calculations')
       .update(update)
       .eq('id', id)
-      .eq('organization_id', ctx.orgId)
+      .eq('organization_id', caller.organization_id)
       .select()
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    await supabase.from('audit_logs').insert({
-      organization_id: ctx.orgId,
+    void admin.from('audit_logs').insert({
+      organization_id: caller.organization_id,
       table_name:      'pipe_support_calculations',
       record_id:       id,
       action:          'UPDATE',
-      performed_by:    ctx.user.id,
+      performed_by:    caller.auth_user_id,
       new_values:      update,
     })
 
@@ -88,30 +74,29 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
-    const { id } = await params
-    const supabase = await createClient()
-    const ctx = await getAuthContext(supabase)
-    if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { caller, error: authError } = await requireAuth(req)
+    if (authError) return authError
+    if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-    const { error } = await supabase
+    const { id } = await params
+    const admin = createAdminClient()
+
+    const { error } = await admin
       .from('pipe_support_calculations')
       .delete()
       .eq('id', id)
-      .eq('organization_id', ctx.orgId)
+      .eq('organization_id', caller.organization_id)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    await supabase.from('audit_logs').insert({
-      organization_id: ctx.orgId,
+    void admin.from('audit_logs').insert({
+      organization_id: caller.organization_id,
       table_name:      'pipe_support_calculations',
       record_id:       id,
       action:          'DELETE',
-      performed_by:    ctx.user.id,
+      performed_by:    caller.auth_user_id,
       new_values:      {},
     })
 

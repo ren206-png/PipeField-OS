@@ -16,6 +16,13 @@ import Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logger } from '@/lib/logger'
+import {
+  StripeWebhookEventSchema,
+  parseSubscriptionEvent,
+  parseInvoiceEvent,
+  deadLetterLog,
+  STRIPE_STATUS_MAP,
+} from '@/lib/stripe-webhook-schemas'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -69,6 +76,7 @@ async function updateOrg(
     stripe_subscription_id?:     string
     stripe_current_period_end?:  string
     seat_limit?:                 number | null
+    trial_ends_at?:              string
   }
 ) {
   // Automatically sync seat_limit whenever subscription_tier changes
@@ -102,11 +110,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
+  // ── Zod-validate the outer event envelope ─────────────────────
+  const eventParse = StripeWebhookEventSchema.safeParse(event)
+  if (!eventParse.success) {
+    deadLetterLog(
+      (event as { id?: string }).id ?? 'unknown',
+      eventParse.error.message,
+      body
+    )
+    // Return 200 so Stripe doesn't retry our validation bug
+    return NextResponse.json({ received: true, warning: 'DEAD_LETTER' })
+  }
+  const validatedEvent = eventParse.data
+
   try {
-    switch (event.type) {
+    switch (validatedEvent.type) {
 
       case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session
+        const session = validatedEvent.data.object as unknown as Stripe.Checkout.Session
         if (session.mode !== 'subscription') break
 
         const subscriptionId = session.subscription as string
@@ -151,56 +172,168 @@ export async function POST(req: NextRequest) {
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        const sub        = event.data.object as Stripe.Subscription
-        const customerId = sub.customer as string
-        const priceId    = sub.items.data[0]?.price.id ?? ''
-        const periodEnd  = getPeriodEnd(sub)
+        // ── Zod-parse the subscription object ─────────────────────
+        const subParse = parseSubscriptionEvent(validatedEvent.data.object)
+        if (!subParse.success) {
+          deadLetterLog(validatedEvent.id, subParse.error.message, body)
+          return NextResponse.json({ received: true, warning: 'DEAD_LETTER' })
+        }
+        const subData    = subParse.data
+        const customerId = subData.customer
+        const priceId    = subData.items?.data[0]?.price.id ?? ''
+        const periodEnd  = subData.current_period_end ?? 0
         const tier2      = tierFromPriceId(priceId)
+        const dbStatus2  = STRIPE_STATUS_MAP[subData.status] ?? 'incomplete'
 
         if (tier2) {
-          await updateOrg(customerId, {
+          const updatePayload2: Parameters<typeof updateOrg>[1] = {
             subscription_tier:         tier2,
-            subscription_status:       mapStatus(sub.status),
-            stripe_subscription_id:    sub.id,
+            subscription_status:       dbStatus2,
+            stripe_subscription_id:    subData.id,
             stripe_current_period_end: new Date(periodEnd * 1000).toISOString(),
-          })
+          }
+          // If trial_end is present, update trial_ends_at
+          if (subData.trial_end) {
+            updatePayload2.trial_ends_at = new Date(subData.trial_end * 1000).toISOString()
+          }
+          await updateOrg(customerId, updatePayload2)
         }
         break
       }
 
       case 'customer.subscription.deleted': {
-        const sub        = event.data.object as Stripe.Subscription
-        const customerId = sub.customer as string
-        await updateOrg(customerId, {
-          subscription_tier:   'free_trial',
-          subscription_status: 'canceled',
-        })
+        // ── Zod-parse the subscription object ─────────────────────
+        const subParse = parseSubscriptionEvent(validatedEvent.data.object)
+        if (!subParse.success) {
+          deadLetterLog(validatedEvent.id, subParse.error.message, body)
+          return NextResponse.json({ received: true, warning: 'DEAD_LETTER' })
+        }
+        const subData    = subParse.data
+        const customerId = subData.customer
+
+        // On full deletion (trial or paid), downgrade to free_trial tier,
+        // clear grace window and trial timestamp.
+        const adminDel = createAdminClient()
+        await adminDel
+          .from('organizations')
+          .update({
+            subscription_tier:    'free_trial',
+            subscription_status:  'canceled',
+            grace_period_ends_at: null,
+            trial_ends_at:        null,
+            updated_at:           new Date().toISOString(),
+          })
+          .eq('stripe_customer_id', customerId)
         break
       }
 
       case 'invoice.payment_succeeded': {
-        const invoice    = event.data.object as Stripe.Invoice
-        const customerId = invoice.customer as string
-        const subId      = getInvoiceSubId(invoice)
+        // ── Zod-parse the invoice object ──────────────────────────
+        const invParse = parseInvoiceEvent(validatedEvent.data.object)
+        if (!invParse.success) {
+          deadLetterLog(validatedEvent.id, invParse.error.message, body)
+          return NextResponse.json({ received: true, warning: 'DEAD_LETTER' })
+        }
+        const invoiceData = invParse.data
+        const customerId  = invoiceData.customer
+        const subId       = invoiceData.subscription ?? undefined
 
         if (subId) {
           const sub     = await getStripe().subscriptions.retrieve(subId)
           const priceId = sub.items.data[0]?.price.id ?? ''
           const periodEnd = getPeriodEnd(sub)
           const tier3 = tierFromPriceId(priceId)
-          await updateOrg(customerId, {
-            subscription_status:       'active',
-            ...(tier3 ? { subscription_tier: tier3 } : {}),
-            stripe_current_period_end: new Date(periodEnd * 1000).toISOString(),
-          })
+
+          // Reactivation: clear grace_period_ends_at and trial_ends_at,
+          // mark subscription active. This fires on:
+          //   - Trial-to-paid conversion (first charge after trial)
+          //   - Dunning recovery (payment retried + succeeded)
+          //   - Normal monthly renewal
+          const adminClient = createAdminClient()
+          await adminClient
+            .from('organizations')
+            .update({
+              subscription_status:       'active',
+              grace_period_ends_at:      null,
+              trial_ends_at:             null,
+              ...(tier3 ? { subscription_tier: tier3 } : {}),
+              stripe_current_period_end: new Date(periodEnd * 1000).toISOString(),
+              updated_at:                new Date().toISOString(),
+            })
+            .eq('stripe_customer_id', customerId)
+
+          // In-app notification: subscription is now active
+          // (skip if this is just a normal renewal — only fire on recovery)
+          const { data: orgRow } = await adminClient
+            .from('organizations')
+            .select('id, subscription_status')
+            .eq('stripe_customer_id', customerId)
+            .maybeSingle()
+
+          if (orgRow) {
+            // Insert reactivation notification — fire-and-forget, never throw
+            void Promise.resolve(
+              adminClient.from('notifications').insert({
+                organization_id: orgRow.id,
+                user_id:         null,
+                type:            'billing_reactivated',
+                title:           '✅ Subscription reactivated',
+                body:            'Your payment went through. Full access has been restored.',
+                href:            '/settings/billing',
+                is_read:         false,
+              })
+            ).catch(() => {})
+          }
         }
         break
       }
 
       case 'invoice.payment_failed': {
-        const invoice    = event.data.object as Stripe.Invoice
-        const customerId = invoice.customer as string
-        await updateOrg(customerId, { subscription_status: 'past_due' })
+        // ── Zod-parse the invoice object ──────────────────────────
+        const invParse = parseInvoiceEvent(validatedEvent.data.object)
+        if (!invParse.success) {
+          deadLetterLog(validatedEvent.id, invParse.error.message, body)
+          return NextResponse.json({ received: true, warning: 'DEAD_LETTER' })
+        }
+        const invoiceData = invParse.data
+        const customerId  = invoiceData.customer
+
+        // 3-day grace period from first failure.
+        // Only set grace_period_ends_at if not already set (idempotent —
+        // Stripe retries payment_failed multiple times during dunning).
+        const adminClient2   = createAdminClient()
+        const { data: orgRow2 } = await adminClient2
+          .from('organizations')
+          .select('id, grace_period_ends_at')
+          .eq('stripe_customer_id', customerId)
+          .maybeSingle()
+
+        const graceEnds = orgRow2?.grace_period_ends_at
+          ?? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+
+        await adminClient2
+          .from('organizations')
+          .update({
+            subscription_status:  'past_due',
+            grace_period_ends_at: graceEnds,  // idempotent: keep original if set
+            updated_at:           new Date().toISOString(),
+          })
+          .eq('stripe_customer_id', customerId)
+
+        // In-app notification for payment failure
+        if (orgRow2) {
+          void Promise.resolve(
+            adminClient2.from('notifications').insert({
+              organization_id: orgRow2.id,
+              user_id:         null,
+              type:            'payment_failed',
+              title:           '⚠️ Payment failed',
+              body:            'We couldn\'t charge your card. Update your payment method to keep full access.',
+              href:            '/settings/billing',
+              is_read:         false,
+            })
+          ).catch(() => {})
+        }
         break
       }
 

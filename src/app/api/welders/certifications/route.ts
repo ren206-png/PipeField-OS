@@ -1,23 +1,21 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/api-auth'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(req: NextRequest) {
+  const { caller, error: authError } = await requireAuth(req)
+  if (authError) return authError
+  if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-  const { data: profile } = await supabase
-    .from('user_profiles').select('organization_id').eq('auth_user_id', user.id).maybeSingle()
+  const admin = createAdminClient()
+  const welderId = req.nextUrl.searchParams.get('welderId')
 
-  const { searchParams } = new URL(request.url)
-  const welderId = searchParams.get('welderId')
-
-  let query = supabase
+  let query = admin
     .from('welder_certifications')
     .select('*, welders(full_name, stamp)')
-    .eq('organization_id', profile?.organization_id)
+    .eq('organization_id', caller.organization_id)
     .order('expiry_date', { ascending: true })
 
   if (welderId) query = query.eq('welder_id', welderId)
@@ -27,15 +25,12 @@ export async function GET(request: Request) {
   return NextResponse.json(data ?? [])
 }
 
-export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function POST(req: NextRequest) {
+  const { caller, error: authError } = await requireAuth(req)
+  if (authError) return authError
+  if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
-  const { data: profile } = await supabase
-    .from('user_profiles').select('organization_id').eq('auth_user_id', user.id).maybeSingle()
-
-  const body = await request.json() as {
+  const body = await req.json() as {
     welder_id: string
     cert_type: string
     cert_number?: string
@@ -47,10 +42,12 @@ export async function POST(request: Request) {
     notes?: string
   }
 
-  const { data, error } = await supabase
+  const admin = createAdminClient()
+  const { data, error } = await admin
     .from('welder_certifications')
-    .insert({ ...body, organization_id: profile?.organization_id })
-    .select().single()
+    .insert({ ...body, organization_id: caller.organization_id })
+    .select()
+    .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data, { status: 201 })
