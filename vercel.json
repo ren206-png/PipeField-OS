@@ -1,5 +1,6 @@
 {
   "framework": "nextjs",
+  "name": "pipefield-os",
   "crons": [
     {
       "path": "/api/cron/daily-digest",
