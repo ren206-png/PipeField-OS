@@ -191,7 +191,7 @@ export default function RegisterPage() {
               id="fullName"
               type="text"
               autoComplete="name"
-              placeholder="Renner Kargbo"
+              placeholder="Jane Smith"
               className={errors.fullName ? 'input-error' : 'input'}
               {...register('fullName')}
             />
