@@ -136,9 +136,9 @@ export default function TermsPage() {
             non-refundable except as required by applicable law.
           </p>
           <p>
-            New accounts may be eligible for a free trial period as advertised at the time of
-            sign-up. At the end of the trial, your account will automatically convert to a paid
-            plan unless cancelled before the trial ends.
+            New accounts receive a 14-day free trial with full access to all features. No credit
+            card is required to start a trial. At the end of the 14-day period, your account will
+            automatically convert to a paid plan unless cancelled before the trial ends.
           </p>
           <p>
             We reserve the right to change pricing with 30 days&apos; notice. Continued use of
