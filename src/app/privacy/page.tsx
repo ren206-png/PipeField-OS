@@ -1,9 +1,5 @@
 // ============================================================
 // /privacy — Privacy Policy
-//
-// SCAFFOLD — Replace all [PLACEHOLDER] sections with
-// counsel-reviewed language before publishing.
-// Do NOT treat this as legal advice.
 // ============================================================
 import Link from 'next/link'
 import { Flame, ArrowLeft } from 'lucide-react'
@@ -17,13 +13,11 @@ export const metadata: Metadata = {
     canonical: `${SITE_URL}/privacy`,
   },
   robots: {
-    // Legal pages should be indexable but not prominently featured
     index: true,
     follow: true,
   },
 }
 
-// ── Section helper ────────────────────────────────────────────
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
     <section id={id} className="space-y-3">
@@ -33,16 +27,8 @@ function Section({ id, title, children }: { id: string; title: string; children:
   )
 }
 
-function Placeholder({ label }: { label: string }) {
-  return (
-    <span className="inline-block bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-xs font-mono px-2 py-0.5 rounded">
-      [PLACEHOLDER: {label}]
-    </span>
-  )
-}
-
 export default function PrivacyPage() {
-  const lastUpdated = '2026-07-04'
+  const lastUpdated = '2026-07-17'
 
   return (
     <div className="min-h-screen bg-surface-900 text-surface-100 font-sans">
@@ -68,12 +54,6 @@ export default function PrivacyPage() {
         <div className="space-y-3">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-surface-50">Privacy Policy</h1>
           <p className="text-sm text-surface-500">Last updated: {lastUpdated}</p>
-          <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm">
-            <strong>Notice:</strong> This document contains placeholder sections marked{' '}
-            <code className="text-xs bg-yellow-500/20 px-1 rounded">[PLACEHOLDER]</code>. Replace
-            all placeholder sections with counsel-reviewed language before publishing. This scaffold
-            is not legal advice.
-          </div>
         </div>
 
         {/* 1 — Who We Are */}
@@ -81,7 +61,7 @@ export default function PrivacyPage() {
           <p>
             PipeField OS (&ldquo;we&rdquo;, &ldquo;our&rdquo;, &ldquo;us&rdquo;) is a software
             platform for pipeline construction quality control and field tools, operated by{' '}
-            <Placeholder label="Legal entity name, registered address, jurisdiction" />.
+            Renco Enterprise, based in Alberta, Canada.
           </p>
           <p>
             This Privacy Policy explains how we collect, use, disclose, and safeguard your
@@ -113,13 +93,14 @@ export default function PrivacyPage() {
               stored by us.
             </li>
             <li>
+              <strong className="text-surface-300">Uploaded files:</strong> Photos, PDFs, drawings,
+              and other documents you upload to the platform in connection with your projects.
+            </li>
+            <li>
               <strong className="text-surface-300">Communications:</strong> Emails or support
               messages you send us.
             </li>
           </ul>
-          <p>
-            <Placeholder label="Describe any additional data specific to your implementation, e.g. uploaded photos, geolocation if used" />
-          </p>
         </Section>
 
         {/* 3 — How We Use Your Data */}
@@ -132,24 +113,22 @@ export default function PrivacyPage() {
             <li>Send product updates and feature announcements (you may opt out at any time)</li>
             <li>Monitor platform security and prevent abuse</li>
             <li>Improve the platform through aggregated, anonymised analytics</li>
-            <li>Comply with legal obligations</li>
+            <li>Comply with legal obligations under applicable Canadian law (PIPEDA)</li>
           </ul>
-          <p>
-            <Placeholder label="Describe legal basis for processing under GDPR/PIPEDA/applicable law (consent, legitimate interest, contract, legal obligation)" />
-          </p>
         </Section>
 
         {/* 4 — Data Retention */}
         <Section id="retention" title="4. Data Retention">
           <p>
-            We retain your account and project data for as long as your account is active, plus{' '}
-            <Placeholder label="X days / months / years" /> after account closure, to allow for
-            data export and dispute resolution.
+            We retain your account and project data for as long as your account is active, plus
+            30 days after account closure to allow for data export and dispute resolution.
           </p>
           <p>
             You may request deletion of your data at any time by contacting us at{' '}
-            <Placeholder label="privacy@yourdomain.com" />. Some data may be retained longer where
-            required by law or for legitimate business purposes (e.g. financial records).
+            <a href="mailto:support@pipefield-os.com" className="text-brand-400 hover:underline">
+              support@pipefield-os.com
+            </a>. Some data may be retained longer where required by law or for legitimate business
+            purposes (e.g. financial records).
           </p>
         </Section>
 
@@ -172,7 +151,7 @@ export default function PrivacyPage() {
                 <tr>
                   <td className="py-2 pr-4 text-surface-300">Supabase</td>
                   <td className="py-2 pr-4">Database, authentication, file storage</td>
-                  <td className="py-2"><Placeholder label="AWS region" /></td>
+                  <td className="py-2">USA (AWS us-east-1)</td>
                 </tr>
                 <tr>
                   <td className="py-2 pr-4 text-surface-300">Stripe</td>
@@ -194,40 +173,52 @@ export default function PrivacyPage() {
                   <td className="py-2 pr-4">Hosting &amp; edge compute</td>
                   <td className="py-2">Global CDN</td>
                 </tr>
+                <tr>
+                  <td className="py-2 pr-4 text-surface-300">Google Analytics</td>
+                  <td className="py-2 pr-4">Anonymised usage analytics</td>
+                  <td className="py-2">USA</td>
+                </tr>
               </tbody>
             </table>
           </div>
-          <p>
-            <Placeholder label="Add Sentry (error tracking) if SENTRY_DSN is configured; add Google Analytics if GA_MEASUREMENT_ID is set" />
-          </p>
         </Section>
 
         {/* 6 — Your Rights */}
         <Section id="your-rights" title="6. Your Rights">
-          <p>Depending on your jurisdiction you may have the right to:</p>
+          <p>Under PIPEDA and applicable Canadian privacy law, you have the right to:</p>
           <ul className="list-disc list-inside space-y-1 ml-2">
             <li>Access the personal data we hold about you</li>
             <li>Request correction of inaccurate data</li>
-            <li>Request deletion of your data (&ldquo;right to be forgotten&rdquo;)</li>
-            <li>Object to or restrict certain processing</li>
-            <li>Data portability (receive a copy of your data in a machine-readable format)</li>
+            <li>Request deletion of your data</li>
             <li>Withdraw consent at any time where processing is based on consent</li>
+            <li>File a complaint with the Office of the Privacy Commissioner of Canada</li>
           </ul>
           <p>
             To exercise any of these rights, contact{' '}
-            <Placeholder label="privacy@yourdomain.com" />. We will respond within{' '}
-            <Placeholder label="30 days or the timeframe required by applicable law" />.
+            <a href="mailto:support@pipefield-os.com" className="text-brand-400 hover:underline">
+              support@pipefield-os.com
+            </a>. We will respond within 30 days.
           </p>
         </Section>
 
         {/* 7 — Cookies */}
-        <Section id="cookies" title="7. Cookies &amp; Tracking">
+        <Section id="cookies" title="7. Cookies & Tracking">
           <p>
             We use essential cookies for authentication session management (via Supabase). We do
             not use advertising cookies or cross-site tracking cookies.
           </p>
           <p>
-            <Placeholder label="If Google Analytics is enabled, describe the GA cookies and provide an opt-out mechanism" />
+            We use Google Analytics to collect anonymised usage statistics (pages visited, session
+            duration, device type). This data is aggregated and cannot be used to identify you
+            individually. You may opt out of Google Analytics by installing the{' '}
+            <a
+              href="https://tools.google.com/dlpage/gaoptout"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-400 hover:underline"
+            >
+              Google Analytics Opt-out Browser Add-on
+            </a>.
           </p>
         </Section>
 
@@ -241,7 +232,9 @@ export default function PrivacyPage() {
           </p>
           <p>
             To report a security vulnerability, contact{' '}
-            <Placeholder label="security@yourdomain.com" />.
+            <a href="mailto:support@pipefield-os.com" className="text-brand-400 hover:underline">
+              support@pipefield-os.com
+            </a>.
           </p>
         </Section>
 
@@ -249,21 +242,24 @@ export default function PrivacyPage() {
         <Section id="changes" title="9. Changes to This Policy">
           <p>
             We may update this policy from time to time. We will notify you of material changes
-            by email and/or by posting a notice on the platform at least{' '}
-            <Placeholder label="30 days" /> before the change takes effect. Continued use after
-            the effective date constitutes acceptance of the updated policy.
+            by email and/or by posting a notice on the platform at least 30 days before the
+            change takes effect. Continued use after the effective date constitutes acceptance
+            of the updated policy.
           </p>
         </Section>
 
         {/* 10 — Contact */}
         <Section id="contact" title="10. Contact Us">
-          <p>
-            For privacy questions or to exercise your rights:
-          </p>
-          <address className="not-italic space-y-1 ml-2">
-            <p><Placeholder label="Legal entity name" /></p>
-            <p><Placeholder label="Registered address" /></p>
-            <p>Email: <Placeholder label="privacy@yourdomain.com" /></p>
+          <p>For privacy questions or to exercise your rights:</p>
+          <address className="not-italic space-y-1 ml-2 mt-2">
+            <p className="font-medium text-surface-200">Renco Enterprise</p>
+            <p>Alberta, Canada</p>
+            <p>
+              Email:{' '}
+              <a href="mailto:support@pipefield-os.com" className="text-brand-400 hover:underline">
+                support@pipefield-os.com
+              </a>
+            </p>
           </address>
         </Section>
 

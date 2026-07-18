@@ -1,9 +1,5 @@
 // ============================================================
 // /terms — Terms of Service
-//
-// SCAFFOLD — Replace all [PLACEHOLDER] sections with
-// counsel-reviewed language before publishing.
-// Do NOT treat this as legal advice.
 // ============================================================
 import Link from 'next/link'
 import { Flame, ArrowLeft } from 'lucide-react'
@@ -27,16 +23,8 @@ function Section({ id, title, children }: { id: string; title: string; children:
   )
 }
 
-function Placeholder({ label }: { label: string }) {
-  return (
-    <span className="inline-block bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-xs font-mono px-2 py-0.5 rounded">
-      [PLACEHOLDER: {label}]
-    </span>
-  )
-}
-
 export default function TermsPage() {
-  const lastUpdated = '2026-07-04'
+  const lastUpdated = '2026-07-17'
 
   return (
     <div className="min-h-screen bg-surface-900 text-surface-100 font-sans">
@@ -62,20 +50,14 @@ export default function TermsPage() {
         <div className="space-y-3">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-surface-50">Terms of Service</h1>
           <p className="text-sm text-surface-500">Last updated: {lastUpdated}</p>
-          <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm">
-            <strong>Notice:</strong> This document contains placeholder sections marked{' '}
-            <code className="text-xs bg-yellow-500/20 px-1 rounded">[PLACEHOLDER]</code>. Replace
-            all placeholder sections with counsel-reviewed language before publishing. This scaffold
-            is not legal advice.
-          </div>
         </div>
 
         {/* 1 — Acceptance */}
         <Section id="acceptance" title="1. Acceptance of Terms">
           <p>
             By accessing or using PipeField OS (&ldquo;the Service&rdquo;), operated by{' '}
-            <Placeholder label="Legal entity name" /> (&ldquo;Company&rdquo;, &ldquo;we&rdquo;,
-            &ldquo;us&rdquo;, &ldquo;our&rdquo;), you agree to be bound by these Terms of Service
+            Renco Enterprise (&ldquo;Company&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;,
+            &ldquo;our&rdquo;), you agree to be bound by these Terms of Service
             (&ldquo;Terms&rdquo;). If you do not agree, do not use the Service.
           </p>
           <p>
@@ -99,7 +81,10 @@ export default function TermsPage() {
             You must create an account and organization to use the Service. You are responsible
             for maintaining the confidentiality of your credentials and for all activity that
             occurs under your account. Notify us immediately at{' '}
-            <Placeholder label="support@yourdomain.com" /> if you suspect unauthorized access.
+            <a href="mailto:support@pipefield-os.com" className="text-brand-400 hover:underline">
+              support@pipefield-os.com
+            </a>{' '}
+            if you suspect unauthorized access.
           </p>
           <p>
             Each account is associated with a single organization. Users you invite to your
@@ -128,7 +113,7 @@ export default function TermsPage() {
         {/* 5 — Engineering Disclaimer */}
         <Section id="engineering-disclaimer" title="5. Engineering & Safety Disclaimer">
           <p className="font-semibold text-surface-200">
-            THE FIELD CALCULATORS AND ALL TECHNICAL OUTPUTS PROVIDED BY PIPEFIELDS OS ARE FOR
+            THE FIELD CALCULATORS AND ALL TECHNICAL OUTPUTS PROVIDED BY PIPEFIELD OS ARE FOR
             INFORMATIONAL AND REFERENCE PURPOSES ONLY.
           </p>
           <p>
@@ -148,14 +133,16 @@ export default function TermsPage() {
         <Section id="subscriptions" title="6. Subscriptions & Payment">
           <p>
             Paid plans are billed in advance on a monthly or annual basis. All fees are
-            non-refundable except as required by law or as described in our refund policy.
+            non-refundable except as required by applicable law.
           </p>
           <p>
-            <Placeholder label="Describe free trial terms if applicable, plan upgrade/downgrade policy, and what happens to data on cancellation" />
+            New accounts may be eligible for a free trial period as advertised at the time of
+            sign-up. At the end of the trial, your account will automatically convert to a paid
+            plan unless cancelled before the trial ends.
           </p>
           <p>
-            We reserve the right to change pricing with <Placeholder label="30 days" /> notice.
-            Continued use after the effective date constitutes acceptance of the new pricing.
+            We reserve the right to change pricing with 30 days&apos; notice. Continued use of
+            the Service after the effective date constitutes acceptance of the new pricing.
           </p>
         </Section>
 
@@ -167,9 +154,9 @@ export default function TermsPage() {
             to host, store, and process Your Data solely to provide the Service.
           </p>
           <p>
-            Upon cancellation, you may export Your Data for{' '}
-            <Placeholder label="30 days" /> after your final billing period. After this period,
-            Your Data may be deleted in accordance with our retention policy.
+            Upon cancellation, you may export Your Data for 30 days after your final billing
+            period. After this period, Your Data may be permanently deleted in accordance with
+            our data retention policy.
           </p>
         </Section>
 
@@ -177,24 +164,24 @@ export default function TermsPage() {
         <Section id="ip" title="8. Intellectual Property">
           <p>
             The Service, including its software, design, and content (excluding Your Data), is
-            owned by <Placeholder label="Legal entity name" /> and protected by copyright,
-            trademark, and other intellectual property laws. Nothing in these Terms grants you
-            any right to our intellectual property except the limited license to use the Service.
+            owned by Renco Enterprise and protected by copyright, trademark, and other
+            intellectual property laws. Nothing in these Terms grants you any right to our
+            intellectual property except the limited license to use the Service.
           </p>
         </Section>
 
         {/* 9 — Limitation of Liability */}
         <Section id="liability" title="9. Limitation of Liability">
           <p>
-            TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL{' '}
-            <Placeholder label="LEGAL ENTITY NAME" /> BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
-            SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES,
-            WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR
-            OTHER INTANGIBLE LOSSES.
+            TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL RENCO
+            ENTERPRISE BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR
+            PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR
+            INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.
           </p>
           <p>
             OUR TOTAL LIABILITY TO YOU FOR ALL CLAIMS ARISING UNDER THESE TERMS SHALL NOT
-            EXCEED THE GREATER OF <Placeholder label="$100 USD OR THE AMOUNT YOU PAID US IN THE 12 MONTHS PRECEDING THE CLAIM" />.
+            EXCEED THE GREATER OF $100 CAD OR THE AMOUNT YOU PAID US IN THE 12 MONTHS
+            PRECEDING THE CLAIM.
           </p>
         </Section>
 
@@ -210,27 +197,34 @@ export default function TermsPage() {
         {/* 11 — Governing Law */}
         <Section id="governing-law" title="11. Governing Law">
           <p>
-            These Terms shall be governed by the laws of{' '}
-            <Placeholder label="Province of Alberta, Canada / State of Texas, USA — choose your jurisdiction" />,
-            without regard to conflict of law principles. Any disputes shall be resolved in the
-            courts of <Placeholder label="jurisdiction" />.
+            These Terms shall be governed by and construed in accordance with the laws of the
+            Province of Alberta and the federal laws of Canada applicable therein, without regard
+            to conflict of law principles. Any disputes shall be resolved in the courts of Alberta,
+            Canada.
           </p>
         </Section>
 
         {/* 12 — Changes */}
         <Section id="changes" title="12. Changes to These Terms">
           <p>
-            We may modify these Terms at any time. We will provide{' '}
-            <Placeholder label="30 days" /> notice of material changes by email and/or platform
-            notification. Continued use after the effective date constitutes acceptance.
+            We may modify these Terms at any time. We will provide 30 days&apos; notice of
+            material changes by email and/or in-platform notification. Continued use of the
+            Service after the effective date constitutes acceptance of the updated Terms.
           </p>
         </Section>
 
         {/* 13 — Contact */}
         <Section id="contact" title="13. Contact">
-          <address className="not-italic space-y-1 ml-2">
-            <p><Placeholder label="Legal entity name" /></p>
-            <p>Email: <Placeholder label="legal@yourdomain.com" /></p>
+          <p>If you have any questions about these Terms, please contact us:</p>
+          <address className="not-italic space-y-1 ml-2 mt-2">
+            <p className="font-medium text-surface-200">Renco Enterprise</p>
+            <p>
+              Email:{' '}
+              <a href="mailto:support@pipefield-os.com" className="text-brand-400 hover:underline">
+                support@pipefield-os.com
+              </a>
+            </p>
+            <p>Alberta, Canada</p>
           </address>
         </Section>
 
