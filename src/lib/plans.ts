@@ -8,7 +8,7 @@ export const PLANS = {
   field_pro: {
     name:     'Field Pro',
     priceId:  process.env.STRIPE_PRICE_FIELD_PRO ?? '',
-    price:    9,
+    price:    19.99,
     interval: 'month' as const,
     limits:   { projects: 1, users: 1, welds: 500 },
     features: [
@@ -22,7 +22,7 @@ export const PLANS = {
   starter: {
     name:     'Starter',
     priceId:  process.env.STRIPE_PRICE_STARTER ?? '',
-    price:    49,
+    price:    59.99,
     interval: 'month' as const,
     limits:   { projects: Infinity, users: 3, welds: 5000 },
     features: [
@@ -37,7 +37,7 @@ export const PLANS = {
   professional: {
     name:     'Professional',
     priceId:  process.env.STRIPE_PRICE_PROFESSIONAL ?? '',
-    price:    149,
+    price:    299.99,
     interval: 'month' as const,
     limits:   { projects: Infinity, users: 15, welds: Infinity },
     features: [
@@ -52,7 +52,7 @@ export const PLANS = {
   enterprise: {
     name:     'Enterprise',
     priceId:  process.env.STRIPE_PRICE_ENTERPRISE ?? '',
-    price:    399,
+    price:    999,
     interval: 'month' as const,
     limits:   { projects: Infinity, users: Infinity, welds: Infinity },
     features: [
