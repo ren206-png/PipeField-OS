@@ -19,7 +19,7 @@ const PLANS = [
   {
     key:         'field_pro',
     name:        'Field Pro',
-    price:       9,
+    price:       19.99,
     description: 'For solo field workers',
     badge:       'For solo field workers',
     headline:    'Stop doing layout math on cardboard.',
@@ -36,7 +36,7 @@ const PLANS = [
   {
     key:         'starter',
     name:        'Starter',
-    price:       49,
+    price:       59.99,
     description: 'For small crews',
     badge:       null,
     headline:    null,
@@ -54,7 +54,7 @@ const PLANS = [
   {
     key:         'professional',
     name:        'Professional',
-    price:       149,
+    price:       299.99,
     description: 'For growing teams',
     badge:       null,
     headline:    null,
@@ -72,7 +72,7 @@ const PLANS = [
   {
     key:         'enterprise',
     name:        'Enterprise',
-    price:       399,
+    price:       999,
     description: 'Unlimited scale',
     badge:       null,
     headline:    null,

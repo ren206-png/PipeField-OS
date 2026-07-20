@@ -33,7 +33,7 @@ const TRIAL_PLANS: {
   {
     key:      'starter',
     name:     'Starter',
-    price:    49,
+    price:    59.99,
     desc:     'For small crews — up to 3 users',
     features: ['Up to 3 users', 'Unlimited projects', 'Weld & spool tracking', 'CSV / PDF reports'],
     highlight: false,
@@ -41,7 +41,7 @@ const TRIAL_PLANS: {
   {
     key:      'professional',
     name:     'Professional',
-    price:    149,
+    price:    299.99,
     desc:     'For growing teams — up to 15 users',
     features: ['Up to 15 users', 'NDE inspection tracking', 'Welder cert management', 'Advanced analytics'],
     highlight: true,
@@ -49,7 +49,7 @@ const TRIAL_PLANS: {
   {
     key:      'enterprise',
     name:     'Enterprise',
-    price:    399,
+    price:    999,
     desc:     'Unlimited users, dedicated support',
     features: ['Unlimited users', 'Custom integrations', 'SSO / SAML', 'Dedicated account manager'],
     highlight: false,

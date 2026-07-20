@@ -43,7 +43,7 @@ export const PLANS = {
   field_pro: {
     name:        'Field Pro',
     description: 'For solo field workers — 1 user',
-    price:       9,
+    price:       19.99,
     interval:    'month' as const,
     seatLimit:   1,
     // TODO: Add annual price ($99/yr) when annual billing is implemented.
@@ -61,7 +61,7 @@ export const PLANS = {
   starter: {
     name:        'Starter',
     description: 'For small crews — up to 3 users',
-    price:       49,
+    price:       59.99,
     interval:    'month' as const,
     features: [
       'Up to 3 users',
@@ -77,7 +77,7 @@ export const PLANS = {
   professional: {
     name:        'Professional',
     description: 'For growing teams — up to 15 users',
-    price:       149,
+    price:       299.99,
     interval:    'month' as const,
     features: [
       'Up to 15 users',
@@ -93,7 +93,7 @@ export const PLANS = {
   enterprise: {
     name:        'Enterprise',
     description: 'Unlimited users, dedicated support',
-    price:       399,
+    price:       999,
     interval:    'month' as const,
     features: [
       'Unlimited users',
@@ -114,22 +114,22 @@ export type PlanKey = keyof typeof PLANS
 // Used by the /billing page pricing cards.
 export const BILLING_PLANS = {
   field_pro: {
-    name: 'Field Pro', price: 9, description: 'For solo field workers',
+    name: 'Field Pro', price: 19.99, description: 'For solo field workers',
     projectLimit: 1, weldLimit: 500, userLimit: 1,
     priceId: process.env.STRIPE_PRICE_FIELD_PRO ?? '',
   },
   starter: {
-    name: 'Starter', price: 49, description: 'For small crews',
+    name: 'Starter', price: 59.99, description: 'For small crews',
     projectLimit: Infinity, weldLimit: 5000, userLimit: 3,
     priceId: process.env.STRIPE_PRICE_STARTER ?? '',
   },
   professional: {
-    name: 'Professional', price: 149, description: 'For growing teams',
+    name: 'Professional', price: 299.99, description: 'For growing teams',
     projectLimit: Infinity, weldLimit: Infinity, userLimit: 15,
     priceId: process.env.STRIPE_PRICE_PROFESSIONAL ?? '',
   },
   enterprise: {
-    name: 'Enterprise', price: 399, description: 'Unlimited scale',
+    name: 'Enterprise', price: 999, description: 'Unlimited scale',
     projectLimit: Infinity, weldLimit: Infinity, userLimit: Infinity,
     priceId: process.env.STRIPE_PRICE_ENTERPRISE ?? '',
   },
