@@ -13,6 +13,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -74,10 +75,7 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      // c. Log deletion (no PII — only IDs and timestamps)
-      console.log(
-        `[support-photo-cleanup] Deleted photo: id=${row.id} org=${row.organization_id} at=${now}`,
-      )
+      logger.info('support-photo-cleanup.deleted', { id: row.id, org: row.organization_id, at: now })
 
       deletedCount++
     } catch (err) {

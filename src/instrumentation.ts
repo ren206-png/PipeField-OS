@@ -26,7 +26,6 @@ export async function register() {
     // Dynamic require so TypeScript does not resolve the module at build time
     // (the package may not be installed yet). Cast to any is intentional here.
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
       const Sentry = require('@sentry/nextjs') as any
       Sentry.init(sentryConfig)
     } catch {
@@ -36,7 +35,6 @@ export async function register() {
 
   if (process.env.NEXT_RUNTIME === 'edge') {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
       const Sentry = require('@sentry/nextjs') as any
       Sentry.init(sentryConfig)
     } catch {

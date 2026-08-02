@@ -61,7 +61,7 @@ export default function IntelligencePage() {
           <div>
             <h1 className="text-2xl font-bold text-surface-50">Intelligence Center</h1>
             <p className="text-sm text-surface-500 mt-0.5">
-              AI-powered tools trained on your company's procedures, specs, and field expertise
+              AI-powered tools trained on your company&apos;s procedures, specs, and field expertise
             </p>
           </div>
         </div>
@@ -91,7 +91,7 @@ export default function IntelligencePage() {
                 Upload your first document to activate AI features
               </p>
               <p className="text-xs text-surface-400 mt-1 leading-relaxed">
-                The AI capabilities below draw answers from your company's uploaded procedures, WPS, safety plans, and specifications.
+                The AI capabilities below draw answers from your company&apos;s uploaded procedures, WPS, safety plans, and specifications.
                 Without documents, the AI has no project-specific knowledge to work from.
                 Start with a WPS or safety plan to see Welding Guidance and Safety Analysis in action.
               </p>
