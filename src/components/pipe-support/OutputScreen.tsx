@@ -103,7 +103,7 @@ export default function OutputScreen({ result, inputs, savedId }: Props) {
           <Row label="Allowable Deflection" value={`${inputs.deflection_allow_in ?? 0.10} in`} />
         </div>
         <p className="mt-2 text-xs text-amber-600/80">
-          ⚠ Allowable deflection of 0.10" is an engineering design criterion, not a universal ASME code requirement.
+          ⚠ Allowable deflection of 0.10&quot; is an engineering design criterion, not a universal ASME code requirement.
         </p>
       </Section>
 
@@ -123,8 +123,8 @@ export default function OutputScreen({ result, inputs, savedId }: Props) {
                 <div className="text-gray-400">
                   Support at <span className="text-white">{c.original_ft.toFixed(2)} ft</span> →
                   weld at <span className="text-white">{c.weld_ft.toFixed(2)} ft</span> |
-                  gap <span className="text-red-400">{c.gap_in.toFixed(3)}"</span> &lt; required |
-                  shifted <span className="text-green-400">{c.shifted_by_in.toFixed(3)}"</span> →
+                  gap <span className="text-red-400">{c.gap_in.toFixed(3)}&quot;</span> &lt; required |
+                  shifted <span className="text-green-400">{c.shifted_by_in.toFixed(3)}&quot;</span> →
                   new position <span className="text-white">{c.adjusted_to_ft.toFixed(3)} ft</span>
                 </div>
               </div>

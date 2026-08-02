@@ -221,7 +221,7 @@ export function ThermalExpansionPanel() {
 
           {/* Calculation summary */}
           <div className="bg-surface-900 rounded-lg p-3 font-mono text-xs text-surface-400 space-y-0.5">
-            <p className="text-surface-500">// Calculation summary</p>
+            <p className="text-surface-500">{'// Calculation summary'}</p>
             <p>α  = {(calc.alpha * 1e6).toFixed(2)}e-6 in/in/°F</p>
             <p>L  = {(calc.L_ft * 12).toFixed(2)} in ({calc.L_ft.toFixed(2)} ft)</p>
             <p>ΔT = {calc.dT_F.toFixed(1)}°F</p>

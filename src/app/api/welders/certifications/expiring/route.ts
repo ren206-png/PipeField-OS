@@ -8,8 +8,9 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('user_profiles').select('organization_id').eq('auth_user_id', user.id).maybeSingle()
+  if (profileError) return NextResponse.json({ error: 'Database error' }, { status: 500 })
 
   const { searchParams } = new URL(request.url)
   const days = parseInt(searchParams.get('days') ?? '30')

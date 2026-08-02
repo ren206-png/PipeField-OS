@@ -77,7 +77,6 @@ export async function buildMtrWorkbook(rows: Record<string, unknown>[]): Promise
 }
 
 // Parse uploaded Excel file — returns { headers, rows }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function parseWorkbook(buffer: any): Promise<{ headers: string[]; rows: Record<string, string>[] }> {
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(buffer)

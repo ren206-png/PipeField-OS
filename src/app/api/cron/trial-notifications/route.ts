@@ -25,6 +25,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendTrialNotificationEmail } from '@/lib/email'
 import { TRIAL_MILESTONES, type TrialMilestoneKey } from '@/lib/trial-notifications-copy'
 import { TRIAL_BILLING_ENABLED } from '@/intelligence/flags'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -163,7 +164,7 @@ export async function GET(req: NextRequest) {
   }
 
   const totalSent = results.reduce((n, r) => n + r.sent.length, 0)
-  console.info(`[trial-notifications] done. orgs=${orgs.length} notifications_sent=${totalSent}`)
+  logger.info('trial-notifications.done', { orgs: orgs.length, notifications_sent: totalSent })
 
   return NextResponse.json({ processed: orgs.length, notifications_sent: totalSent, results })
 }

@@ -266,9 +266,9 @@ export default function InputForm({ onCalculate, loading, projects = [], selecte
                 onChange={e => setSlopeValue(parseFloat(e.target.value))}
                 className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-100 focus:border-orange-500 focus:outline-none"
               >
-                <option value={1/16}>1/16" per ft</option>
-                <option value={1/8}>1/8" per ft</option>
-                <option value={1/4}>1/4" per ft</option>
+                <option value={1/16}>1/16&quot; per ft</option>
+                <option value={1/8}>1/8&quot; per ft</option>
+                <option value={1/4}>1/4&quot; per ft</option>
                 <option value={-1}>Custom</option>
               </select>
             </Field>

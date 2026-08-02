@@ -80,7 +80,7 @@ export default function ReportsPage() {
         <p className="text-sm text-surface-400">
           <span className="text-brand-300 font-semibold">To export as PDF:</span> open any report,
           press <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-surface-300 text-xs font-mono">Ctrl+P</kbd> (or <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-surface-300 text-xs font-mono">⌘+P</kbd> on Mac),
-          then choose <strong className="text-surface-300">"Save as PDF"</strong>.
+          then choose <strong className="text-surface-300">&quot;Save as PDF&quot;</strong>.
           All reports are print-optimised with clean layouts.
         </p>
       </div>

@@ -467,7 +467,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-surface-100 flex items-center gap-2">
                 <ClipboardList className="w-4 h-4 text-blue-400" />
-                Today's Field Reports
+                Today&apos;s Field Reports
               </h2>
               <Link href="/daily-reports" className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">
                 All reports <ChevronRight className="w-3 h-3" />
@@ -477,7 +477,7 @@ export default async function DashboardPage() {
               <div className="text-center py-6">
                 <p className="text-sm text-surface-600">No field report logged today.</p>
                 <Link href="/daily-reports/new" className="btn-primary mt-3 inline-flex text-sm">
-                  Log Today's Report →
+                  Log Today&apos;s Report →
                 </Link>
               </div>
             ) : (

@@ -92,7 +92,6 @@ async function enqueue<T extends QueueItem>(
   item: T
 ): Promise<string> {
   const db = await getDB()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (db as any).put(store, item)
   return item.local_id
 }
@@ -207,7 +206,6 @@ async function updateItem(
   patch: Partial<BaseQueueItem>
 ): Promise<void> {
   const db  = await getDB()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tx  = (db as any).transaction(store, 'readwrite')
   const item = await tx.store.get(localId)
   if (item) await tx.store.put({ ...item, ...patch })
@@ -223,7 +221,6 @@ export async function markSynced(localId: string, entityType: EntityType = 'weld
 export async function markFailed(localId: string, error: string, entityType: EntityType = 'weld'): Promise<void> {
   const db   = await getDB()
   const store = storeForType(entityType)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const item = await (db as any).get(store, localId)
   await updateItem(store, localId, {
     sync_status:   'failed',

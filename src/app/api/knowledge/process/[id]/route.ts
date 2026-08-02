@@ -27,7 +27,6 @@ function getOpenAI() {
 async function extractText(buffer: Buffer, mimeType: string): Promise<string | null> {
   // PDF
   if (mimeType === 'application/pdf') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfParse = (await import('pdf-parse')) as any
     const data = await (pdfParse.default ?? pdfParse)(buffer)
     return data.text
