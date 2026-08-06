@@ -53,3 +53,11 @@ public/workbox-*.js.map
 
 # Graphify generated artifacts
 graphify-out/
+# Added by code-review-graph
+.code-review-graph/
+
+# Local Claude Code permissions
+.claude/settings.local.json
+
+# Machine-specific MCP configuration
+.mcp.json
