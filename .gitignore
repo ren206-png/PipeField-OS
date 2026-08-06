@@ -61,3 +61,6 @@ graphify-out/
 
 # Machine-specific MCP configuration
 .mcp.json
+
+# Claude Code generated backups
+.claude/*.bak
