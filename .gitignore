@@ -50,3 +50,6 @@ public/workbox-*.js.map
 /playwright-report/
 /playwright/.cache/
 .env.test
+
+# Graphify generated artifacts
+graphify-out/
