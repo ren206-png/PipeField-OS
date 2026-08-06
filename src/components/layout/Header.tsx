@@ -36,18 +36,25 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
 
       <header className="sticky top-0 z-30 bg-surface-900/80 backdrop-blur-md border-b border-surface-800">
         <div className="flex items-center gap-4 px-4 sm:px-6 lg:px-8 h-16">
-          {/* Page title (shown on mobile) */}
+          {/* Logo — mobile only (sidebar hidden on mobile) */}
+          <div className="lg:hidden flex-shrink-0">
+            <img src="/logo.png" alt="PipeField OS" className="h-8 w-auto" />
+          </div>
+
+          {/* Page title (shown on mobile when no logo context needed) */}
           {title && (
             <div className="flex-1 min-w-0 lg:hidden">
-              <h1 className="text-lg font-bold text-surface-50 truncate">{title}</h1>
+              <h1 className="text-base font-bold text-surface-50 truncate">{title}</h1>
               {subtitle && (
                 <p className="text-xs text-surface-500 truncate">{subtitle}</p>
               )}
             </div>
           )}
 
-          {/* Spacer on desktop */}
-          <div className="hidden lg:block flex-1" />
+          {/* Logo + search bar — desktop */}
+          <div className="hidden lg:flex flex-1 items-center gap-3">
+            <img src="/logo.png" alt="PipeField OS" className="h-9 w-auto" />
+          </div>
 
           {/* Right actions cluster */}
           <div className="flex items-center gap-2">

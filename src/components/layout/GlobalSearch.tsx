@@ -198,6 +198,11 @@ export function GlobalSearch() {
 
       {/* Panel */}
       <div className="relative w-full max-w-xl bg-surface-900 border border-surface-700 rounded-2xl shadow-2xl overflow-hidden">
+        {/* Logo bar */}
+        <div className="flex items-center justify-center py-3 border-b border-surface-800/60 bg-surface-900/60">
+          <img src="/logo.png" alt="PipeField OS" className="h-7 w-auto" />
+        </div>
+
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-surface-800">
           {loading ? (
