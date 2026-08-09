@@ -6,7 +6,7 @@
 // procedure guidance without being on the weld form.
 // ============================================================
 import { useState, FormEvent }        from 'react'
-import { Flame, Send, Loader2, Shield, CheckCircle, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Flame, Loader2, Shield, CheckCircle, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import { apiFetch }                   from '@/lib/apiFetch'
 import { useWpsList }                 from '@/hooks/useWps'
 import { useProjects }                from '@/hooks/useProjects'

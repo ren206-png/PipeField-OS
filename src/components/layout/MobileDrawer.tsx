@@ -15,7 +15,6 @@ import {
   Package,
   FileBarChart,
   Calculator,
-  Wrench,
   Settings,
   LogOut,
   Users,
@@ -155,7 +154,7 @@ const NAV_GROUPS: DrawerNavGroup[] = [
 
 export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   const pathname = usePathname()
-  const { profile, signOut, isPlatformAdmin } = useAuth()
+  const { profile, isPlatformAdmin } = useAuth()
   const { organization } = useOrganization()
 
   // Close drawer on route change

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useItp, useUpdateItp, useCreateItpItem, useUpdateItpItem, useDeleteItpItem } from '@/hooks/useItp'
 import { useAuth } from '@/hooks/useAuth'

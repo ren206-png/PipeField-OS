@@ -14,7 +14,6 @@ import {
   Package,
   FileBarChart,
   Calculator,
-  Wrench,
   Settings,
   CreditCard,
   LogOut,
@@ -168,7 +167,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { profile, signOut, isPlatformAdmin, isLoading } = useAuth()
+  const { profile, isPlatformAdmin, isLoading } = useAuth()
   const { organization } = useOrganization()
   const { plan } = usePlanLimits()
 

@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getResend } from '@/lib/email'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -290,7 +291,7 @@ export async function POST(req: NextRequest) {
   }
 
   const durationMs = Date.now() - cronStartedAt.getTime()
-  console.log(`[health-monitor] Done in ${durationMs}ms`, jobs)
+  logger.info('health-monitor.done', { durationMs, jobs })
 
   return NextResponse.json({
     ok:   true,

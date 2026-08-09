@@ -41,7 +41,6 @@ import { digitalTwinAdapter }         from './adapters/digital-twin'
 import { supportPhotoIdAdapter }      from './adapters/support-photo-id'
 
 // ── Capability registry map ───────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const REGISTRY = new Map<CapabilityName, CapabilityAdapter<any, any>>([
   // Phase 1
   ['rag-qa',               ragQaAdapter],

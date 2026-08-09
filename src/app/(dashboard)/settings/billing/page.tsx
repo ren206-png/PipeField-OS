@@ -7,8 +7,6 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganization } from '@/hooks/useOrganization'
-import { usePlanLimits } from '@/hooks/usePlanLimits'
-import { PlanBadge } from '@/components/billing/PlanBadge'
 import { BillingStatusBanner } from '@/components/billing/BillingStatusBanner'
 import { TrialSignupCard } from '@/components/billing/TrialSignupCard'
 import type { PlanKey } from '@/lib/plans'

@@ -1,6 +1,11 @@
 // POST /api/ai/iso-blueprint-3d
 // Accepts a multipart/form-data upload of an ISO drawing (PNG, JPG, JPEG, PDF)
 // and returns a structured 3D spatial breakdown via GPT-4o vision.
+//
+// NOTE: This route bypasses the Intelligence Engine registry (src/intelligence/registry.ts)
+// and calls the OpenAI API directly. It does NOT go through the standard capability gate
+// (flag check, tier check, budget accounting). Consider migrating to a registry adapter
+// if usage-gating or audit-trail parity with other AI routes is required.
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { getOpenAIClient } from '@/intelligence/client'

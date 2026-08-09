@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
-import { Document, Page, Text, View, StyleSheet, renderToBuffer, Font, type DocumentProps } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, renderToBuffer, type DocumentProps } from '@react-pdf/renderer'
 import React from 'react'
 
 // ── Styles ────────────────────────────────────────────────────

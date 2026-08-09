@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Plus, Users, Stamp, Phone, Mail, ShieldCheck, ShieldOff, Pencil, Trash2, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Users, Stamp, Phone, Mail, Pencil, Trash2, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import { RejectionRateCard } from '@/components/welders/RejectionRateCard'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'

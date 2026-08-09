@@ -36,7 +36,6 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
 
 export function MobileNav() {
   const pathname = usePathname()
-  const { signOut } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   function isActive(href: string): boolean {

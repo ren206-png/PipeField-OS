@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
-  ArrowLeft, Flame, Package, CheckCircle2, XCircle, Clock,
+  ArrowLeft, Flame, Package, XCircle,
   AlertCircle, Edit3, ChevronRight, FlaskConical, Zap, FileText,
   Users, Calendar, MapPin, TrendingUp, Activity, AlertTriangle,
   ListChecks, MessageSquare, BarChart3, LineChart, FileDown,

@@ -13,7 +13,6 @@ import {
 import { calculatePipeProperties } from '@/lib/calculator/pipe-calculations'
 import { ResultCard } from './ResultCard'
 import { WarningBanner } from './WarningBanner'
-import { cn } from '@/lib/utils'
 
 interface PipePropertiesPanelProps {
   nps: NpsSize

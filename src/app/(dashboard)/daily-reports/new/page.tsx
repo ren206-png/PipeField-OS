@@ -79,7 +79,7 @@ export default function NewDfrPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold text-surface-50">New Daily Field Report</h1>
-          <p className="text-sm text-surface-500 mt-0.5">Fill in today's site activity</p>
+          <p className="text-sm text-surface-500 mt-0.5">Fill in today&apos;s site activity</p>
         </div>
       </div>
 

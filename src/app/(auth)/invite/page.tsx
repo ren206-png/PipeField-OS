@@ -151,7 +151,7 @@ function InvitePageInner() {
 
         {/* Invite card */}
         <div className="rounded-xl border border-brand-500/20 bg-brand-500/5 px-5 py-4 text-center">
-          <p className="text-xs text-surface-500 mb-1">You've been invited to join</p>
+          <p className="text-xs text-surface-500 mb-1">You&apos;ve been invited to join</p>
           <p className="text-base font-bold text-surface-50">{invite?.org_name}</p>
           <p className="text-xs text-brand-400 mt-1">as {ROLE_LABELS[invite?.role ?? ''] ?? invite?.role}</p>
         </div>

@@ -131,7 +131,7 @@ export default function WeldQRPage({ params }: PageProps) {
         <p className="text-sm text-surface-500 text-center">
           <strong className="text-surface-300">Tip:</strong> Press{' '}
           <kbd className="px-1.5 py-0.5 rounded bg-surface-700 text-surface-300 text-xs font-mono">Ctrl+P</kbd>
-          {' '}→ set paper size to <strong className="text-surface-300">4×6"</strong> label or <strong className="text-surface-300">Letter</strong> → Save as PDF to cut into 4 stickers.
+          {' '}→ set paper size to <strong className="text-surface-300">4×6&quot;</strong> label or <strong className="text-surface-300">Letter</strong> → Save as PDF to cut into 4 stickers.
         </p>
       </div>
     </>

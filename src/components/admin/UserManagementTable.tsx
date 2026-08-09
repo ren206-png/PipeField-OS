@@ -6,7 +6,7 @@
 import { useState, useCallback } from 'react'
 import { apiFetch } from '@/lib/apiFetch'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Filter, X, ChevronDown, RefreshCw, Shield } from 'lucide-react'
+import { Search, X, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AdminUser {

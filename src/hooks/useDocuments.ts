@@ -107,9 +107,10 @@ export function useDocumentUrl(storagePath: string) {
   return useQuery({
     queryKey: ['document-url', storagePath],
     queryFn: async () => {
-      const { data } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('project-documents')
         .createSignedUrl(storagePath, 3600) // 1 hour signed URL
+      if (error) throw error
       return data?.signedUrl ?? null
     },
     enabled: !!storagePath,

@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { Plus, FolderKanban, Calendar, Flame, Pencil } from 'lucide-react'
+import { Plus, FolderKanban, Calendar, Pencil } from 'lucide-react'
 import { useProjects } from '@/hooks/useProjects'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { EmptyState } from '@/components/shared/EmptyState'
