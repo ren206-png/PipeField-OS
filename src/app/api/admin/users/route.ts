@@ -12,9 +12,22 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
+// Platform admins may assign any role including platform_admin itself
+const ALL_VALID_ROLES = [
+  'platform_admin',
+  'organization_owner',
+  'administrator',
+  'project_manager',
+  'foreman',
+  'qa_inspector',
+  'shop_fabricator',
+  'pipefitter',
+  'client_viewer',
+] as const
+
 const patchSchema = z.object({
   user_profile_id: z.string().uuid(),
-  role:   z.string().optional(),
+  role:   z.enum(ALL_VALID_ROLES).optional(),
   status: z.enum(['active', 'deactivated', 'suspended']).optional(),
 }).refine(d => d.role || d.status, { message: 'Provide at least role or status' })
 
@@ -27,7 +40,7 @@ export async function GET(req: NextRequest) {
     void caller
 
     const { searchParams } = new URL(req.url)
-    const search     = searchParams.get('search')     ?? ''
+    const search     = (searchParams.get('search') ?? '').slice(0, 200)
     const orgId      = searchParams.get('org_id')     ?? ''
     const role       = searchParams.get('role')        ?? ''
     const status     = searchParams.get('status')      ?? ''

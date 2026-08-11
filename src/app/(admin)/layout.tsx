@@ -1,63 +1,32 @@
-'use client'
 // ============================================================
-// (admin) route group layout — CLIENT COMPONENT
-// Uses the existing AuthProvider session (same as the rest of
-// the app) so no extra server-side cookie check is needed.
-// Non-admins see a 403 screen; unauthenticated users are
-// redirected to /login.
+// (admin) route group layout — SERVER COMPONENT
+//
+// Server-side auth guard runs before any children render.
+// Unauthenticated requests → redirect to /login.
+// Authenticated non-platform-admins → redirect to /dashboard.
+//
+// The API routes under /api/admin/* have their own
+// requirePlatformAdmin() guards as defense-in-depth.
 // ============================================================
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
+import { redirect } from 'next/navigation'
+import { getCallerProfile } from '@/lib/api-auth'
 import { ShieldCheck } from 'lucide-react'
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { isLoading, isAuthenticated, isPlatformAdmin } = useAuth()
-  const router = useRouter()
+  const caller = await getCallerProfile()
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/login?redirect=/admin/overview')
-    }
-  }, [isLoading, isAuthenticated, router])
-
-  // Still loading — show a minimal spinner
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-surface-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    )
+  // Not authenticated → send to login
+  if (!caller) {
+    redirect('/login?redirect=/admin/overview')
   }
 
-  // Not authenticated — redirect is firing via useEffect above
-  if (!isAuthenticated) return null
-
-  // Wrong role
-  if (!isPlatformAdmin) {
-    return (
-      <div className="min-h-screen bg-surface-950 flex items-center justify-center p-6">
-        <div className="max-w-md text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
-            <span className="text-3xl">🔒</span>
-          </div>
-          <h1 className="text-xl font-bold text-surface-50">Access Denied</h1>
-          <p className="text-sm text-surface-400">
-            This area is restricted to PipeField OS platform administrators only.
-          </p>
-          <a
-            href="/dashboard"
-            className="inline-block mt-4 px-6 py-2.5 rounded-lg bg-brand-500 text-white text-sm font-medium hover:bg-brand-600 transition-colors"
-          >
-            Back to Dashboard
-          </a>
-        </div>
-      </div>
-    )
+  // Authenticated but wrong role → send to dashboard
+  if (caller.role !== 'platform_admin') {
+    redirect('/dashboard')
   }
 
   return (

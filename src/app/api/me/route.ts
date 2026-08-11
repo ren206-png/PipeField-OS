@@ -81,6 +81,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ profile, organization })
   } catch (err) {
     console.error('[/api/me]', err)
-    return NextResponse.json({ profile: null, organization: null })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -16,27 +16,35 @@ import { useAuth } from './useAuth'
 import type { WeldStatus } from '@/types'
 
 // ── Shared query function (also used by usePrefetchWeld) ──────
+// organizationId is required — caller must supply it from their
+// authenticated profile. Never pass '' or null; the hook that
+// calls this guards against it via the enabled flag.
 
-export async function fetchWeld(id: string) {
+export async function fetchWeld(id: string, organizationId: string) {
   const supabase = createClient()
 
-  // All three queries run in parallel — eliminates 2 sequential round-trips
+  // All three queries run in parallel — eliminates 2 sequential round-trips.
+  // Each query is explicitly scoped to the caller's org so isolation
+  // does not rely on RLS alone.
   const [weldRes, photosRes, auditRes] = await Promise.all([
     supabase
       .from('welds')
       .select('*, projects(name), spools(spool_number)')
       .eq('id', id)
+      .eq('organization_id', organizationId)
       .single(),
     supabase
       .from('weld_photos')
       .select('*')
       .eq('weld_id', id)
+      .eq('organization_id', organizationId)
       .order('created_at', { ascending: true }),
     supabase
       .from('audit_logs')
       .select('*, user_profiles(full_name)')
       .eq('table_name', 'welds')
       .eq('record_id', id)
+      .eq('organization_id', organizationId)
       .order('performed_at', { ascending: false }),
   ])
 
@@ -85,11 +93,16 @@ export function useWelds(filters: {
 }
 
 export function useWeld(id: string, initialData?: Awaited<ReturnType<typeof fetchWeld>>) {
+  const { profile } = useAuth()
+  const organizationId = profile?.organization_id ?? null
+
   return useQuery({
-    queryKey: ['weld', id],
+    queryKey: ['weld', id, organizationId],
     staleTime: 30 * 1000,
-    queryFn: () => fetchWeld(id),
-    enabled: !!id,
+    // Guard: do not query until we have a real organization_id.
+    // This prevents a window where fetchWeld is called with an empty string.
+    queryFn: () => fetchWeld(id, organizationId!),
+    enabled: !!id && !!organizationId,
     ...(initialData ? { initialData, initialDataUpdatedAt: 0 } : {}),
   })
 }

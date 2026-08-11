@@ -13,9 +13,22 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
+// Org admins may assign any role EXCEPT platform_admin (which is a
+// cross-tenant privilege that must only be set by a platform admin).
+const ORG_ASSIGNABLE_ROLES = [
+  'organization_owner',
+  'administrator',
+  'project_manager',
+  'foreman',
+  'qa_inspector',
+  'shop_fabricator',
+  'pipefitter',
+  'client_viewer',
+] as const
+
 const patchSchema = z.object({
   worker_profile_id: z.string().uuid(),
-  role:   z.string().optional(),
+  role:   z.enum(ORG_ASSIGNABLE_ROLES).optional(),
   status: z.enum(['active', 'deactivated', 'suspended']).optional(),
 }).refine(d => d.role || d.status, { message: 'Provide at least role or status' })
 
@@ -27,7 +40,7 @@ export async function GET(req: NextRequest) {
     const { caller } = getAuth
 
     const { searchParams } = new URL(req.url)
-    const search = searchParams.get('search') ?? ''
+    const search = (searchParams.get('search') ?? '').slice(0, 200)
     const role   = searchParams.get('role')   ?? ''
     const status = searchParams.get('status') ?? ''
 

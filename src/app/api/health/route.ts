@@ -98,8 +98,11 @@ export async function GET() {
         storage,
         env: {
           ok:      env.ok,
-          missing: env.missing,          // tells you WHICH vars are absent — not their values
-          present: env.present.length,   // count only — never expose key names in prod if you prefer
+          // Never expose secret variable names — return counts only.
+          // An attacker learning which secrets are absent makes targeted
+          // attacks easier on misconfigured deployments.
+          missing: env.missing.length,   // count only
+          present: env.present.length,   // count only
         },
       },
     },

@@ -15,12 +15,15 @@ import type { SpoolStatus, SpoolItem, SpoolWithRelations } from '@/types'
 
 // ── Shared query function (also used by usePrefetchSpool) ─────
 
-export async function fetchSpool(id: string): Promise<SpoolWithRelations> {
+// organizationId is required — caller must supply it from their
+// authenticated profile. Never pass '' or null.
+export async function fetchSpool(id: string, organizationId: string): Promise<SpoolWithRelations> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('spools')
     .select('*, projects(name), spool_items(*)')
     .eq('id', id)
+    .eq('organization_id', organizationId)
     .single()
   if (error) throw error
   return data as SpoolWithRelations
@@ -68,11 +71,15 @@ export function useSpools(filters: {
 }
 
 export function useSpool(id: string, initialData?: SpoolWithRelations) {
+  const { profile } = useAuth()
+  const organizationId = profile?.organization_id ?? null
+
   return useQuery({
-    queryKey: ['spool', id],
+    queryKey: ['spool', id, organizationId],
     staleTime: 30 * 1000,
-    queryFn: () => fetchSpool(id),
-    enabled: !!id,
+    // Guard: do not query until we have a real organization_id.
+    queryFn: () => fetchSpool(id, organizationId!),
+    enabled: !!id && !!organizationId,
     ...(initialData ? { initialData, initialDataUpdatedAt: 0 } : {}),
   })
 }

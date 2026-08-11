@@ -267,13 +267,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 })
     }
 
-    const body = await req.json() as {
+    const rawBody = await req.json() as {
       projectId?:   string
       status?:      string
       welderStamp?: string
       dateFrom?:    string
       dateTo?:      string
       search?:      string
+    }
+    // Clamp string fields to prevent degenerate ILIKE patterns
+    const body = {
+      ...rawBody,
+      welderStamp: rawBody.welderStamp?.slice(0, 200),
+      search:      rawBody.search?.slice(0, 200),
     }
 
     const supabase = await createClient()

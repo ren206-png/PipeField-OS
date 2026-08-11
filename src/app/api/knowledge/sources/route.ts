@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const project_id    = searchParams.get('project_id')
     const document_type = searchParams.get('document_type')
     const related_module = searchParams.get('related_module')
-    const q             = searchParams.get('q')             // full-text search
+    const q             = (searchParams.get('q') ?? '').slice(0, 200) || null  // full-text search
     const limit         = Math.min(parseInt(searchParams.get('limit') ?? '50'), 200)
     const offset        = parseInt(searchParams.get('offset') ?? '0')
 

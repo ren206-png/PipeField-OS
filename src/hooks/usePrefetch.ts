@@ -12,33 +12,42 @@
 // entry is shared — no duplicate requests.
 // ============================================================
 import { useQueryClient } from '@tanstack/react-query'
+import { useAuth } from './useAuth'
 import { fetchWeld } from './useWelds'
 import { fetchSpool } from './useSpools'
 
 const STALE_TIME = 30 * 1000 // match the hook staleTime
 
-/** Returns a prefetch function for weld detail. */
+/** Returns a prefetch function for weld detail.
+ *  No-ops if the caller has no organization_id (prevents unscoped queries). */
 export function usePrefetchWeld() {
   const queryClient = useQueryClient()
+  const { profile } = useAuth()
+  const organizationId = profile?.organization_id ?? null
 
   return (id: string) => {
+    if (!organizationId) return // guard: never prefetch without a real org scope
     // prefetchQuery is a no-op if data is already fresh in cache
     void queryClient.prefetchQuery({
-      queryKey: ['weld', id],
-      queryFn: () => fetchWeld(id),
+      queryKey: ['weld', id, organizationId],
+      queryFn: () => fetchWeld(id, organizationId),
       staleTime: STALE_TIME,
     })
   }
 }
 
-/** Returns a prefetch function for spool detail. */
+/** Returns a prefetch function for spool detail.
+ *  No-ops if the caller has no organization_id (prevents unscoped queries). */
 export function usePrefetchSpool() {
   const queryClient = useQueryClient()
+  const { profile } = useAuth()
+  const organizationId = profile?.organization_id ?? null
 
   return (id: string) => {
+    if (!organizationId) return // guard: never prefetch without a real org scope
     void queryClient.prefetchQuery({
-      queryKey: ['spool', id],
-      queryFn: () => fetchSpool(id),
+      queryKey: ['spool', id, organizationId],
+      queryFn: () => fetchSpool(id, organizationId),
       staleTime: STALE_TIME,
     })
   }

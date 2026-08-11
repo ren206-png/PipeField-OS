@@ -39,9 +39,23 @@ interface PushSubscriptionRow {
   auth:     string
 }
 
+// Roles permitted to send push notifications to org members
+const PUSH_ALLOWED_ROLES = new Set([
+  'platform_admin',
+  'organization_owner',
+  'administrator',
+  'project_manager',
+  'qa_inspector',
+])
+
 export async function POST(req: NextRequest) {
   const { caller, error: authError } = await requireAuth(req)
   if (authError) return authError
+
+  // Role guard — comment said "admin only" but was never enforced
+  if (!PUSH_ALLOWED_ROLES.has(caller.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   if (!caller.organization_id) {
     return NextResponse.json({ error: 'No organization' }, { status: 400 })
