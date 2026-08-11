@@ -6,7 +6,7 @@ import { QRScanButton } from "@/components/shared/QRScanButton";
 import type { QRScanResult } from "@/hooks/useQRScanner";
 import type { ProjectListItem } from "@/hooks/useProjects";
 
-const NPS_SIZES = ["0.5","0.75","1.0","1.25","1.5","2.0","2.5","3.0","3.5","4.0","5.0","6.0","8.0","10.0","12.0","14.0","16.0","18.0","20.0","24.0","30.0","36.0","42.0","48.0","60.0"];
+const NPS_SIZES = ["0.5","0.75","1.0","1.25","1.5","2.0","2.5","3.0","3.5","4.0","5.0","6.0","8.0","10.0","12.0","14.0","16.0","18.0","20.0","24.0","26.0","28.0","30.0","32.0","34.0","36.0","38.0","40.0","42.0","44.0","46.0","48.0","60.0"];
 const SCHEDULES = ["SCH10","SCH20","SCH30","SCH40","SCH60","SCH80","SCH100","SCH120","SCH140","SCH160","STD","XS","XXS","SCH5S","SCH10S","SCH40S","SCH80S"];
 const MATERIALS = ["carbon_steel","stainless_steel","copper"];
 const FLUIDS = ["water","steam","condensate","air","nitrogen","natural_gas","crude_oil","custom"];
