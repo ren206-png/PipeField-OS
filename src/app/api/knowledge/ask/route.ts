@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
     })
 
     // 6. Log query to knowledge_queries
-    const { data: queryLog } = await admin
+    const { data: queryLog, error: queryLogError } = await admin
       .from('knowledge_queries')
       .insert({
         organization_id: caller.organization_id,
@@ -143,6 +143,7 @@ export async function POST(req: NextRequest) {
       })
       .select('id')
       .maybeSingle()
+    if (queryLogError) console.error('[knowledge/ask] Failed to log query:', queryLogError.message)
 
     // 7. Log query sources
     if (queryLog && matchedChunks.length > 0) {

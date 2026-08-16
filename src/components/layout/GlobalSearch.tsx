@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
-import { Search, Flame, Package, FolderKanban, MessageSquare, AlertOctagon, FileText, X, ChevronRight, Loader2, Clock, MessageSquareMore, Gauge, FileSearch } from 'lucide-react'
+import { Search, Flame, Package, FolderKanban, AlertOctagon, FileText, X, ChevronRight, Loader2, Clock, MessageSquareMore, Gauge, FileSearch } from 'lucide-react'
 import { getRecent, type RecentItem } from '@/lib/recent'
 
 export { addRecent } from '@/lib/recent'

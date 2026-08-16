@@ -51,11 +51,12 @@ export async function POST(req: NextRequest) {
 
     // ── Notification side-effects (fire-and-forget per weld) ──
     if (newStatus === 'failed' || newStatus === 'accepted') {
-      const { data: weldRows } = await admin
+      const { data: weldRows, error: weldRowsError } = await admin
         .from('welds')
         .select('id, weld_id_number')
         .in('id', weldIds)
         .eq('organization_id', caller.organization_id)
+      if (weldRowsError) console.error('[welds/bulk-status] Failed to fetch weld rows for notifications:', weldRowsError.message)
 
       for (const w of weldRows ?? []) {
         const weldNumber = (w.weld_id_number as string | null) ?? w.id

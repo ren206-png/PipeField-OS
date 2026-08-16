@@ -4,7 +4,7 @@
 // Sections: Project Compliance Status, Welder Qualification
 // Tracker, Weld Inspection Form, Audit Pack Generation.
 // ============================================================
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import {
   ShieldCheck,
   AlertTriangle,
@@ -319,8 +319,8 @@ function WelderQualificationSection() {
                 const isExpanded = expanded === w.id
 
                 return (
-                  <>
-                    <tr key={w.id} className="hover:bg-surface-800/40 transition-colors">
+                  <Fragment key={w.id}>
+                    <tr className="hover:bg-surface-800/40 transition-colors">
                       <td className="py-3 px-3 text-surface-100 font-medium">{w.full_name}</td>
                       <td className="py-3 px-3 font-mono text-surface-400 text-xs">{w.stamp}</td>
                       <td className="py-3 px-3 text-surface-400">{w.process?.join(', ') || '—'}</td>
@@ -378,7 +378,7 @@ function WelderQualificationSection() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>

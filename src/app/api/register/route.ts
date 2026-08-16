@@ -103,11 +103,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Fetch org name for the welcome email
-      const { data: inviteOrg } = await admin
+      const { data: inviteOrg, error: inviteOrgError } = await admin
         .from('organizations')
         .select('name')
         .eq('id', invite.organization_id)
         .maybeSingle()
+      if (inviteOrgError) console.error('[register] Failed to fetch org name:', inviteOrgError.message)
 
       sendWelcomeEmail({
         to:       email,

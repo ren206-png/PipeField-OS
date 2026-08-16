@@ -4,7 +4,7 @@
 // Lists connected ERP systems, tests connections, adds new
 // connectors, and shows sync status.
 // ============================================================
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Link2,
   Plus,
@@ -291,7 +291,7 @@ export default function ErpSettingsPage() {
   const tier = organization?.subscription_tier ?? 'free_trial'
   const needsUpgrade = (ERP_TIER_ORDER[tier] ?? 0) < ERP_TIER_ORDER['professional']
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -306,9 +306,9 @@ export default function ErpSettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { void loadData() }, [])
+  useEffect(() => { void loadData() }, [loadData])
 
   async function testConnection(id: string) {
     setTestingId(id)
@@ -388,7 +388,7 @@ export default function ErpSettingsPage() {
             <div className="text-center py-10 border border-dashed border-surface-700 rounded-xl">
               <Link2 className="w-8 h-8 text-surface-600 mx-auto mb-3" />
               <p className="text-surface-400 text-sm font-medium">No ERP connectors configured</p>
-              <p className="text-surface-600 text-xs mt-1">Click "Add New ERP" to connect your first ERP system.</p>
+              <p className="text-surface-600 text-xs mt-1">Click &ldquo;Add New ERP&rdquo; to connect your first ERP system.</p>
             </div>
           )}
 

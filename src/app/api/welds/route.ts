@@ -39,13 +39,14 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient()
 
   // Verify project belongs to caller's org
-  const { data: project } = await admin
+  const { data: project, error: projectError } = await admin
     .from('projects')
     .select('id')
     .eq('id', parsed.data.project_id)
     .eq('organization_id', caller.organization_id)
     .maybeSingle()
 
+  if (projectError) return NextResponse.json({ error: projectError.message }, { status: 500 })
   if (!project) {
     return NextResponse.json({ error: 'Project not found' }, { status: 404 })
   }

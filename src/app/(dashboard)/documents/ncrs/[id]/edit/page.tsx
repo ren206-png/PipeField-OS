@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { useNcr, useUpdateNcr } from '@/hooks/useNcr'
 import { useProjects } from '@/hooks/useProjects'
-import type { NcrSeverity, NcrDisposition } from '@/types'
+import type { NcrSeverity } from '@/types'
 
 interface Props {
   params: Promise<{ id: string }>

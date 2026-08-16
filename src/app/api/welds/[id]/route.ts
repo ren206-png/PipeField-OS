@@ -52,13 +52,14 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const admin = createAdminClient()
 
     // Verify the weld exists and belongs to this org
-    const { data: existing } = await admin
+    const { data: existing, error: existingError } = await admin
       .from('welds')
       .select('id, status, welder_id, organization_id, weld_id_number')
       .eq('id', id)
       .eq('organization_id', caller.organization_id)
       .maybeSingle()
 
+    if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 })
     if (!existing) {
       return NextResponse.json({ error: 'Weld not found' }, { status: 404 })
     }

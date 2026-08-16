@@ -1,4 +1,6 @@
 // ============================================================
+// TODO: Dead route — no direct frontend callers found as of 2026-08.
+// ITP items are managed via Supabase client directly in useItp hook.
 // PATCH /api/itps/items/[id]
 // Update an ITP item's status (and optional fields).
 // After marking complete/not_applicable, checks if every item

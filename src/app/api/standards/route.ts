@@ -1,3 +1,5 @@
+// TODO: Dead route — no direct frontend callers found as of 2026-08.
+// Global standards data is accessed via /api/projects/[id]/standards instead.
 // GET /api/standards — list all compliance standards (global reference data)
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'

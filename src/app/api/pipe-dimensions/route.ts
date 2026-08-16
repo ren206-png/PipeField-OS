@@ -1,4 +1,6 @@
 // ============================================================
+// TODO: Dead route — no frontend callers found as of 2026-08.
+// Intended for pipe calculator or future mobile/external use.
 // GET /api/pipe-dimensions
 // Serve ASME pipe dimensions with optional SI conversion.
 //
