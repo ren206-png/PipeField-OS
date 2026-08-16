@@ -50,6 +50,7 @@ import {
   WifiOff,
   BarChart3,
   Link2,
+  Tag,
 } from 'lucide-react'
 import { cn, getInitials, truncate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -165,6 +166,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Billing',          href: '/billing',              icon: CreditCard },
       { label: 'Settings',         href: '/settings',             icon: Settings },
       { label: 'ERP Integration',  href: '/settings/erp',        icon: Link2 },
+      { label: 'Pricing',          href: '/settings/pricing',    icon: Tag   },
     ],
   },
 ]

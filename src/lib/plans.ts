@@ -32,6 +32,8 @@ export const PLANS = {
       'QR code stickers',
       'CSV / PDF reports',
       'Email support',
+      'AWS D1.1 compliance templates',
+      'Welder continuity (180-day tracking)',
     ],
   },
   professional: {
@@ -47,6 +49,10 @@ export const PLANS = {
       'Welder cert management',
       'Advanced analytics',
       'Priority support',
+      'ERP integration (MIE Trak, Syspro)',
+      'Inspection records & NDT workflow',
+      'Audit pack export',
+      'Compliance dashboard',
     ],
   },
   enterprise: {
@@ -58,7 +64,8 @@ export const PLANS = {
     features: [
       'Unlimited users',
       'Everything in Professional',
-      'Custom integrations',
+      'Custom ERP connectors',
+      'Unlimited compliance standards',
       'SSO / SAML',
       'Dedicated account manager',
       'SLA guarantee',

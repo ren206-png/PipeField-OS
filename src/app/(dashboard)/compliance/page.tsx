@@ -25,6 +25,7 @@ import { apiFetch } from '@/lib/apiFetch'
 import { useProjectsList } from '@/hooks/useProjects'
 import { useWelders } from '@/hooks/useWelders'
 import { cn, formatDate } from '@/lib/utils'
+import { useOrganization } from '@/hooks/useOrganization'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -681,7 +682,15 @@ function AuditPackSection() {
 
 // ── Page ───────────────────────────────────────────────────────
 
+const COMPLIANCE_TIER_ORDER: Record<string, number> = {
+  free_trial: 0, field_pro: 1, starter: 2, professional: 3, enterprise: 4,
+}
+
 export default function CompliancePage() {
+  const { organization } = useOrganization()
+  const tier = organization?.subscription_tier ?? 'free_trial'
+  const needsUpgrade = (COMPLIANCE_TIER_ORDER[tier] ?? 0) < COMPLIANCE_TIER_ORDER['starter']
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
@@ -696,6 +705,26 @@ export default function CompliancePage() {
           </p>
         </div>
       </div>
+
+      {/* Upsell banner */}
+      {needsUpgrade && (
+        <div className="flex items-start justify-between gap-4 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-4">
+          <div>
+            <p className="text-sm font-semibold text-brand-300">
+              Compliance Dashboard requires Starter plan or higher.
+            </p>
+            <p className="text-sm text-surface-400 mt-0.5">
+              Upgrade to access AWS D1.1 templates, welder continuity tracking, and more.
+            </p>
+          </div>
+          <a
+            href="/settings/billing"
+            className="flex-shrink-0 bg-brand-500 hover:bg-brand-400 text-white rounded-xl py-2 px-4 text-sm font-semibold transition-colors"
+          >
+            Upgrade Plan →
+          </a>
+        </div>
+      )}
 
       <ProjectComplianceSection />
       <WelderQualificationSection />

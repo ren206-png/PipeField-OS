@@ -45,6 +45,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No organization' }, { status: 400 })
   }
 
+  // ── Plan gate: Professional or higher required ────────────
+  const admin0 = createAdminClient()
+  const { data: org } = await admin0
+    .from('organizations')
+    .select('subscription_tier')
+    .eq('id', caller.organization_id)
+    .single()
+  const tier = (org?.subscription_tier ?? 'free_trial') as string
+  const tierOrder: Record<string, number> = { free_trial: 0, field_pro: 1, starter: 2, professional: 3, enterprise: 4 }
+  if ((tierOrder[tier] ?? 0) < tierOrder['professional']) {
+    return NextResponse.json(
+      { error: 'ERP integration requires Professional plan or higher', requiredTier: 'professional' },
+      { status: 403 },
+    )
+  }
+
   const body   = await req.json()
   const parsed = schema.safeParse(body)
   if (!parsed.success) {

@@ -60,3 +60,30 @@ export function gracePeriodRemainingMs(org: Organization | null | undefined): nu
   if (!org?.grace_period_ends_at) return 0
   return Math.max(0, new Date(org.grace_period_ends_at).getTime() - Date.now())
 }
+
+// ── Plan tier helpers ─────────────────────────────────────────
+
+const TIER_ORDER: Record<string, number> = {
+  free_trial:   0,
+  field_pro:    1,
+  starter:      2,
+  professional: 3,
+  enterprise:   4,
+}
+
+/**
+ * Checks whether the org's subscription_tier meets `minTier`.
+ * Returns { allowed, requiredTier }.
+ */
+export function requirePlanTier(
+  org: Organization | null | undefined,
+  minTier: string,
+): { allowed: boolean; requiredTier: string } {
+  const current = org?.subscription_tier ?? 'free_trial'
+  const currentRank = TIER_ORDER[current] ?? 0
+  const requiredRank = TIER_ORDER[minTier] ?? 0
+  return {
+    allowed:      currentRank >= requiredRank,
+    requiredTier: minTier,
+  }
+}

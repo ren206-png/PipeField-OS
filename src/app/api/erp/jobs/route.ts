@@ -1,9 +1,14 @@
-// GET /api/erp/jobs?connector_id=UUID&status=IN_PROGRESS
+// GET  /api/erp/jobs?connector_id=UUID&status=IN_PROGRESS
+// POST /api/erp/jobs — create / trigger a job sync (Professional+ only)
 // Fetches jobs from the ERP and caches results in erp_job_mappings.
 // Falls back to cached rows when the ERP is unreachable.
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+
+const TIER_ORDER: Record<string, number> = {
+  free_trial: 0, field_pro: 1, starter: 2, professional: 3, enterprise: 4,
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -87,4 +92,29 @@ export async function GET(req: NextRequest) {
       synced_at: lastSync,
     })
   }
+}
+
+export async function POST(req: NextRequest) {
+  const { caller, error: authError } = await requireAuth(req)
+  if (authError) return authError
+  if (!caller.organization_id) {
+    return NextResponse.json({ error: 'No organization' }, { status: 400 })
+  }
+
+  // ── Plan gate: Professional or higher required ────────────
+  const admin = createAdminClient()
+  const { data: org } = await admin
+    .from('organizations')
+    .select('subscription_tier')
+    .eq('id', caller.organization_id)
+    .single()
+  const tier = (org?.subscription_tier ?? 'free_trial') as string
+  if ((TIER_ORDER[tier] ?? 0) < TIER_ORDER['professional']) {
+    return NextResponse.json(
+      { error: 'ERP integration requires Professional plan or higher', requiredTier: 'professional' },
+      { status: 403 },
+    )
+  }
+
+  return NextResponse.json({ message: 'Job sync initiated' }, { status: 202 })
 }

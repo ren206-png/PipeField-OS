@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { apiFetch } from '@/lib/apiFetch'
 import { cn, formatDate } from '@/lib/utils'
+import { useOrganization } from '@/hooks/useOrganization'
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -273,7 +274,12 @@ function AddErpModal({ onClose, onAdded }: AddErpModalProps) {
 
 // ── Page ───────────────────────────────────────────────────────
 
+const ERP_TIER_ORDER: Record<string, number> = {
+  free_trial: 0, field_pro: 1, starter: 2, professional: 3, enterprise: 4,
+}
+
 export default function ErpSettingsPage() {
+  const { organization } = useOrganization()
   const [connectors,   setConnectors]   = useState<ErpConnector[]>([])
   const [syncStatus,   setSyncStatus]   = useState<SyncStatus | null>(null)
   const [loading,      setLoading]      = useState(true)
@@ -281,6 +287,9 @@ export default function ErpSettingsPage() {
   const [showAdd,      setShowAdd]      = useState(false)
   const [testingId,    setTestingId]    = useState<string | null>(null)
   const [testResults,  setTestResults]  = useState<Record<string, 'CONNECTED' | 'FAILED'>>({})
+
+  const tier = organization?.subscription_tier ?? 'free_trial'
+  const needsUpgrade = (ERP_TIER_ORDER[tier] ?? 0) < ERP_TIER_ORDER['professional']
 
   async function loadData() {
     setLoading(true)
@@ -326,6 +335,26 @@ export default function ErpSettingsPage() {
           Connect PipeField OS to your ERP systems for data sync
         </p>
       </div>
+
+      {/* Upsell banner */}
+      {needsUpgrade && (
+        <div className="flex items-start justify-between gap-4 rounded-xl border border-brand-500/30 bg-brand-500/10 px-4 py-4">
+          <div>
+            <p className="text-sm font-semibold text-brand-300">
+              ERP Integration requires Professional plan.
+            </p>
+            <p className="text-sm text-surface-400 mt-0.5">
+              Upgrade to connect MIE Trak, Syspro, and more.
+            </p>
+          </div>
+          <a
+            href="/settings/billing"
+            className="flex-shrink-0 bg-brand-500 hover:bg-brand-400 text-white rounded-xl py-2 px-4 text-sm font-semibold transition-colors"
+          >
+            Upgrade Plan →
+          </a>
+        </div>
+      )}
 
       {/* Connectors section */}
       <Section icon={Link2} title="Connected ERP Systems">
