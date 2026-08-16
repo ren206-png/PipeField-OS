@@ -140,11 +140,12 @@ export function useUpdateWeldStatus() {
     }: { weldId: string; newStatus: WeldStatus; notes?: string }) => {
       const supabase = createClient()
 
-      const { data: current } = await supabase
+      const { data: current, error: currentError } = await supabase
         .from('welds')
         .select('status')
         .eq('id', weldId)
         .single()
+      if (currentError) throw currentError
 
       const { data, error } = await supabase
         .from('welds')

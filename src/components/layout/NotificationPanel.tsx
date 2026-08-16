@@ -7,7 +7,7 @@ import { useRef, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { useNotifications, type DbNotification } from '@/hooks/useNotifications'
-import { Flame, FolderKanban, AlertOctagon, MessageSquareMore, CheckCircle, Bell, X, Check } from 'lucide-react'
+import { Flame, AlertOctagon, MessageSquareMore, CheckCircle, Bell, X, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 

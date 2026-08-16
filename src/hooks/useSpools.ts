@@ -96,11 +96,12 @@ export function useUpdateSpoolStatus() {
     }: { spoolId: string; newStatus: SpoolStatus; notes?: string }) => {
       const supabase = createClient()
 
-      const { data: current } = await supabase
+      const { data: current, error: currentError } = await supabase
         .from('spools')
         .select('status')
         .eq('id', spoolId)
         .single()
+      if (currentError) throw currentError
 
       const updateData: Record<string, unknown> = { status: newStatus }
       if (newStatus === 'released') {

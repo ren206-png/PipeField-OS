@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
   Flame, CheckCircle2, XCircle, Package,
   TrendingUp, Clock, AlertTriangle, FolderKanban,
-  ChevronRight, User, PlusCircle, Edit3, ClipboardList,
+  ChevronRight, PlusCircle, Edit3, ClipboardList,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { WELD_STATUS_LABELS, SPOOL_STATUS_LABELS, DFR_STATUS_COLORS, DFR_STATUS_LABELS, type WeldStatus, type SpoolStatus, type DfrStatus } from '@/types'

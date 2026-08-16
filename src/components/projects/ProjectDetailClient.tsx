@@ -3,7 +3,7 @@
 // Project Detail — Comprehensive per-project command center
 // Tabs: Overview | Welds | Spools | NDE | Commissioning | Documents | Analytics
 // ============================================================
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { MilestonesPanel } from '@/components/projects/MilestonesPanel'
 import { useQuery } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'

@@ -52,7 +52,7 @@ import {
   Link2,
   Tag,
 } from 'lucide-react'
-import { cn, getInitials, truncate } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganization } from '@/hooks/useOrganization'
 import { USER_ROLE_LABELS, type UserRole } from '@/types'

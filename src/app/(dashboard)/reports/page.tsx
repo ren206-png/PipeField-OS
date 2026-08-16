@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import {
   FileText, Users, Package, ChevronRight,
-  Download, Printer, BarChart2, FileDown, ClipboardList, TrendingUp,
+  Printer, BarChart2, FileDown, ClipboardList, TrendingUp,
 } from 'lucide-react'
 
 const REPORTS = [

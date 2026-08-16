@@ -6,8 +6,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   BarChart3, CheckCircle2, XCircle, AlertTriangle,
-  FlaskConical, Flame, Thermometer, FileSearch,
-  TrendingUp, Cpu,
+  FlaskConical, Flame, FileSearch,
+  Cpu,
 } from 'lucide-react'
 import { apiFetch } from '@/lib/apiFetch'
 import { useProjectsList } from '@/hooks/useProjects'
