@@ -21,6 +21,7 @@ import {
   Building2,
   Users,
   ShieldAlert,
+  ShieldCheck,
   ClipboardList,
   MessageSquareMore,
   ListChecks,
@@ -48,6 +49,7 @@ import {
   FileSpreadsheet,
   WifiOff,
   BarChart3,
+  Link2,
 } from 'lucide-react'
 import { cn, getInitials, truncate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -151,16 +153,18 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Tools',
     items: [
       { label: 'Client Portal', href: '/client-portal', icon: Eye },
+      { label: 'Compliance',    href: '/compliance',    icon: ShieldCheck },
       { label: 'Reports',       href: '/reports',       icon: FileBarChart },
     ],
   },
   {
     title: 'Admin',
     items: [
-      { label: 'Welders',      href: '/welders',              icon: Users },
-      { label: 'Team Members', href: '/organization/workers', icon: Users },
-      { label: 'Billing',      href: '/billing',              icon: CreditCard },
-      { label: 'Settings',     href: '/settings',             icon: Settings },
+      { label: 'Welders',          href: '/welders',              icon: Users },
+      { label: 'Team Members',     href: '/organization/workers', icon: Users },
+      { label: 'Billing',          href: '/billing',              icon: CreditCard },
+      { label: 'Settings',         href: '/settings',             icon: Settings },
+      { label: 'ERP Integration',  href: '/settings/erp',        icon: Link2 },
     ],
   },
 ]

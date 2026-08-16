@@ -1,6 +1,6 @@
 'use client'
-import { useState } from 'react'
-import { Plus, Users, Stamp, Phone, Mail, Pencil, Trash2, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Plus, Users, Stamp, Phone, Mail, Pencil, Trash2, X, Loader2, ChevronDown, ChevronUp, Download, AlertCircle } from 'lucide-react'
 import { RejectionRateCard } from '@/components/welders/RejectionRateCard'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,7 +9,9 @@ import { useWelders, useCreateWelder, useUpdateWelder, useDeleteWelder } from '@
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { WELD_PROCESSES, WELD_POSITIONS, type Welder } from '@/types'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/apiFetch'
+import { useProjectsList } from '@/hooks/useProjects'
 
 const schema = z.object({
   full_name:        z.string().min(2, 'Name required'),
@@ -23,12 +25,214 @@ const schema = z.object({
 })
 type FormValues = z.infer<typeof schema>
 
+// ── Continuity types ──────────────────────────────────────────
+interface WelderContinuity {
+  welder_id: string
+  process: string
+  position: string
+  last_weld_date: string | null
+  qualification_date: string | null
+  expiry_date: string | null
+  status: 'ACTIVE' | 'CLOSE_TO_EXPIRY' | 'EXPIRED'
+  days_remaining: number | null
+}
+
+function continuityBadge(status: 'ACTIVE' | 'CLOSE_TO_EXPIRY' | 'EXPIRED') {
+  const map = {
+    ACTIVE:          'bg-green-500/15 text-green-400 border border-green-500/30',
+    CLOSE_TO_EXPIRY: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30',
+    EXPIRED:         'bg-red-500/15 text-red-400 border border-red-500/30',
+  }
+  const labels = { ACTIVE: 'Active', CLOSE_TO_EXPIRY: 'Expiring Soon', EXPIRED: 'Expired' }
+  return (
+    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', map[status])}>
+      {labels[status]}
+    </span>
+  )
+}
+
+// ── Continuity Tab ─────────────────────────────────────────────
+
+function ContinuityTab({ welders }: { welders: Welder[] }) {
+  const { data: projects = [] } = useProjectsList()
+  const [continuityMap, setContinuityMap] = useState<Record<string, WelderContinuity[]>>({})
+  const [loadingAll,    setLoadingAll]    = useState(false)
+  const [exporting,     setExporting]     = useState(false)
+  const [exportError,   setExportError]   = useState<string | null>(null)
+  const [projectId,     setProjectId]     = useState<string>('')
+  const [loadError,     setLoadError]     = useState<string | null>(null)
+
+  const loadAll = useCallback(async () => {
+    if (welders.length === 0) return
+    setLoadingAll(true)
+    setLoadError(null)
+    try {
+      const results = await Promise.all(
+        welders.map(async w => {
+          try {
+            const res = await apiFetch(`/api/welders/${w.id}/continuity`)
+            const data: WelderContinuity[] = res.ok ? await res.json() : []
+            return [w.id, data] as const
+          } catch {
+            return [w.id, []] as const
+          }
+        })
+      )
+      setContinuityMap(Object.fromEntries(results))
+    } catch (err) {
+      setLoadError((err as Error).message)
+    } finally {
+      setLoadingAll(false)
+    }
+  }, [welders])
+
+  useEffect(() => { void loadAll() }, [loadAll])
+
+  async function exportReport() {
+    const pid = projectId || (projects[0] as { id: string } | undefined)?.id
+    if (!pid) { setExportError('No project available for export.'); return }
+    setExporting(true)
+    setExportError(null)
+    try {
+      const res = await apiFetch(`/api/projects/${pid}/audit-pack`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ format: 'JSON', include: ['qualifications'] }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `continuity-report-${pid}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setExportError((err as Error).message)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-3 justify-between">
+        <div className="flex items-center gap-3">
+          {projects.length > 0 && (
+            <div className="relative">
+              <select
+                value={projectId}
+                onChange={e => setProjectId(e.target.value)}
+                className="input text-sm py-1.5 appearance-none pr-8"
+              >
+                <option value="">First project (default)</option>
+                {projects.map((p: { id: string; name: string }) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-surface-500 pointer-events-none" />
+            </div>
+          )}
+          <button
+            onClick={() => void loadAll()}
+            disabled={loadingAll}
+            className="p-2 text-surface-500 hover:text-brand-400 hover:bg-surface-700 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            {loadingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4 rotate-0" />}
+          </button>
+        </div>
+
+        <button
+          onClick={() => void exportReport()}
+          disabled={exporting}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-700 text-surface-300 text-sm font-medium hover:bg-surface-600 hover:text-surface-100 transition-colors disabled:opacity-50"
+        >
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          Export Continuity Report
+        </button>
+      </div>
+
+      {exportError && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {exportError}
+        </div>
+      )}
+
+      {loadError && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {loadError}
+        </div>
+      )}
+
+      {loadingAll && (
+        <div className="flex items-center gap-2 text-surface-500 text-sm py-4">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading continuity data…
+        </div>
+      )}
+
+      {!loadingAll && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-surface-700">
+                {['Welder', 'Process', 'Position', 'Qual Date', 'Expiry', 'Status', 'Days Remaining'].map(h => (
+                  <th key={h} className="text-left py-2 px-3 text-xs text-surface-500 font-semibold uppercase tracking-wide">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-700/50">
+              {welders.flatMap(w => {
+                const rows = continuityMap[w.id] ?? []
+                if (rows.length === 0) {
+                  return [(
+                    <tr key={w.id} className="hover:bg-surface-800/40 transition-colors">
+                      <td className="py-3 px-3 font-medium text-surface-100">{w.full_name}</td>
+                      <td colSpan={6} className="py-3 px-3 text-surface-500 text-xs italic">No continuity records</td>
+                    </tr>
+                  )]
+                }
+                return rows.map((c, i) => (
+                  <tr key={`${w.id}-${i}`} className="hover:bg-surface-800/40 transition-colors">
+                    {i === 0 && (
+                      <td className="py-3 px-3 font-medium text-surface-100" rowSpan={rows.length}>{w.full_name}</td>
+                    )}
+                    <td className="py-3 px-3 text-surface-300">{c.process}</td>
+                    <td className="py-3 px-3 text-surface-300">{c.position}</td>
+                    <td className="py-3 px-3 text-surface-400 text-xs">{c.qualification_date ? formatDate(c.qualification_date) : '—'}</td>
+                    <td className="py-3 px-3 text-surface-400 text-xs">{c.expiry_date ? formatDate(c.expiry_date) : '—'}</td>
+                    <td className="py-3 px-3">{continuityBadge(c.status)}</td>
+                    <td className={cn(
+                      'py-3 px-3 text-sm font-medium',
+                      c.status === 'EXPIRED'         ? 'text-red-400' :
+                      c.status === 'CLOSE_TO_EXPIRY' ? 'text-yellow-400' : 'text-green-400'
+                    )}>
+                      {c.days_remaining !== null ? `${c.days_remaining}d` : '—'}
+                    </td>
+                  </tr>
+                ))
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main Page ──────────────────────────────────────────────────
+
 export default function WeldersPage() {
   const { data: welders = [], isLoading } = useWelders()
   const create  = useCreateWelder()
   const update  = useUpdateWelder()
   const destroy = useDeleteWelder()
 
+  const [activeTab,   setActiveTab]   = useState<'welders' | 'continuity'>('welders')
   const [showForm,    setShowForm]    = useState(false)
   const [editing,     setEditing]     = useState<Welder | null>(null)
   const [expanded,    setExpanded]    = useState<string | null>(null)
@@ -115,12 +319,50 @@ export default function WeldersPage() {
             Manage certified welders and their stamps
           </p>
         </div>
-        <button onClick={openNew} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add Welder</span>
-          <span className="sm:hidden">Add</span>
-        </button>
+        {activeTab === 'welders' && (
+          <button onClick={openNew} className="btn-primary flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Add Welder</span>
+            <span className="sm:hidden">Add</span>
+          </button>
+        )}
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 bg-surface-800/60 rounded-xl border border-surface-700/50 w-fit">
+        {[
+          { id: 'welders',     label: 'Welders' },
+          { id: 'continuity',  label: 'Continuity' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as 'welders' | 'continuity')}
+            className={cn(
+              'px-5 py-2 rounded-lg text-sm font-medium transition-colors',
+              activeTab === tab.id
+                ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
+                : 'text-surface-400 hover:text-surface-200'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Continuity Tab */}
+      {activeTab === 'continuity' && (
+        <div className="card p-6">
+          {isLoading
+            ? <LoadingSpinner />
+            : welders.length === 0
+              ? <p className="text-sm text-surface-500 text-center py-4">No welders to show continuity for.</p>
+              : <ContinuityTab welders={welders} />
+          }
+        </div>
+      )}
+
+      {activeTab === 'welders' && (
+      <>
 
       {/* Stats bar */}
       {welders.length > 0 && (
@@ -372,6 +614,8 @@ export default function WeldersPage() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   )
