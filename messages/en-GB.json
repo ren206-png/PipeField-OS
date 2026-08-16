@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "locale": "en-GB",
+    "unit_system": "si",
+    "date_format": "DD/MM/YYYY",
+    "note": "British English stub — inherits en-US keys; override SI units and date format here",
+    "generated": "2026-08-15"
+  },
+  "units": {
+    "inches": "in",
+    "feet": "ft",
+    "mm": "mm",
+    "m": "m",
+    "psi": "psi",
+    "bar": "bar",
+    "kpa": "kPa",
+    "lbft": "lb/ft",
+    "kgm": "kg/m",
+    "degF": "°F",
+    "degC": "°C"
+  },
+  "project": {
+    "page_letter": "Letter (8.5×11\")",
+    "page_a4": "A4 (210×297mm)"
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "_meta": {
+    "locale": "en-US",
+    "unit_system": "imperial",
+    "date_format": "MM/DD/YYYY",
+    "generated": "2026-08-15"
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "required": "Required",
+    "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit"
+  },
+  "units": {
+    "inches": "in",
+    "feet": "ft",
+    "mm": "mm",
+    "m": "m",
+    "psi": "psi",
+    "bar": "bar",
+    "kpa": "kPa",
+    "lbft": "lb/ft",
+    "kgm": "kg/m",
+    "degF": "°F",
+    "degC": "°C"
+  },
+  "pipe": {
+    "nps": "Pipe Size (NPS)",
+    "schedule": "Schedule",
+    "od": "Outside Diameter",
+    "wall": "Wall Thickness",
+    "id": "Inside Diameter",
+    "material": "Material",
+    "fluid": "Fluid Service",
+    "standard": "Standard",
+    "insulation_thickness": "Insulation Thickness",
+    "insulation_density": "Insulation Density"
+  },
+  "project": {
+    "governing_code": "Governing Code",
+    "jurisdiction": "Jurisdiction",
+    "unit_system": "Unit System",
+    "locale": "Report Locale",
+    "ahj": "Authority Having Jurisdiction (AHJ)",
+    "page_size": "PDF Page Size",
+    "unit_imperial": "Imperial",
+    "unit_si": "SI (Metric)",
+    "unit_mixed": "Mixed",
+    "page_letter": "Letter (8.5×11\")",
+    "page_a4": "A4 (210×297mm)"
+  },
+  "welder": {
+    "name": "Welder Name",
+    "stamp": "Stamp / Badge",
+    "process": "Welding Process",
+    "position": "Position",
+    "cert_expiry": "Certification Expiry",
+    "qualified": "Qualified",
+    "not_qualified": "Not Qualified",
+    "continuity_ok": "Continuity OK",
+    "continuity_lapsed": "Continuity Lapsed",
+    "p_number": "P-Number",
+    "f_number": "F-Number",
+    "thickness_range": "Qualified Thickness Range",
+    "od_min": "Minimum Qualified OD"
+  },
+  "nde": {
+    "method": "NDE Method",
+    "result": "Result",
+    "pass": "Pass",
+    "fail": "Fail",
+    "pending": "Pending",
+    "inspector": "Inspector",
+    "level": "Inspector Level",
+    "cert_body": "Certifying Body",
+    "vision_test": "Vision Test Date",
+    "selection_reason_random": "Random Sample",
+    "selection_reason_progressive": "Progressive Penalty",
+    "selection_reason_repair": "Repair Follow-up"
+  },
+  "mtr": {
+    "heat_number": "Heat Number",
+    "material_spec": "Material Specification",
+    "cert_type": "Certificate Type",
+    "cert_type_21": "2.1 — Declaration of Compliance",
+    "cert_type_22": "2.2 — Test Report",
+    "cert_type_31": "3.1 — Inspection Certificate (Manufacturer's Inspector)",
+    "cert_type_32": "3.2 — Inspection Certificate (Independent Inspector)",
+    "issued_by": "Issued By",
+    "document": "Certificate Document",
+    "hash_verified": "Document integrity verified",
+    "hash_mismatch": "⚠️ Document hash mismatch — certificate may have been altered"
+  },
+  "signature": {
+    "sign": "Sign",
+    "signed_by": "Signed By",
+    "signed_at": "Signed At",
+    "role": "Role",
+    "hash_note": "This signature covers the document as it existed at the time of signing.",
+    "tampered_warning": "⚠️ The signed record has been modified after signing. This signature may be invalid."
+  },
+  "engineering_review": {
+    "banner": "⚠️ ENGINEERING REVIEW REQUIRED",
+    "qualification_ranges": "Qualification ranges come from WPS records as entered. Verify all parameters against your governing code before relying on this check for compliance.",
+    "nde_percentages": "NDE sampling percentages and progressive trigger thresholds are engineering defaults. They must be reviewed by a qualified engineer before use in a code-compliant NDE program.",
+    "position_coverage": "Position coverage rules (RULE-001) must be verified against ASME IX QW-461.9 before enabling qualification enforcement.",
+    "p_number_grouping": "P-number grouping (RULE-002) must be verified against ASME IX QW-422 before enabling enforcement.",
+    "thickness_ranges": "Thickness range rules (RULE-003) must be verified against ASME IX QW-451 before enabling enforcement."
+  }
+}

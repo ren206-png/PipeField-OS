@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "locale": "fr-CA",
+    "unit_system": "si",
+    "date_format": "DD/MM/YYYY",
+    "note": "French Canadian stub — key translations to be completed by a professional translator",
+    "generated": "2026-08-15"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "loading": "Chargement…",
+    "error": "Une erreur s'est produite",
+    "required": "Obligatoire",
+    "optional": "Facultatif",
+    "yes": "Oui",
+    "no": "Non",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre"
+  },
+  "project": {
+    "governing_code": "Code directeur",
+    "jurisdiction": "Juridiction",
+    "unit_system": "Système d'unités",
+    "ahj": "Autorité ayant juridiction (AHJ)",
+    "page_size": "Format de page PDF"
+  }
+}
