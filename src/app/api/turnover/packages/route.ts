@@ -7,7 +7,12 @@ import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { TURNOVER_GEN_ENABLED } from '@/intelligence/flags'
 import { runGapCheck } from '@/lib/turnover-gap-check'
+import { buildTurnoverPackage } from '@/lib/turnover/builder'
+import { renderTurnoverPdf } from '@/lib/turnover/pdf-renderer'
 import { z } from 'zod'
+import crypto from 'crypto'
+
+const TURNOVER_BUCKET = 'turnover-packages'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,77 +37,79 @@ async function generatePackageAsync(
       .update({ status: 'generating', progress_pct: 10 })
       .eq('id', packageId)
 
-    // 2. Load project details
-    const { data: project } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('id', projectId)
-      .single()
-
-    // 3. Load all welds (progress 30)
+    // 2. Assemble all package data from DB (progress 40)
     await supabase
       .from('turnover_packages')
-      .update({ progress_pct: 30 })
+      .update({ progress_pct: 40 })
       .eq('id', packageId)
-    const { data: welds } = await supabase
-      .from('welds')
-      .select('*, welders(full_name, stamp)')
-      .eq('project_id', projectId)
-      .eq('organization_id', organizationId)
 
-    // 4. Load NDE selections with results (progress 50)
-    await supabase
-      .from('turnover_packages')
-      .update({ progress_pct: 50 })
-      .eq('id', packageId)
-    const planIds =
-      (
-        await supabase
-          .from('nde_plans')
-          .select('id')
-          .eq('project_id', projectId)
-          .eq('organization_id', organizationId)
-      ).data?.map(p => p.id) ?? []
-    const { data: ndeSelections } =
-      planIds.length > 0
-        ? await supabase.from('nde_selections').select('*').in('nde_plan_id', planIds)
-        : { data: [] }
+    const packageData = await buildTurnoverPackage(supabase, packageId, projectId, organizationId)
 
-    // 5. Assemble content object (progress 70)
+    // 3. Render PDF buffer (progress 70)
     await supabase
       .from('turnover_packages')
       .update({ progress_pct: 70 })
       .eq('id', packageId)
-    const content = {
-      generated_at: new Date().toISOString(),
-      project,
-      weld_count: welds?.length ?? 0,
-      welds: welds ?? [],
-      nde_selections: ndeSelections ?? [],
+
+    const pdfBuffer = await renderTurnoverPdf(packageData)
+
+    // 4. SHA-256 hash of PDF for immutability
+    const pdfHash = crypto.createHash('sha256').update(pdfBuffer).digest('hex')
+
+    // 5. Upload to Supabase Storage (progress 90)
+    await supabase
+      .from('turnover_packages')
+      .update({ progress_pct: 90 })
+      .eq('id', packageId)
+
+    const dateStr   = new Date().toISOString().split('T')[0]
+    const safeName  = packageData.package_name.replace(/[^a-z0-9-_]/gi, '_').slice(0, 60)
+    const storagePath = `${organizationId}/${projectId}/${dateStr}-${safeName}-${packageId.slice(0, 8)}.pdf`
+
+    const { error: uploadError } = await supabase.storage
+      .from(TURNOVER_BUCKET)
+      .upload(storagePath, pdfBuffer, {
+        contentType:  'application/pdf',
+        upsert:       true,
+      })
+
+    if (uploadError) {
+      // Storage upload failed — complete with hash but no path; log the error
+      console.error('[turnover] Storage upload failed:', uploadError.message)
+      await supabase
+        .from('turnover_packages')
+        .update({
+          status:        'complete',
+          progress_pct:  100,
+          content_hash:  pdfHash,
+          generated_by:  userId,
+          generated_at:  new Date().toISOString(),
+          storage_path:  null,
+          error_message: `PDF generated but storage upload failed: ${uploadError.message}`,
+        })
+        .eq('id', packageId)
+      return
     }
-    const contentJson = JSON.stringify(content, null, 2)
 
-    // 6. SHA-256 content hash for immutability
-    const crypto = await import('crypto')
-    const contentHash = crypto.createHash('sha256').update(contentJson).digest('hex')
-
-    // 7. Complete (progress 100)
+    // 6. Mark complete with storage path (progress 100)
     await supabase
       .from('turnover_packages')
       .update({
-        status: 'complete',
+        status:       'complete',
         progress_pct: 100,
-        content_hash: contentHash,
+        content_hash: pdfHash,
         generated_by: userId,
         generated_at: new Date().toISOString(),
-        // storage_path: left null — no Supabase Storage bucket configured yet
+        storage_path: storagePath,
       })
       .eq('id', packageId)
+
   } catch (err) {
+    console.error('[turnover] generation failed:', err)
     await supabase
       .from('turnover_packages')
       .update({
-        status: 'failed',
+        status:        'failed',
         error_message: err instanceof Error ? err.message : 'Unknown error',
       })
       .eq('id', packageId)
