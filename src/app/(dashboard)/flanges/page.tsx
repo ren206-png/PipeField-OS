@@ -282,10 +282,12 @@ function StatusDropdown({
   onUpdated: () => void
 }) {
   const [pending, setPending] = useState(false)
+  const [updateError, setUpdateError] = useState<string | null>(null)
   const cfg = statusConfig(currentStatus)
 
   async function handleChange(newStatus: string) {
     setPending(true)
+    setUpdateError(null)
     try {
       const res = await apiFetch(`/api/flanges/${flangeId}`, {
         method: 'PATCH',
@@ -293,34 +295,41 @@ function StatusDropdown({
       })
       if (!res.ok) {
         const d = await res.json()
-        console.error('Status update failed:', d.error)
+        setUpdateError(d.error ?? 'Failed to update status')
       } else {
         onUpdated()
       }
+    } catch {
+      setUpdateError('Failed to update status')
     } finally {
       setPending(false)
     }
   }
 
   return (
-    <div className="relative">
-      <select
-        className={cn(
-          'text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer appearance-none pr-6',
-          cfg.color,
-          'bg-transparent focus:outline-none focus:ring-1 focus:ring-brand-500/50',
-        )}
-        value={currentStatus}
-        onChange={e => handleChange(e.target.value)}
-        disabled={pending}
-      >
-        {FLANGE_STATUSES.map(s => (
-          <option key={s.value} value={s.value} className="bg-surface-800 text-surface-200">
-            {s.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500 pointer-events-none" />
+    <div>
+      <div className="relative">
+        <select
+          className={cn(
+            'text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer appearance-none pr-6',
+            cfg.color,
+            'bg-transparent focus:outline-none focus:ring-1 focus:ring-brand-500/50',
+          )}
+          value={currentStatus}
+          onChange={e => handleChange(e.target.value)}
+          disabled={pending}
+        >
+          {FLANGE_STATUSES.map(s => (
+            <option key={s.value} value={s.value} className="bg-surface-800 text-surface-200">
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-surface-500 pointer-events-none" />
+      </div>
+      {updateError && (
+        <p className="text-xs text-red-400 mt-1 whitespace-nowrap">{updateError}</p>
+      )}
     </div>
   )
 }

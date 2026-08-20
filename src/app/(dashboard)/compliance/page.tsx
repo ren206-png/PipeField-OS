@@ -31,14 +31,17 @@ import { useOrganization } from '@/hooks/useOrganization'
 
 interface ComplianceStatus {
   standard: string
-  welds_logged: number
-  visual_inspections: number
-  ndt_progress: number        // percentage 0-100
-  welder_qualifications: number
-  alerts: Array<{
-    id: string
-    severity: 'critical' | 'warning'
-    message: string
+  total_welds: number
+  welds_with_visual_inspection: number
+  inspection_completion_pct: number   // percentage 0-100
+  welder_qualifications_active: number
+  continuity_alerts: Array<{
+    welder_id: string
+    process: string
+    position: string
+    expires_date: string
+    continuity_status: string
+    days_remaining: number
   }>
 }
 
@@ -96,13 +99,13 @@ function ProjectComplianceSection() {
       // API may not exist yet — show friendly placeholder
       setStatus({
         standard: 'AWS D1.1 2025',
-        welds_logged: 0,
-        visual_inspections: 0,
-        ndt_progress: 0,
-        welder_qualifications: 0,
-        alerts: [],
+        total_welds: 0,
+        welds_with_visual_inspection: 0,
+        inspection_completion_pct: 0,
+        welder_qualifications_active: 0,
+        continuity_alerts: [],
       })
-      setError((err as Error).message.includes('404') ? null : null)
+      setError((err as Error).message.includes('404') ? null : ((err as Error).message || 'Failed to load compliance status'))
     } finally {
       setLoading(false)
     }
@@ -167,10 +170,10 @@ function ProjectComplianceSection() {
           {/* Stat cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Welds Logged',            value: status.welds_logged,           icon: FlaskConical },
-              { label: 'Visual Inspections',       value: status.visual_inspections,     icon: CheckCircle2 },
-              { label: 'NDT Progress',             value: `${status.ndt_progress}%`,     icon: ClipboardList },
-              { label: 'Welder Qualifications',    value: status.welder_qualifications,  icon: Users },
+              { label: 'Welds Logged',            value: status.total_welds,                    icon: FlaskConical },
+              { label: 'Visual Inspections',       value: status.welds_with_visual_inspection,   icon: CheckCircle2 },
+              { label: 'NDT Progress',             value: `${status.inspection_completion_pct}%`, icon: ClipboardList },
+              { label: 'Welder Qualifications',    value: status.welder_qualifications_active,   icon: Users },
             ].map(s => {
               const Icon = s.icon
               return (
@@ -186,26 +189,26 @@ function ProjectComplianceSection() {
           </div>
 
           {/* Alerts */}
-          {status.alerts.length > 0 ? (
+          {status.continuity_alerts.length > 0 ? (
             <div className="space-y-2">
               <p className="text-xs font-semibold text-surface-400 uppercase tracking-wide">Continuity Alerts</p>
-              {status.alerts.map(a => (
+              {status.continuity_alerts.map((a, i) => (
                 <div
-                  key={a.id}
+                  key={i}
                   className={cn(
                     'flex items-start gap-2 p-3 rounded-lg text-sm',
-                    a.severity === 'critical'
+                    a.days_remaining <= 0
                       ? 'bg-red-500/10 border border-red-500/30 text-red-300'
                       : 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-300'
                   )}
                 >
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{a.message}</span>
+                  <span>{a.welder_id} — {a.process} / {a.position} — {a.continuity_status}</span>
                   <span className={cn(
                     'ml-auto px-2 py-0.5 rounded-full text-xs font-bold flex-shrink-0',
-                    a.severity === 'critical' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
+                    a.days_remaining <= 0 ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
                   )}>
-                    {a.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
+                    {a.days_remaining <= 0 ? 'EXPIRED' : `${a.days_remaining}d`}
                   </span>
                 </div>
               ))}

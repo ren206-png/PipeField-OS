@@ -110,29 +110,3 @@ export const PLANS = {
 
 export type PlanKey = keyof typeof PLANS
 
-// ── Three-tier billing plans (Free / Pro / Enterprise) ───────
-// Used by the /billing page pricing cards.
-export const BILLING_PLANS = {
-  field_pro: {
-    name: 'Field Pro', price: 19.99, description: 'For solo field workers',
-    projectLimit: 1, weldLimit: 500, userLimit: 1,
-    priceId: process.env.STRIPE_PRICE_FIELD_PRO ?? '',
-  },
-  starter: {
-    name: 'Starter', price: 59.99, description: 'For small crews',
-    projectLimit: Infinity, weldLimit: 5000, userLimit: 3,
-    priceId: process.env.STRIPE_PRICE_STARTER ?? '',
-  },
-  professional: {
-    name: 'Professional', price: 299.99, description: 'For growing teams',
-    projectLimit: Infinity, weldLimit: Infinity, userLimit: 15,
-    priceId: process.env.STRIPE_PRICE_PROFESSIONAL ?? '',
-  },
-  enterprise: {
-    name: 'Enterprise', price: 999, description: 'Unlimited scale',
-    projectLimit: Infinity, weldLimit: Infinity, userLimit: Infinity,
-    priceId: process.env.STRIPE_PRICE_ENTERPRISE ?? '',
-  },
-} as const
-
-export type BillingPlanKey = keyof typeof BILLING_PLANS

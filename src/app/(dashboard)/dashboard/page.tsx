@@ -206,7 +206,7 @@ export default async function DashboardPage() {
 
   // ── urgent spools (priority 1-2, not released) ────────────
   const urgentSpools = spools
-    .filter(s => s.priority <= 2 && s.status !== 'released')
+    .filter(s => s.priority != null && s.priority <= 2 && s.status !== 'released')
     .slice(0, 3)
 
   // ── overdue spools (required_date < today & not completed/released) ──

@@ -87,7 +87,3 @@ export const TRIAL_MILESTONES: TrialMilestone[] = [
   },
 ]
 
-// Lookup by key
-export const MILESTONE_MAP = Object.fromEntries(
-  TRIAL_MILESTONES.map(m => [m.key, m])
-) as Record<TrialMilestoneKey, TrialMilestone>
