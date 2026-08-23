@@ -88,7 +88,8 @@ export function PhotoUpload({ weldId, photos, orgId }: PhotoUploadProps) {
   async function handleDelete(photoId: string, storagePath: string) {
     setDeleting(photoId)
     try {
-      await supabase.storage.from('weld-photos').remove([storagePath])
+      const { error: storageErr } = await supabase.storage.from('weld-photos').remove([storagePath])
+      if (storageErr) { setError(storageErr.message); return }
       const { error } = await supabase.from('weld_photos').delete().eq('id', photoId)
       if (error) { setError(error.message); return }
       queryClient.invalidateQueries({ queryKey: ['weld', weldId] })
