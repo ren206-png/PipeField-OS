@@ -38,6 +38,9 @@ const ContentSecurityPolicy = [
     'wss://*.supabase.co',
     'https://api.stripe.com',
     'https://js.stripe.com',
+    // Capacitor native bridge (iOS / Android WebView)
+    'capacitor://localhost',
+    'ionic://localhost',
     isDev ? 'ws://localhost:3000' : '',
     'https://www.google-analytics.com',
     'https://region1.google-analytics.com',

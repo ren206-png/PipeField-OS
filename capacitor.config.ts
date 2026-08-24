@@ -24,11 +24,11 @@ const config: CapacitorConfig = {
     scrollEnabled:      true,
   },
 
-  // ── Server (live Vercel build) ─────────────────────────────
+  // ── Server (live production domain) ───────────────────────
   // Android WebView uses this directly — no custom scheme proxy needed.
   // iOS ignores this because MainViewController loads apphttps:// manually.
   server: {
-    url: 'https://pipefield-os.vercel.app',
+    url: 'https://pipefield-os.com',
     cleartext: false,
   },
 

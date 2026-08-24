@@ -39,9 +39,13 @@
 		</dict>
 	</array>
 
+	<!-- ── Push notifications usage description ── -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>PipeField OS sends alerts for weld continuity expiry, inspection reminders, and team updates.</string>
+
 	<!-- ── Associated Domains (Universal Links + Supabase) ── -->
 	<!-- Enable in Signing & Capabilities → Associated Domains -->
-	<!-- Entry: applinks:pipefield-os.vercel.app            -->
+	<!-- Entry: applinks:pipefield-os.com                   -->
 
 	<!-- ── Device requirements ── -->
 	<key>LSRequiresIPhoneOS</key>
@@ -94,12 +98,12 @@
 		<false/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>pipefield-os.vercel.app</key>
+			<key>pipefield-os.com</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<false/>
 				<key>NSIncludesSubdomains</key>
-				<false/>
+				<true/>
 			</dict>
 		</dict>
 	</dict>
