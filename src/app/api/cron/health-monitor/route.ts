@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         : (currentRate > 0 ? 999 : 0)
 
       if (spikeMultiple >= 3 && currentRate > 5) {
-        await supabase.from('system_alerts').insert({
+        const { error: alertErr } = await supabase.from('system_alerts').insert({
           alert_type: 'error_spike',
           severity:   spikeMultiple >= 5 ? 'critical' : 'warning',
           capability: cap,
@@ -90,7 +90,8 @@ export async function POST(req: NextRequest) {
           body:       `Current error rate ${currentRate.toFixed(1)}% is ${spikeMultiple.toFixed(1)}x above baseline (${baselineRate.toFixed(1)}%)`,
           metadata:   { currentRate, baselineRate, spikeMultiple, total: current[0].total },
         })
-        jobs.errorSpike.alertsCreated++
+        if (alertErr) console.error('[health-monitor] Failed to insert error_spike alert:', alertErr.message)
+        else jobs.errorSpike.alertsCreated++
       }
     }
   } catch (err) {
@@ -128,14 +129,15 @@ export async function POST(req: NextRequest) {
         const pct    = (used / budget) * 100
 
         if (pct >= 80) {
-          await supabase.from('system_alerts').insert({
+          const { error: budgetAlertErr } = await supabase.from('system_alerts').insert({
             alert_type: 'budget_warning',
             severity:   pct >= 95 ? 'critical' : 'warning',
             title:      `AI budget ${pct >= 95 ? 'critical' : 'warning'}: ${tier} org`,
             body:       `Organization has used ${pct.toFixed(0)}% of daily token budget (${used.toLocaleString()} / ${budget.toLocaleString()} tokens)`,
             metadata:   { organization_id: org.id, tier, used, budget, pct },
           })
-          jobs.budgetWarning.alertsCreated++
+          if (budgetAlertErr) console.error('[health-monitor] Failed to insert budget_warning alert:', budgetAlertErr.message)
+          else jobs.budgetWarning.alertsCreated++
         }
       }
     }
@@ -166,15 +168,16 @@ export async function POST(req: NextRequest) {
       const errorRate = (stats.errors / stats.total) * 100
       if (errorRate > 50) {
         const reason = `Auto-disabled: ${errorRate.toFixed(0)}% error rate in last 30 min (${stats.errors}/${stats.total} requests)`
-        await supabase.from('capability_overrides').upsert({
+        const { error: upsertErr } = await supabase.from('capability_overrides').upsert({
           capability:      cap,
           disabled:        true,
           disabled_reason: reason,
           disabled_at:     new Date().toISOString(),
           auto_disabled:   true,
         }, { onConflict: 'capability' })
+        if (upsertErr) console.error('[health-monitor] Failed to upsert capability_override:', upsertErr.message)
 
-        await supabase.from('system_alerts').insert({
+        const { error: healAlertErr } = await supabase.from('system_alerts').insert({
           alert_type: 'capability_disabled',
           severity:   'critical',
           capability: cap,
@@ -182,6 +185,7 @@ export async function POST(req: NextRequest) {
           body:       reason,
           metadata:   { errorRate, total: stats.total, errors: stats.errors },
         })
+        if (healAlertErr) console.error('[health-monitor] Failed to insert capability_disabled alert:', healAlertErr.message)
         jobs.selfHealing.disabledCapabilities++
       }
     }
@@ -211,7 +215,7 @@ export async function POST(req: NextRequest) {
       for (const admin of admins ?? []) {
         for (const alert of criticalAlerts) {
           // In-app notification
-          await supabase.from('notifications').insert({
+          const { error: notifErr } = await supabase.from('notifications').insert({
             user_id:         admin.id,
             organization_id: admin.organization_id,
             type:            'system_alert',
@@ -220,7 +224,8 @@ export async function POST(req: NextRequest) {
             data:            { alert_id: alert.id, alert_type: alert.alert_type, severity: alert.severity },
             read:            false,
           })
-          jobs.notifications.sent++
+          if (notifErr) console.error('[health-monitor] Failed to insert notification:', notifErr.message)
+          else jobs.notifications.sent++
 
           // Email alert for critical alerts
           if (alert.severity === 'critical' && admin.email) {

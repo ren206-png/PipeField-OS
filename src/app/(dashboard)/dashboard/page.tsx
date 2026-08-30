@@ -46,7 +46,6 @@ export default async function DashboardPage() {
     spoolsRes,
     projectsRes,
     activityRes,
-    welderStatsRes,
     expiringWeldersRes,
     todayDfrsRes,
     ndeRes,
@@ -62,10 +61,6 @@ export default async function DashboardPage() {
       .select('id, action, table_name, record_id, new_values, previous_values, performed_at')
       .order('performed_at', { ascending: false })
       .limit(12),
-    supabase
-      .from('welds')
-      .select('welder_stamp, welder_name, status')
-      .not('welder_stamp', 'is', null),
     supabase
       .from('welders')
       .select('id, full_name, cert_expiry')
@@ -135,7 +130,6 @@ export default async function DashboardPage() {
   const weldTotal    = welds.length
   const weldAccepted = welds.filter(w => w.status === 'accepted').length
   const weldFailed   = welds.filter(w => w.status === 'failed').length
-  const weldPending  = welds.filter(w => w.status === 'xray_pending').length
   const weldActive   = welds.filter(w => ['welded', 'fit_up_approved', 'visual_pass', 'repaired'].includes(w.status)).length
   const passRate     = pct(weldAccepted, weldTotal - weldFailed > 0 ? weldTotal - weldFailed : weldTotal)
 

@@ -2,6 +2,8 @@
 // POST /api/notifications/send-push
 // Send a web push notification to all subscribed users in the
 // caller's organization (or a specific user_id if provided).
+// TODO(dead-route): No frontend callers found as of 2026-08-30.
+//   Exposed as an admin-only utility endpoint; remove if never adopted.
 //
 // Body:
 //   { title, body, url?, tag?, userId? }

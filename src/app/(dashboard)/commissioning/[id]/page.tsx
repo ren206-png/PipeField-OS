@@ -7,7 +7,7 @@ import { useStp, useUpdateStp, useCreatePrecommItem, useUpdatePrecommItem, useDe
 import { useAuth } from '@/hooks/useAuth'
 import {
   ArrowLeft, Plus, Trash2, Loader2, CheckCircle2, Clock, AlertCircle,
-  FileText, Award, X, ChevronDown, Edit2, Save
+  FileText, Award, X, Edit2, Save
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'

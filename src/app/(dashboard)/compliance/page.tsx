@@ -56,13 +56,6 @@ interface WelderContinuity {
   days_remaining: number | null
 }
 
-interface Standard {
-  id: string
-  code: string
-  name: string
-  visual_criteria: string[]
-}
-
 // ── Helpers ────────────────────────────────────────────────────
 
 function statusBadge(status: 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED') {

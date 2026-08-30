@@ -10,7 +10,7 @@ import { useOrganization } from '@/hooks/useOrganization'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import {
-  Building2, Flame, Package, CheckCircle2, AlertCircle, Clock,
+  Building2, Flame, Package, CheckCircle2, AlertCircle,
   MessageSquare, ListChecks, Activity, TrendingUp,
   ShieldCheck, ChevronRight,
   Link2, Plus, Copy, Trash2, ExternalLink, CalendarClock,

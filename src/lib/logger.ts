@@ -56,6 +56,7 @@ function emit(level: Level, event: string, context?: Record<string, unknown>, er
       .filter(([k]) => k !== 'level' && k !== 'event' && k !== 'service' && k !== 'env')
       .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
       .join(' ')
+    // eslint-disable-next-line no-console
     const method = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log
     method(`${color[level]}[${level.toUpperCase()}]${reset} ${timestamp} ${event}${meta ? ' ' + meta : ''}`)
   } else {
