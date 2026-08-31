@@ -33,12 +33,14 @@ const ENTITY_LABELS: Record<EntityType, string> = {
   weld:         'Welds',
   daily_report: 'Daily Reports',
   spool:        'Spools',
+  field_weld:   'Field Welds',
 }
 
 const ENTITY_ICONS: Record<EntityType, React.ElementType> = {
   weld:         Flame,
   daily_report: ClipboardList,
   spool:        Package,
+  field_weld:   Flame,
 }
 
 type Tab = EntityType | 'all'

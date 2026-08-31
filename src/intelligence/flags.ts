@@ -66,6 +66,36 @@ export const FLAGS = {
   // Phase 1: Trial billing fields, webhook hardening, idempotency.
   // Phases 2-4: trial creation, cron notifications, grace period enforcement.
   PFOS_TRIAL_BILLING:                  process.env.PFOS_TRIAL_BILLING                  === 'true',
+
+  // ── Field Mode module (PipeField OS Field Mode master prompt) ──
+  // Master switch — reference library, calculator, field UI, and
+  // personal log are each gated by their own sub-flag below, but all
+  // of them are no-ops while this is OFF. Phase 1 (this migration)
+  // ships schema + importer only, no UI — every Field Mode flag
+  // defaults OFF and stays OFF until its owning phase is approved.
+  PFOS_FIELD_MODE:                     process.env.PFOS_FIELD_MODE                     === 'true',
+
+  // Phase 1: reference library (24 recall + 17 pocket-tradesman
+  // tables, verification workflow). No UI yet — this flag guards the
+  // future reference-browsing surface, not the importer/verify-ref
+  // CLIs (which are unconditional standalone scripts).
+  PFOS_FIELD_REFERENCE:                process.env.PFOS_FIELD_REFERENCE                === 'true',
+
+  // Phase 2: calculator engine (mm-internal, imperial display).
+  PFOS_FIELD_CALC:                     process.env.PFOS_FIELD_CALC                     === 'true',
+
+  // Phase 3: Field Mode UI shell (scan/lookup log).
+  PFOS_FIELD_SCAN_LOG:                 process.env.PFOS_FIELD_SCAN_LOG                 === 'true',
+
+  // Phase 4: personal log.
+  PFOS_FIELD_PERSONAL_LOG:             process.env.PFOS_FIELD_PERSONAL_LOG             === 'true',
+
+  // Phase 4: voice notes capture on the personal log.
+  PFOS_FIELD_VOICE_NOTES:              process.env.PFOS_FIELD_VOICE_NOTES              === 'true',
+
+  // Owner-facing console for reviewing/approving ref_verification_events
+  // and resolving DATA_SOURCE_MANIFEST gaps in-app (post-Phase-1 UI).
+  PFOS_FIELD_REF_VERIFY_CONSOLE:       process.env.PFOS_FIELD_REF_VERIFY_CONSOLE        === 'true',
 } as const
 
 export type FlagName = keyof typeof FLAGS

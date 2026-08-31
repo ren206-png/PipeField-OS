@@ -1,378 +1,287 @@
-# PHASE 0 FINDINGS — PipeField OS International Standards Architecture Audit
-
-**Date:** 2026-08-15
-**Auditor:** Claude (read-only inventory; no code changed)
-**Scope:** Full codebase snapshot at HEAD
-**Status:** AWAITING `APPROVED: PHASE 0` before any implementation begins
+# PHASE_0_FINDINGS.md
+# PipeField OS — Field Mode Module Pre-Work Analysis
+# Date: 2026-08-26
 
 ---
 
-## A. Standard References Inventory
+## 2.1 Stack and Structure
 
-All ASME / API / ISO / EN / BS references found in source files.
+### Framework, Router, Rendering Model, State Management
 
-| Reference | File(s) | Context |
-|-----------|---------|---------|
-| ASME B36.10M | `src/data/asme_pipe_dimensions.json`, `pipefield_os/data/asme_pipe_dimensions.json`, `src/config/pipe-data.ts`, `src/components/pipe-support/InputForm.tsx` (line 93) | Pipe dimension dataset; user-selectable standard in Pipe Support form |
-| ASME B36.19M | same JSON files, `InputForm.tsx` | Stainless schedules |
-| ASME B31.3 | `InputForm.tsx` line 15 (`DESIGN_BASES`), `pipefield_os/pipe_support/engine.py` | Process piping design basis selector |
-| ASME B31.1 | `InputForm.tsx` line 15, `engine.py` | Power piping design basis |
-| ASME B16.9 | `src/app/(dashboard)/calculator/page.tsx` (engineering notice banner) | Reference only; no data table |
-| ASME IX | `src/intelligence/qualification-engine.ts` comments | Welder qualification process codes |
-| API 1104 | `src/intelligence/qualification-engine.ts` comments | Pipeline welding reference (comment only) |
-| ASME B&PV Sec I | Implicit via B31.1 reference in engine.py | Not explicitly cited |
+- **Framework:** Next.js 14.2.29 (`package.json:47`) using the App Router.
+- **Router:** App Router with route groups: `(auth)`, `(dashboard)`, `(admin)`. Middleware at `src/middleware.ts` handles session refresh on every non-static request.
+- **Rendering model:** Mixed. Server Components for data-fetch pages (weld detail, spool detail, project detail use `createAdminClient` + `getCallerProfile` server-side). Client Components (`'use client'`) for interactive UI. Quote from `src/app/(dashboard)/welds/[id]/page.tsx:1–10`: "Weld Detail — Server Component."
+- **State management:** TanStack React Query (`@tanstack/react-query` 5.101.0) for server state — 333 import sites across `src/`. No Zustand or Redux found. Provider at `src/providers/QueryProvider.tsx`.
+- **Mobile:** Capacitor 8.x (`capacitor.config.ts`) targeting iOS and Android. PWA via `@ducanh2912/next-pwa` 10.2.9.
 
-**Edition tracking:** None. No `edition_year` or `edition` field exists on any record or in the JSON data. The standard name is stored but not the edition year (e.g., "B36.10M-2015" vs "B36.10M-2004").
+### Database Client and Query Layer; Tenant Scoping
 
----
+- **Database client:** Supabase (`@supabase/supabase-js` ^2.110.0, `@supabase/ssr` ^0.12.0).
+- **Three client variants:**
+  - `src/lib/supabase/server.ts` — anon key, cookie-based SSR sessions.
+  - `src/lib/supabase/client.ts` — anon key, browser-side.
+  - `src/lib/supabase/admin.ts` — service role key, bypasses RLS. Server-only.
+- **Tenant scoping pattern — `getCallerProfile`:** Canonical implementation at `src/lib/api-auth.ts:29`. It authenticates via Bearer token (Strategy 1) or SSR cookie (Strategy 2), then queries `user_profiles` using `createAdminClient` to resolve `organization_id`, `role`, `id`. All route handlers call `requireAuth(req)` or `requireOrgAdmin(req)` (defined at `src/lib/api-auth.ts:82–116`) before touching data. Server-Component pages call `getCallerProfile()` directly and then apply `organization_id` as an explicit `.eq('organization_id', organizationId)` filter even when using `createAdminClient` (see `src/app/(dashboard)/welds/[id]/page.tsx:20–40`). RLS on Supabase enforces the same boundary for anon-key queries via `get_my_org_id()` / `get_my_role()` helper functions defined in `supabase/schema.sql:201–215`.
 
-## B. Welder Qualification Schema & Logic
+### Where Migrations Live and How They Are Applied
 
-### Schema (from Supabase migrations)
-```
-welders
-  id, org_id, name, badge_number, created_at
+- **Location:** `supabase/migrations/` — dated SQL files (20260702 through 20260815). Also unnumbered fix/setup scripts directly in `supabase/` (e.g., `schema.sql`, `setup-all.sql`, `fix-all-columns.sql`).
+- **Application:** No Supabase CLI `config.toml` found. Migrations appear to be applied manually via the Supabase Dashboard SQL editor or via `supabase/apply-missing-migrations.sql`. There is also an Alembic-based Python backend at `pipefield_os/migrations/` for the FastAPI service.
+- **Note for Field Mode:** A new Field Mode migration should follow the dated naming convention: `20260826_field_mode_*.sql`.
 
-welder_qualifications
-  id, welder_id, org_id
-  process          TEXT   (e.g. "SMAW", "GTAW")
-  position         TEXT   (e.g. "1G", "6G")
-  base_metal       TEXT
-  filler_metal     TEXT
-  qualified_date   DATE
-  expiry_date      DATE
-  test_number      TEXT
-  notes            TEXT
-  created_at
-```
+### Feature-Flag Mechanism
 
-### Evaluation Logic (`src/intelligence/qualification-engine.ts`)
-`checkQualification(welderId, weldParams)` performs:
-1. Fetch all qualifications for welder where `expiry_date > now()`
-2. Filter by `process` match (exact string comparison)
-3. Filter by `position` match (exact string comparison — **no essential variable expansion**)
-4. Returns `{ qualified: boolean, matchedQual: ... }`
+**Confirmed present. Two-layer system:**
 
-### Gaps
-- ❌ No thickness range enforcement (essential variable per ASME IX QW-403)
-- ❌ No diameter range enforcement (QW-403.18 for pipe)
-- ❌ No P-number / F-number / A-number grouping
-- ❌ No essential vs. supplementary essential variable classification
-- ❌ No PWHT condition tracking
-- ❌ No impact test condition
-- ❌ No 6-month continuity check (QW-322) — `continuity_window` env var exists but defaults to `ENGINEERING_REVIEW_REQUIRED` string (see Risk R4)
-- ❌ No API 1104 qualification path
-- ❌ Position coverage expansion not implemented (e.g., 6G covers all positions)
+1. **Process-env flags** at `src/intelligence/flags.ts:1–74`. All flags are `const FLAGS = { FLAG_NAME: process.env.FLAG_NAME === 'true' }`. Evaluated at request time, not build time.
+2. **Per-tenant DB overrides** at `supabase/migrations/20260815_org_feature_flags.sql`. Table `org_feature_flags (org_id, flag_name, enabled, metadata)` unique on `(org_id, flag_name)`. Resolution order: DB row > env var > false. API at `src/app/api/org/flags/route.ts`.
 
----
+Current flags include: `PFOS_OFFLINE_FIELD` (Module 5A), `PFOS_MATERIAL_TRACE`, `PFOS_QUAL_ENFORCEMENT`, `PFOS_NDE_ENGINE`. A `PFOS_FIELD_MODE` flag does not yet exist — it must be added.
 
-## C. NDE Selection Engine
+### Existing i18n Setup
 
-### Location
-`src/intelligence/nde-engine.ts` (and mirrored in `pipefield_os/intelligence/`)
+**Status: SCAFFOLDED but not activated.** `next-intl` is NOT installed (absent from `package.json`).
 
-### Logic
-- Percentage-based random selection seeded with SHA-256 hash of `(org_id + weld_id + date)`
-- Fluid service category drives RT/UT/MT/PT percentage tables
-- Design basis (B31.3 vs B31.1) selects different percentage tables
+- Locale list defined at `src/i18n/request.ts:10`: `['en-US', 'en-CA', 'en-GB', 'en-AU', 'fr-CA', 'fr-FR', 'de-DE', 'pt-BR', 'es-MX', 'ar-SA', 'zh-CN']`.
+- Message files exist for three locales only: `messages/en-US.json`, `messages/en-GB.json`, `messages/fr-CA.json`.
+- `src/i18n/README.md`: "Status: SCAFFOLDED — needs `next-intl` installed to activate." Activation checklist not complete.
+- Unit conversion (`src/lib/units.ts`) is active and has no `next-intl` dependency.
 
-### Gaps
-- ❌ No NDE personnel qualification model (SNT-TC-1A / ASME Sec V Art. 1 T-120)
-- ❌ SHA-256 seed incorporates `date` — **non-reproducible** if re-run on different day (Risk R2)
-- ❌ No radiographic technique record (source, SFD, IQI)
-- ❌ No hardness testing (PWHT verification)
-- ❌ No hold-point / witness-point workflow
-- ❌ Severity of indication / acceptance criteria not stored — pass/fail only
+### Unit System: SI-Internal or Planned?
+
+**Storage is imperial. Display conversion is implemented and live.** `src/lib/units.ts:3–4`:
+
+> "All internal storage is imperial (inches, feet, psi, lb, °F). These helpers convert to SI for display when `project.unit_system === 'si'`."
+
+Conversion utilities confirmed live at `src/lib/units.ts`:
+- `inToMm`, `mmToIn`, `ftToM`, `mToFt` (lines 18–23)
+- `lbToKg`, `lbftToKgm` (lines 26–27)
+- `psiToBar`, `psiToKpa`, `psiToMpa`, `barToPsi` (lines 30–33)
+- `fToC`, `cToF` (lines 36–37)
+- `NPS_TO_DN` lookup table (lines 40–55)
+- `formatLength`, `formatSpan`, `formatPressure`, `formatTemp`, `formatWeight` (lines 59–90)
+
+`projects.unit_system` column (`CHECK (unit_system IN ('imperial', 'si', 'mixed'))`) added in `supabase/migrations/20260815_project_standards_config.sql:23`.
 
 ---
 
-## D. Material Traceability
+## 2.2 Existing Assets to Reuse
 
-### Schema
-```
-mtrs (Material Test Reports)
-  id, org_id, project_id
-  heat_number      TEXT
-  material_spec    TEXT   (e.g. "A106 Gr B")
-  cert_type        TEXT   (free text — no enum)
-  issued_by        TEXT
-  document_url     TEXT
-  created_at
+### NPS 1–48 Pipe Dimension Dataset
 
-welds
-  heat_number_base TEXT
-  heat_number_fill TEXT
-  (FK to mtrs via heat_number — soft link, no FK constraint)
-```
+**Not a database table — stored as JSON and in-code lookup tables.**
 
-### Gaps
-- ❌ No EN 10204 certificate type enum (2.1 / 2.2 / 3.1 / 3.2)
-- ❌ No document hash / SHA-256 fingerprint on uploaded certs
-- ❌ No PMI (Positive Material Identification) record table
-- ❌ No traceability chain: MR → spool → weld (heat_number is a free-text soft link)
-- ❌ No mill cert expiry / validity period
-- ❌ `cert_type` is free text — cannot enforce 3.1 vs 3.2 by project requirement
+- `src/data/asme_pipe_dimensions.json` — keyed object `{ "B36.10M": { "<NPS>": { "OD_in": number, "schedules": { "<SCH>": { "wall_in": number, "ID_in": number } } } }, "B36.19M": {...} }`. B36.10M has 33 NPS sizes (0.5–60); B36.19M has 13 sizes (0.5–12). **No circumference column. No weight-per-length column.**
+- `src/config/pipe-data.ts` — `PIPE_OD_TABLE` (NPS → OD in inches, 35 NPS sizes 0.5–48, `pipe-data.ts:114`), `PIPE_WALL_TABLE` (NPS → schedule → wall_in, `pipe-data.ts:158`), `NPS_SIZES` array (35 entries, `pipe-data.ts:73`). **No circumference. No weight-per-length.**
 
----
+Circumference and weight-per-length must be computed (circumference = π × OD; weight per ASME B36.10M formula) or added as new columns.
 
-## E. Pipe Dimension Dataset
+### Pipe Support Reference UI
 
-### Files
-- `src/data/asme_pipe_dimensions.json` — Next.js app source of truth
-- `pipefield_os/data/asme_pipe_dimensions.json` — Python backend mirror
-- `src/config/pipe-data.ts` — TypeScript typed lookup tables
+- **Pipe Support Calculator page:** `src/app/(dashboard)/pipe-support/page.tsx`
+- **Components directory:** `src/components/pipe-support/` contains:
+  - `SupportCalculator.tsx`, `InputForm.tsx`, `OutputScreen.tsx`, `PdfTriggerButton.tsx`, `SaveCalculationModal.tsx`
+  - `SupportSpecTable.tsx` — filterable 3-row spec table (hardcoded sample data, `SupportSpecTable.tsx:3–23`)
+  - `SupportPhotoIdentifier.tsx` — AI photo-ID widget
+- **Pipe Reference page:** `src/app/(dashboard)/pipe-reference/page.tsx` — multi-tab reference library (Pipe Dims, Fitting Take-Outs B16.9, Flanges B16.5, Valves B16.10, Support Spans MSS SP-69). Imports from `src/config/pipe-data.ts` and `src/config/reference-data.ts`.
+- **Reusability:** The pipe-reference multi-tab pattern is a good reference-page template. `SupportSpecTable` is a reusable filterable table. The `SupportPhotoIdentifier` is the AI photo-ID widget.
 
-### Coverage (post-expansion this session)
-- B36.10M: NPS 0.5 → 60 (33 sizes, no gaps in 24–48 range)
-- B36.19M: NPS 0.5 → 12 (stainless schedules)
+### Offline Entry Queue
 
-### Structure
-```json
-{
-  "B36.10M": {
-    "<NPS>": {
-      "OD_in": 4.500,
-      "schedules": {
-        "SCH40": { "wall_in": 0.237, "ID_in": 4.026 }
-      }
-    }
-  }
-}
-```
+- **Storage:** IndexedDB, database name `'pipefield-offline'`, version 2. `src/lib/offline-queue.ts`.
+- **Entity types supported:** `weld`, `daily_report`, `spool` — three fixed object stores. **Not arbitrary entity types.** (`src/lib/offline-queue.ts:32`)
+- **Retry handling:** `attempt_count` field incremented on each `markFailed()` call (`src/lib/offline-queue.ts:226–232`). No automatic back-off or max-attempt cap. No conflict-resolution strategy.
+- **Status surface:** `pending | synced | failed`. Exported helpers: `getPendingWelds()`, `getPendingDailyReports()`, `getPendingSpools()`, `getPendingCount()`, `getAllQueueItems()`, `clearSynced()`, `purgeExpired()`.
+- **TTL:** 30 days (`src/lib/offline-queue.ts:19`).
 
-### Gaps
-- ❌ All dimensions in **inches only** — no DN (mm) field
-- ❌ No `edition_year` per row or per standard block
-- ❌ No database table — JSON file only (cannot query, no audit trail on changes)
-- ❌ No API endpoint serving pipe dimensions (UI reads bundled JSON at build time)
-- ❌ `InputForm.tsx` maintains a **second independent hardcoded `NPS_SIZES` array** (line 9) — dual-maintenance risk
-- ❌ Schedules incomplete for large NPS (26+): only SCH10/SCH20/SCH40/SCH80; no SCH60/SCH100/SCH120/SCH140/SCH160/STD/XS/XXS for these sizes
+### Photo-ID Offline Queue (7-Day Retention)
 
----
+- **Storage:** IndexedDB, database name `'pipefield-support-photos'`. `src/lib/support-photo-queue.ts`.
+- **TTL:** 7 days (`src/lib/support-photo-queue.ts:5`).
+- **Retention job:** `purgeExpiredPhotos()` marks expired items; `cleanupQueue()` physically deletes synced/expired items (`src/lib/support-photo-queue.ts:96–117`). Server-side cron cleanup at `src/app/api/cron/support-photo-cleanup/route.ts`.
+- **Limits:** Max 25 pending items, max 100 MB total (`src/lib/support-photo-queue.ts:3–4`).
 
-## F. Units System
+### Jurisdiction / Code-Edition Rule Engine
 
-### Current State
-- All pipe dimensions: **inches** (hard-coded)
-- All span outputs: **feet** (hard-coded)
-- Pressure: **PSI** (hard-coded in pressure_tests schema)
-- Temperature: **°F** (hard-coded in thermal expansion panel)
-- Weight: **lb/ft** (hard-coded)
+**There is no rule engine.** Jurisdiction and governing code are stored as project metadata columns only (`supabase/migrations/20260815_project_standards_config.sql:20–31`):
+- `projects.jurisdiction` (ISO 3166-2, e.g., `'US-TX'`)
+- `projects.governing_code` (free text)
+- `projects.governing_code_year` (integer)
+- `projects.ahj` (Authority Having Jurisdiction, free text)
 
-### Per-record unit fields found
-```
-pressure_tests.pressure_unit   TEXT  (not enforced — free text)
-mtrs.unit_system               TEXT  (not present — absent)
-flanges.pressure_class         TEXT  (ANSI class — no SI)
-```
+No engine enforces or interprets rules based on jurisdiction or code edition. The qualification engine (`src/intelligence/engines/qualification-engine.ts`) enforces welder continuity but is not jurisdiction-parameterized.
 
-### Gaps
-- ❌ No global `unit_system` setting at org / project / user level
-- ❌ No conversion layer — all calculations output imperial
-- ❌ Temperature inputs accept numeric only; no unit label stored
-- ❌ PDF reports have no unit labels on some fields
-- ❌ No SI storage format (DN, bar, mm, °C, N/mm²)
+### Existing Table Schemas — Column Level
 
----
+**`welds`** (base: `supabase/schema.sql:102–121`; extended: `supabase/setup-all.sql:8–13`; WPS FK: `supabase/migrations/20260702_wps.sql:26`):
+- `id uuid PK`, `organization_id uuid FK`, `project_id uuid FK`, `spool_id uuid FK nullable`
+- `weld_id_number text` (e.g., "W-0001"), `welder_stamp text`, `welder_name text`
+- `status text CHECK ('draft','fit_up_approved','welded','visual_pass','xray_pending','failed','repaired','accepted')`
+- `weld_date date`, `notes text`, `created_by uuid FK`, `created_at timestamptz`, `updated_at timestamptz`
+- Extended: `spool_number text`, `line_number text`, `pipe_size text`, `wall_thickness text`, `weld_process text`
+- `wps_id uuid FK` (references `wps_records`)
+- Material trace: `base_metal_heat_a text`, `base_metal_heat_b text`, `filler_batch_number text`
 
-## G. Internationalization (i18n)
+**`spools`** (base: `supabase/schema.sql:76–96`; extended: `supabase/setup-all.sql:15–32`):
+- `id uuid PK`, `organization_id uuid FK`, `project_id uuid FK`
+- `spool_number text`, `drawing_number text`, `area text`, `line_number text`, `assigned_crew text`
+- `status text CHECK ('designed','material_released','cut','fit_up','welded','nde','painted','released')`
+- Extended: `revision text`, `pipe_size text`, `pipe_schedule text`, `material text`, `service text`
+- `design_pressure numeric(10,2)`, `design_temp numeric(8,2)`, `total_welds integer`, `total_length_in numeric(10,3)`
+- `isometric_ref text`, `priority integer`, `required_date date`, `released_date date`
 
-### Current State
-- **Zero i18n infrastructure** — no `next-intl`, `react-i18next`, `i18next`, or similar library found in `package.json` or imports
-- All UI strings are inline English literals in TSX/TS files
-- Estimated >2,000 user-facing string literals across components
-- No `locales/` or `messages/` directory
+**`spool_items`** (`supabase/setup-all.sql:40–54`):
+- `id uuid PK`, `spool_id uuid FK`, `organization_id uuid FK`
+- `item_number integer`, `item_type text DEFAULT 'other'`, `description text`, `quantity integer`
+- `length_in numeric(10,3)`, `heat_number text`, `is_cut boolean`, `is_fitted boolean`
+- `notes text`, `created_at timestamptz`
 
-### PDF Generation
-- `@react-pdf/renderer` used for all PDF output
-- All PDFs hardcoded to A4 page size
-- No locale-aware date/number formatting
-- All labels hardcoded in English
+**`weld_photos`** (`supabase/migrations/20260702_weld_photos.sql`):
+- `id uuid PK`, `organization_id uuid FK`, `weld_id uuid FK`
+- `storage_path text`, `file_name text`, `file_size integer`
+- `uploaded_by uuid FK (auth.users)`, `caption text`, `created_at timestamptz`
 
-### Gaps
-- ❌ No translation key system
-- ❌ No RTL layout support
-- ❌ No locale-aware number formatting (decimal separator)
-- ❌ No locale-aware date formatting
-- ❌ PDF page size hardcoded A4 (US projects typically use Letter)
-- ❌ No `lang` attribute management on `<html>` element
+**`audit_logs`** (`supabase/schema.sql:127–137`):
+- `id uuid PK`, `organization_id uuid FK`, `table_name text`, `record_id uuid`
+- `action text CHECK ('INSERT','UPDATE','DELETE')`
+- `previous_values jsonb`, `new_values jsonb`
+- `performed_by uuid FK (user_profiles)`, `performed_at timestamptz`
+
+### Auth Session Lifetime and Re-auth Policy
+
+- **Token lifetime:** Supabase default 1-hour JWT access token. `src/middleware.ts:7–12`: "The access token expires after 1 hour, and without middleware refreshing it... every API call fails permanently until the user manually signs out/in."
+- **Refresh mechanism:** `supabase.auth.getUser()` called on every non-static request in `src/middleware.ts:55–57`.
+- **Re-auth policy:** No explicit re-authentication challenge found anywhere in the codebase. No `reauthenticate()` call sites.
 
 ---
 
-## H. Signatures & Audit Trail
+## 2.3 Roles
 
-### Schema
+### Current Role Model
+
+Full role list from `src/types/index.ts:9–17` and enforced in `user_profiles.role CHECK` (`supabase/schema.sql:39–42`):
+
 ```
-signatures
-  id, org_id, weld_id (or entity_id + entity_type)
-  signed_by        UUID (FK → auth.users)
-  role             TEXT
-  signed_at        TIMESTAMPTZ
-  signature_data   TEXT  (base64 image or null)
-  -- No content_hash field
-
-audit_logs
-  id, org_id, user_id
-  action           TEXT
-  entity_type      TEXT
-  entity_id        UUID
-  changes          JSONB
-  created_at       TIMESTAMPTZ
-  -- Append-only enforced by: NO DELETE/UPDATE RLS policy (added in migration 20260805)
-
-weld_events
-  id, weld_id, org_id, actor_id
-  event_type       TEXT
-  payload          JSONB
-  created_at       TIMESTAMPTZ
-  -- True append-only: no UPDATE/DELETE columns; no RLS delete policy
+platform_admin       — cross-tenant superadmin; can access /admin; can bypass org scoping
+organization_owner   — per-tenant owner; can manage org, invite, set flags
+administrator        — per-tenant admin
+project_manager
+foreman
+qa_inspector         — QA/QC Inspector
+shop_fabricator
+pipefitter           — default role on registration
+client_viewer        — read-only client access
 ```
 
-### Gaps
-- ❌ No content hash on `signatures` — cannot prove what document was signed
-- ❌ No DB trigger preventing UPDATE on `audit_logs` (RLS alone is bypassable by service role)
-- ❌ No DB trigger preventing UPDATE on `signatures`
-- ❌ `signature_data` is nullable — signature can be recorded without actual signature image
-- ❌ No PKI / certificate-based signing (only base64 image)
-- ❌ No timestamping authority integration (RFC 3161)
-- ✅ PARTIAL: `weld_events` is structurally append-only (no mutable columns)
+### Is There a Fitter/Welder Role Distinct from Foreman/QC/Admin?
 
----
+**There is a `pipefitter` role** (`src/types/index.ts:17`). There is **no separate `welder` role**. Welders are tracked in a separate `welders` table (with `stamp`, `cert_expiry`, `process` columns) and linked to welds by `welder_stamp`. A `pipefitter` user can have a `welder_stamp` on their `user_profiles` record (`supabase/schema.sql:45`). The `shop_fabricator` role is closest to a field fabricator. `foreman` is distinct from `qa_inspector`.
 
-## I. Turnover Package Generation
+### Is There an Owner/Superadmin Role with Cross-Tenant Permissions?
 
-### Current State
-- `turnover_packages` table exists:
-  ```
-  id, org_id, project_id
-  name             TEXT
-  contents         JSONB   (list of included entity IDs / types)
-  storage_path     TEXT    (always NULL in practice)
-  created_at
-  ```
-- API route `POST /api/turnover/generate` creates a DB record only
-- `storage_path` is never populated — no file is actually generated or stored
-- No PDF template exists for turnover packages
-- No weld map, test pack index, or ITR sheet generation
-
-### Gaps
-- ❌ No PDF generation for turnover packages
-- ❌ `storage_path` always null — turnover package is a DB record stub only
-- ❌ No test pack / inspection and test record (ITR) structure
-- ❌ No weld map generation
-- ❌ No index of included welds, MTRs, NDE reports, pressure tests
-- ❌ No multi-document bundle (zip) generation
-
----
-
-## J. Project & Jurisdiction Configuration
-
-### Current State
+**Yes — `platform_admin`.** Confirmed at `src/lib/api-auth.ts:12–14`:
+```typescript
+export const ORG_ADMIN_ROLES = [
+  'platform_admin',
+  'organization_owner',
+  'administrator',
+] as const
 ```
-projects
-  id, org_id, name, project_number
-  description      TEXT
-  status           TEXT
-  created_at, updated_at
+`platform_admin` bypasses org-scoping:
+- `src/app/api/organization/workers/route.ts:88–89`: `if (caller.role !== 'platform_admin') { // Verify target worker is in the same org }`
+- `supabase/migrations/20260710_pc1_rls_helpers.sql:10–12`: `CREATE OR REPLACE FUNCTION public.is_platform_admin() ... SELECT public.get_my_role() = 'platform_admin'`
+- `src/app/(admin)/layout.tsx:20` checks for `platform_admin` via `getCallerProfile()`.
 
-org_settings
-  id, org_id
-  default_design_basis  TEXT  (e.g. "B31.3")
-  -- (minimal fields)
-```
-
-### Gaps
-- ❌ No `governing_code` field on projects (which edition of which standard)
-- ❌ No `jurisdiction` field (country / state / province)
-- ❌ No `code_profile` or `standard_set` linking project to a ruleset
-- ❌ No `unit_system` preference at project level
-- ❌ No `language` / `locale` preference at project level
-- ❌ No `authority_having_jurisdiction` (AHJ) field
-- ❌ Design basis is a UI selector in `InputForm.tsx`, not stored on the project record
+`platform_admin` is assigned only via `/api/admin/users` which itself requires `platform_admin` access (`src/app/api/admin/users/route.ts:15`).
 
 ---
 
-## K. Feature Flags
+## 2.4 Inventory the Recall Data
 
-### Inventory (`src/intelligence/flags.ts`)
+### `/data/sources/recall/` Directory
 
-| Flag | Env Var | Default | Scope |
-|------|---------|---------|-------|
-| `ndeEnabled` | `NEXT_PUBLIC_NDE_ENABLED` | `false` | Process-level |
-| `qualificationEnforcement` | `NEXT_PUBLIC_QUAL_ENFORCEMENT` | `false` | Process-level |
-| `turnoverGeneration` | `NEXT_PUBLIC_TURNOVER_GEN` | `false` | Process-level |
-| `offlineSync` | `NEXT_PUBLIC_OFFLINE_SYNC` | `false` | Process-level |
-| `continuityWindow` | `NEXT_PUBLIC_CONTINUITY_WINDOW` | `ENGINEERING_REVIEW_REQUIRED` | Process-level |
-| `materialTraceability` | `NEXT_PUBLIC_MTR_ENFORCE` | `false` | Process-level |
-| ... (17 more) | `NEXT_PUBLIC_*` | varies | Process-level |
+**This directory does not exist in the codebase.** A full recursive search (`find /Users/rennerkargbo/Desktop/pipefield-os -name "recall*" -not -path "*/node_modules/*"`) returned zero results. There are no CSV files anywhere in the project outside of `node_modules`.
 
-**Total flags found:** 23
+- No `/data/sources/recall/` path exists.
+- No recall CSV files exist.
+- No `source_doc`, `verified`, `verified_by`, `verified_against`, or `recall_confidence` columns exist anywhere in the schema.
+- No VALIDATION_REPORT_batch*.md files exist.
+- No "check these first" items can be listed because the source material does not exist.
 
-### Gaps
-- ❌ All flags are process-level (Vercel env vars) — same value for all tenants on same deployment
-- ❌ No per-org / per-tenant flag override capability
-- ❌ No admin UI to toggle flags without redeployment
-- ❌ `NEXT_PUBLIC_*` prefix exposes all flags to browser bundle (intentional for client-side checks, but worth noting)
-- ❌ `continuityWindow` default is the string `"ENGINEERING_REVIEW_REQUIRED"` — any code parsing this as a number will get `NaN` (Risk R4)
+The recall capability is implemented as a SQL function `batch_recall()` in `supabase/migrations/20260710_module3_material_trace.sql:28–79` that queries live `welds` rows by heat number or filler batch against the tenant's production data — not from imported CSV seed data.
 
 ---
 
-## L. Offline Sync & Timezone Handling
+## 2.5 Risks
 
-### Current State
-- Offline queue stored in **IndexedDB** via custom hook (`src/hooks/useOfflineSync.ts`)
-- Conflict resolution: **first-write-wins** (server record wins if it exists)
-- Timestamps: client-side `new Date().toISOString()` (UTC string) at time of local write
+### New Route Groups
 
-### Gaps
-- ❌ No timezone metadata stored on records — UTC offset of originating device not captured
-- ❌ No server-side timestamp override on sync (client timestamp accepted as-is)
-- ❌ First-write-wins can silently discard a field inspector's update if a foreman synced first
-- ❌ No sync conflict log — user never sees that their write was discarded
-- ❌ No vector clock or sequence number for merge ordering
-- ❌ Offline queue has no TTL — stale records can sync days later with old timestamps
+Adding a new route group (e.g., `(field)`) is low risk in Next.js App Router. Route groups do not affect URL paths. **Risk:** The service worker at `public/sw.js` is a compiled Workbox precache manifest with a hard-coded chunk URL list. Adding new routes triggers a new build which regenerates `sw.js` automatically — no manual SW change needed. The SW scope is `/` root, so any sub-path is within scope.
 
----
+### New Tables
 
-## Gap Matrix
+Adding new tables requires a new migration SQL file. **Risk:** The `supabase/migrations/` directory contains both dated files and ad-hoc scripts applied outside the numbered migration sequence. There is no Supabase CLI lock file (`config.toml` not found). New migrations must be idempotent (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`). **Critical:** RLS must be explicitly enabled on every new table (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`) or data is globally readable by all authenticated users. Several existing tables show this pattern being applied retroactively (see `supabase/migrations/20260805_enable_rls_core_tables.sql`).
 
-| Capability | Status | Notes |
-|------------|--------|-------|
-| Multi-standard code registry (edition-tracked) | ❌ MISSING | Standard name stored; no edition year |
-| Rule engine with jurisdiction profiles | ❌ MISSING | Design basis is UI-only selector |
-| SI unit storage + conversion layer | ❌ MISSING | All imperial, hard-coded |
-| i18n / locale framework | ❌ MISSING | Zero infrastructure |
-| Jurisdiction / AHJ project config | ❌ MISSING | No governing_code on projects |
-| Per-tenant feature flag scoping | ❌ MISSING | Process-level env vars only |
-| Welder qual essential variable expansion | ❌ MISSING | Exact-match only |
-| EN 10204 cert type enforcement | ❌ MISSING | Free text field |
-| Turnover PDF generation | ❌ MISSING | DB record stub only; storage_path always null |
-| Content-hashed signatures | ⚠️ PARTIAL | Signature table exists; no hash field |
+### New Service Worker Scope
+
+The service worker is registered at `/` scope (no explicit scope override in `next.config.mjs`). A new `/field/...` route is automatically within scope. **Risk:** The Workbox `NetworkFirst` cache for Supabase API URLs caches GET responses for 24 hours (`next.config.mjs`, workboxOptions runtimeCaching). If Field Mode endpoints return large per-user datasets, stale cached responses could surface wrong data after a session switch. This is a pre-existing risk that Field Mode's offline-first pattern will make more visible.
+
+### Bundle Size
+
+- Current `.next/static/chunks/` total: **4.1 MB across 67 JS chunks**; largest single chunk 344 KB.
+- ~1,300 reference rows as inline JSON: a typical pipe dimension row is ~200–400 bytes. 1,300 rows ≈ 260–520 KB raw. Bundled and gzip-compressed this is likely 40–80 KB. **Manageable.** However, if the data is imported into a client component without `import()` dynamic splitting, it inflates the initial bundle for every dashboard page. Recommendation: lazy-load via `import()` or a dedicated API route.
 
 ---
 
-## Incidental Risks (Non-Standards, Observed During Audit)
+## 2.6 Adversarial Self-Check
 
-| ID | Risk | Location | Severity |
-|----|------|----------|----------|
-| R1 | Several API route handlers import `createAdminClient()` (service role key), bypassing RLS for business logic rather than admin operations | `src/app/api/welders/certifications/expiring/route.ts` and ~4 others | Medium |
-| R2 | NDE seed includes current date — re-running NDE selection on a different calendar day produces different selections for the same weld set, making audits non-reproducible | `src/intelligence/nde-engine.ts` | High |
-| R3 | Turnover package `storage_path` is always null; `POST /api/turnover/generate` returns 200 with a DB record but no file is ever stored | `src/app/api/turnover/generate/route.ts` | High |
-| R4 | `NEXT_PUBLIC_CONTINUITY_WINDOW` defaults to string `"ENGINEERING_REVIEW_REQUIRED"` — any numeric parse (e.g., `parseInt(flag)`) yields `NaN`; continuity check silently passes or throws | `src/intelligence/flags.ts` | Medium |
-| R5 | `signatures` table has no DB trigger preventing UPDATE — a service-role client can mutate a signed record without an audit trail entry | Supabase schema | Medium |
-| R6 | All PDF outputs hardcode A4 page size — US jurisdictions expect Letter (8.5×11"); no per-org or per-project page size setting | `src/components/pdf/` (all files) | Low |
+### "I assumed a flag system exists and it doesn't."
+
+**False — confirmed present.** Two-layer flag system at `src/intelligence/flags.ts` (process-env) and `org_feature_flags` table (per-tenant DB overrides). However, no `PFOS_FIELD_MODE` flag exists yet — it must be added.
+
+### "I assumed the offline queue handles arbitrary entity types, but it only handles welds."
+
+**Corrected.** The offline queue (`src/lib/offline-queue.ts`) handles three fixed entity types: `weld`, `daily_report`, `spool`. The `EntityType` type is `'weld' | 'daily_report' | 'spool'` (`src/lib/offline-queue.ts:32`). A Field Mode entity type would require a new IndexedDB object store, union type extension, and new CRUD helpers. The queue is not plug-and-play for new types.
+
+### "I assumed SI-internal is live, but the schema stores inches."
+
+**Confirmed: schema stores imperial.** `src/lib/units.ts:3`: "All internal storage is imperial (inches, feet, psi, lb, °F)." Conversion to SI for display is live via the `formatLength`, `formatPressure`, etc. helpers. Field Mode data entry must store in imperial and display per `project.unit_system`.
+
+### "The service-role client is still reachable from a page a fitter could hit." List every remaining `createAdminClient` call site.
+
+**Pre-existing risk.** Four dashboard/public page routes use `createAdminClient` directly, accessible to any authenticated user (or unauthenticated, for share):
+
+1. `src/app/(dashboard)/projects/[id]/page.tsx:29` — Server Component; tenant-scoped by `eq('organization_id', organizationId)` after `getCallerProfile()`.
+2. `src/app/(dashboard)/spools/[id]/page.tsx:26` — same pattern.
+3. `src/app/(dashboard)/welds/[id]/page.tsx:21` — same pattern.
+4. `src/app/share/[token]/page.tsx:18,140` — public share page; no auth required to reach this route.
+
+In all three dashboard cases, org-scoping is enforced manually via `.eq('organization_id', ...)`. The risk is a missing `.eq` clause creating a cross-tenant data leak. This is a pre-existing architectural risk; Field Mode page routes must follow the same pattern.
+
+All 105 source files that import `createAdminClient` are listed (excluding `src/lib/supabase/admin.ts` which defines it):
+- **Dashboard page routes (fitter-accessible):** `src/app/(dashboard)/projects/[id]/page.tsx`, `src/app/(dashboard)/spools/[id]/page.tsx`, `src/app/(dashboard)/welds/[id]/page.tsx`, `src/app/share/[token]/page.tsx`
+- **API routes** (require auth via `requireAuth`/`requireOrgAdmin`): all files under `src/app/api/**` (~85 files)
+- **Intelligence adapters** (server-only, called from API routes): `src/intelligence/accounting.ts`, `src/intelligence/audit.ts`, `src/intelligence/registry.ts`, `src/intelligence/tier.ts`, all `src/intelligence/adapters/*.ts` (14 files), `src/intelligence/engines/nde-selection-engine.ts`, `src/intelligence/engines/qualification-engine.ts`
+- **Library utilities** (server-only): `src/lib/api-auth.ts`, `src/lib/api-billing-guard.ts`, `src/lib/ai-rate-limit.ts`, `src/lib/notifications.ts`, `src/lib/spool-auto-release.ts`, `src/lib/usage.ts`, `src/lib/weld-events.ts`
+
+### "There is no owner-level role, so reference verification would have to be per-tenant, which is wrong."
+
+**False — `platform_admin` is a confirmed cross-tenant role.** `src/lib/api-auth.ts:12–14`, `src/types/index.ts:10`, `src/app/api/admin/users/route.ts:15`. A `platform_admin` can read and write across all tenants. Reference data verification for Field Mode reference tables can be seeded or managed by `platform_admin`. Per-tenant reference customization (e.g., `pipe_support_catalog`) is gated by `organization_owner` and `administrator` within each tenant.
 
 ---
 
-## Deliverables
+## Summary of Items Missing for Field Mode
 
-- [x] `PHASE_0_FINDINGS.md` — this document
-- [ ] `RULES_REQUIRING_VERIFICATION.md` — to be created (empty for Phase 0; no rules implemented yet)
+| Item | Status |
+|---|---|
+| `PFOS_FIELD_MODE` feature flag | Missing — must be added to `src/intelligence/flags.ts` and `FEATURE_FLAGS.md` |
+| `/data/sources/recall/` recall CSV dataset | Does not exist — must be created if Field Mode requires static recall reference data |
+| `welder` role | Does not exist — only `pipefitter`; Field Mode role mapping must use `pipefitter` and/or `shop_fabricator` |
+| Offline queue for new entity types | Not plug-and-play — new types require explicit object store, type union, and CRUD helpers |
+| Circumference / weight-per-length in pipe dimension data | Not present — must be computed or added to `pipe-data.ts` / `asme_pipe_dimensions.json` |
+| i18n activation | `next-intl` not installed; Field Mode strings will be hardcoded like all other UI |
+| Jurisdiction/code rule engine | Does not exist — only metadata storage; runtime enforcement requires building an engine |
 
 ---
 
-## Next Step
-
-**STOP. Awaiting `APPROVED: PHASE 0` before proceeding to Phase 1 (ARCH_PLAN.md).**
-
-Phase 1 will produce a concrete implementation plan across the gap matrix items above, with file-level change specifications, migration scripts, and a sequenced delivery order.
+Phase 0 complete. Awaiting `APPROVED: PHASE 0`.

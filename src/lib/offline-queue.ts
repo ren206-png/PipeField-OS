@@ -6,11 +6,13 @@
 // device has no connectivity. On reconnect, the sync engine
 // uploads them to the server.
 //
-// DB:      'pipefield-offline'  version 2
-// Stores:  weld_queue | daily_report_queue | spool_queue
+// DB:      'pipefield-offline'  version 3
+// Stores:  weld_queue | daily_report_queue | spool_queue | field_weld_queue
 //
 // Version 1 → 2 upgrade: adds daily_report_queue and spool_queue
 // while keeping all existing weld_queue data intact.
+// Version 2 → 3 upgrade: adds field_weld_queue for Field Mode scan-to-log.
+// IndexedDB persists across app restarts — field_weld items survive force-quit.
 //
 // TTL: 30 days from created_at. Expired items are purged by
 // purgeExpired() which runs at the start of every sync cycle.
@@ -21,7 +23,7 @@ import { openDB, DBSchema, IDBPDatabase } from 'idb'
 export const QUEUE_TTL_MS = 30 * 24 * 60 * 60 * 1000   // 30 days
 
 export type SyncStatus = 'pending' | 'synced' | 'failed'
-export type EntityType = 'weld' | 'daily_report' | 'spool'
+export type EntityType = 'weld' | 'daily_report' | 'spool' | 'field_weld'
 
 // ── Shared base shape ─────────────────────────────────────────
 interface BaseQueueItem {
@@ -38,8 +40,9 @@ interface BaseQueueItem {
 export interface WeldQueueItem        extends BaseQueueItem { entity_type: 'weld' }
 export interface DailyReportQueueItem extends BaseQueueItem { entity_type: 'daily_report' }
 export interface SpoolQueueItem       extends BaseQueueItem { entity_type: 'spool' }
+export interface FieldWeldQueueItem   extends BaseQueueItem { entity_type: 'field_weld' }
 
-export type QueueItem = WeldQueueItem | DailyReportQueueItem | SpoolQueueItem
+export type QueueItem = WeldQueueItem | DailyReportQueueItem | SpoolQueueItem | FieldWeldQueueItem
 
 // ── IndexedDB schema ──────────────────────────────────────────
 interface PipeFieldDB extends DBSchema {
@@ -58,13 +61,18 @@ interface PipeFieldDB extends DBSchema {
     value: SpoolQueueItem
     indexes: { 'by-sync-status': string; 'by-project': string }
   }
+  field_weld_queue: {
+    key: string
+    value: FieldWeldQueueItem
+    indexes: { 'by-sync-status': string; 'by-project': string }
+  }
 }
 
 let dbPromise: Promise<IDBPDatabase<PipeFieldDB>> | null = null
 
 function getDB(): Promise<IDBPDatabase<PipeFieldDB>> {
   if (!dbPromise) {
-    dbPromise = openDB<PipeFieldDB>('pipefield-offline', 2, {
+    dbPromise = openDB<PipeFieldDB>('pipefield-offline', 3, {
       upgrade(db, oldVersion) {
         // Version 1 → 2: create new stores while preserving weld_queue
         if (oldVersion < 1) {
@@ -79,6 +87,13 @@ function getDB(): Promise<IDBPDatabase<PipeFieldDB>> {
           const ss = db.createObjectStore('spool_queue', { keyPath: 'local_id' })
           ss.createIndex('by-sync-status', 'sync_status')
           ss.createIndex('by-project', 'project_id')
+        }
+        // Version 2 → 3: add field_weld_queue for Field Mode scan-to-log.
+        // IndexedDB persists across force-quit — getPendingFieldWelds() recovers all items on restart.
+        if (oldVersion < 3) {
+          const fw = db.createObjectStore('field_weld_queue', { keyPath: 'local_id' })
+          fw.createIndex('by-sync-status', 'sync_status')
+          fw.createIndex('by-project', 'project_id')
         }
       },
     })
@@ -171,32 +186,35 @@ export const getPendingItems = getPendingWelds
 
 export async function getAllQueueItems(): Promise<QueueItem[]> {
   const db = await getDB()
-  const [welds, reports, spools] = await Promise.all([
+  const [welds, reports, spools, fieldWelds] = await Promise.all([
     db.getAll('weld_queue'),
     db.getAll('daily_report_queue'),
     db.getAll('spool_queue'),
+    db.getAll('field_weld_queue'),
   ])
-  return [...welds, ...reports, ...spools].sort(
+  return [...welds, ...reports, ...spools, ...fieldWelds].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
 }
 
-export async function getPendingCount(): Promise<{ welds: number; daily_reports: number; spools: number; total: number }> {
+export async function getPendingCount(): Promise<{ welds: number; daily_reports: number; spools: number; field_welds: number; total: number }> {
   const db = await getDB()
-  const [w, d, s] = await Promise.all([
+  const [w, d, s, fw] = await Promise.all([
     db.getAllFromIndex('weld_queue',         'by-sync-status', 'pending'),
     db.getAllFromIndex('daily_report_queue', 'by-sync-status', 'pending'),
     db.getAllFromIndex('spool_queue',        'by-sync-status', 'pending'),
+    db.getAllFromIndex('field_weld_queue',   'by-sync-status', 'pending'),
   ])
-  return { welds: w.length, daily_reports: d.length, spools: s.length, total: w.length + d.length + s.length }
+  return { welds: w.length, daily_reports: d.length, spools: s.length, field_welds: fw.length, total: w.length + d.length + s.length + fw.length }
 }
 
 // ── Status updates ────────────────────────────────────────────
-type Store = 'weld_queue' | 'daily_report_queue' | 'spool_queue'
+type Store = 'weld_queue' | 'daily_report_queue' | 'spool_queue' | 'field_weld_queue'
 
 function storeForType(entityType: EntityType): Store {
   if (entityType === 'weld')         return 'weld_queue'
   if (entityType === 'daily_report') return 'daily_report_queue'
+  if (entityType === 'field_weld')   return 'field_weld_queue'
   return 'spool_queue'
 }
 
@@ -239,7 +257,7 @@ export async function markPending(localId: string, entityType: EntityType = 'wel
 export async function clearSynced(): Promise<number> {
   const db = await getDB()
   let count = 0
-  for (const store of ['weld_queue', 'daily_report_queue', 'spool_queue'] as Store[]) {
+  for (const store of ['weld_queue', 'daily_report_queue', 'spool_queue', 'field_weld_queue'] as Store[]) {
     const synced: QueueItem[] = await db.getAllFromIndex(store, 'by-sync-status', 'synced')
     await Promise.all(synced.map(i => db.delete(store, i.local_id)))
     count += synced.length
@@ -255,11 +273,37 @@ export async function purgeExpired(): Promise<number> {
   const db       = await getDB()
   const cutoff   = Date.now() - QUEUE_TTL_MS
   let   purged   = 0
-  for (const store of ['weld_queue', 'daily_report_queue', 'spool_queue'] as Store[]) {
+  for (const store of ['weld_queue', 'daily_report_queue', 'spool_queue', 'field_weld_queue'] as Store[]) {
     const all: QueueItem[] = await db.getAll(store)
     const expired = all.filter(i => new Date(i.created_at).getTime() < cutoff)
     await Promise.all(expired.map(i => db.delete(store, i.local_id)))
     purged += expired.length
   }
   return purged
+}
+
+// ── Field Weld helpers (Field Mode scan-to-log) ───────────────
+export async function addFieldWeld(
+  item: Omit<FieldWeldQueueItem, 'local_id' | 'attempt_count' | 'sync_status' | 'created_at'>
+): Promise<string> {
+  const local_id = crypto.randomUUID()
+  const fullItem: FieldWeldQueueItem = {
+    ...item,
+    local_id,
+    attempt_count: 0,
+    sync_status: 'pending',
+    created_at: new Date().toISOString(),
+    entity_type: 'field_weld',
+  }
+  return enqueue('field_weld_queue', fullItem)
+}
+
+export async function getFieldWeldItems(): Promise<FieldWeldQueueItem[]> {
+  const db = await getDB()
+  return db.getAll('field_weld_queue') as Promise<FieldWeldQueueItem[]>
+}
+
+export async function getPendingFieldWelds(): Promise<FieldWeldQueueItem[]> {
+  const db = await getDB()
+  return db.getAllFromIndex('field_weld_queue', 'by-sync-status', 'pending') as Promise<FieldWeldQueueItem[]>
 }

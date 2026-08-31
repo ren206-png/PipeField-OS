@@ -1,0 +1,12 @@
+standard,angle_between_lines_deg,block_load_multiplier,recall_confidence,edition,source_doc,verified,verified_by,verified_against
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",0,2.0,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",10,1.99,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",20,1.97,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",30,1.93,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",45,1.85,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",60,1.73,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",90,1.41,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",120,1.0,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",135,0.77,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",150,0.52,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
+"Trig: block load = line pull x 2cos(angle/2), angle between lead and load lines",180,0.0,computed,UNSPECIFIED-verify,claude-memory-2026-08-24 (recall); NOT an independent source,false,,
