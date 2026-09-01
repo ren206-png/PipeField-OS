@@ -27,7 +27,12 @@ export function useWelderCerts(welderId?: string) {
 export function useExpiringCerts(days = 30) {
   return useQuery<WelderCert[]>({
     queryKey: ['expiring-certs', days],
-    queryFn: () => fetch(`/api/welders/certifications/expiring?days=${days}`).then(r => r.json()),
+    queryFn: async () => {
+      const r = await fetch(`/api/welders/certifications/expiring?days=${days}`)
+      if (!r.ok) return []
+      const json = await r.json()
+      return Array.isArray(json) ? json : []
+    },
     staleTime: 1000 * 60 * 5,
   })
 }

@@ -14,6 +14,7 @@ import { WELD_STATUS_LABELS, SPOOL_STATUS_LABELS, DFR_STATUS_COLORS, DFR_STATUS_
 import { formatDateTime } from '@/lib/utils'
 import { OnboardingBanner } from '@/components/dashboard/OnboardingBanner'
 import { CertExpiryBanner } from '@/components/welders/CertExpiryBanner'
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { WelderRiskWidget } from '@/components/dashboard/WelderRiskWidget'
 
 export const metadata: Metadata = { title: 'Dashboard — PipeField OS' }
@@ -218,7 +219,9 @@ export default async function DashboardPage() {
       )}
 
       {/* ── Cert expiry banner (new certifications table) ── */}
-      <CertExpiryBanner />
+      <ErrorBoundary fallback={null}>
+        <CertExpiryBanner />
+      </ErrorBoundary>
 
       {/* ── Greeting banner ── */}
       <div className="flex items-end justify-between gap-4">
