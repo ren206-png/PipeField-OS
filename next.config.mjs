@@ -107,6 +107,22 @@ const nextConfig = {
         source: '/(.*)',
         headers: securityHeaders,
       },
+      {
+        // Service worker must NEVER be cached — browsers need to see
+        // the updated file immediately so stale JS bundles are evicted.
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      {
+        // Workbox runtime — same no-cache policy
+        source: '/workbox-:hash.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
     ]
   },
 }
@@ -139,7 +155,9 @@ export default withMDX(withBundleAnalyzer(withPWA({
         handler: 'CacheFirst',
         options: {
           cacheName: 'next-static',
-          expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+          // 1 day — Next.js static chunks are content-hashed so they're
+          // safe to cache, but a short TTL ensures deploys reach mobile fast.
+          expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
         },
       },
       {
