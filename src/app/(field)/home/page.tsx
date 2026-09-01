@@ -107,7 +107,7 @@ export default function FieldHomePage() {
     {
       id: 'today',
       label: t.home_today,
-      href: '/field/today',
+      href: '/today',
       icon: <CalendarIcon />,
       enabled: true,
     },
@@ -136,7 +136,7 @@ export default function FieldHomePage() {
 
   // ── Sync indicator ────────────────────────────────────────────
   function SyncIndicator() {
-    const syncHref = syncState !== 'synced' ? '/field/sync' : undefined
+    const syncHref = syncState !== 'synced' ? '/sync' : undefined
 
     const indicator = (
       <div
