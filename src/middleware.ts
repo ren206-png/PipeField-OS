@@ -76,7 +76,10 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  const isPublicRoute = PUBLIC_ROUTES.some(r => pathname.startsWith(r))
+  // '/' must match exactly — startsWith('/') would match every path
+  const isPublicRoute = PUBLIC_ROUTES.some(r =>
+    r === '/' ? pathname === '/' : pathname.startsWith(r)
+  )
 
   // Not logged in + protected page → redirect to login
   if (!user && !isPublicRoute) {
