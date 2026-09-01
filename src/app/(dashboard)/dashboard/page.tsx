@@ -11,8 +11,9 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { WELD_STATUS_LABELS, SPOOL_STATUS_LABELS, DFR_STATUS_COLORS, DFR_STATUS_LABELS, type WeldStatus, type SpoolStatus, type DfrStatus } from '@/types'
-import { formatDateTime } from '@/lib/utils'
 import { OnboardingBanner } from '@/components/dashboard/OnboardingBanner'
+import { DashboardGreeting } from '@/components/shared/DashboardGreeting'
+import { LocalTime } from '@/components/shared/LocalTime'
 import dynamic from 'next/dynamic'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 
@@ -44,9 +45,6 @@ export default async function DashboardPage() {
     : { data: null }
   const firstName = userProfile?.full_name?.split(' ')[0] ?? ''
   const orgId = userProfile?.organization_id ?? ''
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-  const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
   // ── fetch everything in parallel ──────────────────────────
   const [
@@ -232,12 +230,7 @@ export default async function DashboardPage() {
 
       {/* ── Greeting banner ── */}
       <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-surface-50">
-            {greeting}{firstName ? `, ${firstName}` : ''} 👋
-          </h1>
-          <p className="text-sm text-surface-500 mt-0.5">{todayLabel} · Real-time project overview</p>
-        </div>
+        <DashboardGreeting firstName={firstName} />
       </div>
 
       {/* ── Critical alerts row ── */}
@@ -755,7 +748,7 @@ export default async function DashboardPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-surface-300 leading-snug truncate">{description}</p>
-                        <p className="text-xs text-surface-600 mt-0.5">{formatDateTime(entry.performed_at)}</p>
+                        <p className="text-xs text-surface-600 mt-0.5"><LocalTime dateString={entry.performed_at} /></p>
                       </div>
                     </div>
                   )

@@ -17,6 +17,10 @@ export function cn(...inputs: ClassValue[]) {
  * Format a date string into a readable label.
  * Input:  "2025-06-05T14:30:00Z"
  * Output: "Jun 5, 2025"
+ *
+ * NOTE: No explicit timeZone is set — on the server (Vercel/UTC) this will
+ * render in UTC. Call these functions only from client components, or prefer
+ * the <LocalTime> client component for user-facing timestamps.
  */
 export function formatDate(dateString: string | null): string {
   if (!dateString) return '—'
