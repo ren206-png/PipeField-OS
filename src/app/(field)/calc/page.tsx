@@ -27,19 +27,19 @@ export default function CalcPickerPage() {
   }, [])
 
   const CALCS: CalcCard[] = [
-    { id: 'simple-offset',    label: t.calc_simple_offset,    href: '/field/calc/simple-offset' },
-    { id: 'rolling-offset',   label: t.calc_rolling_offset,   href: '/field/calc/rolling-offset' },
-    { id: 'parallel-offsets', label: t.calc_parallel_offsets, href: '/field/calc/parallel-offsets' },
-    { id: 'cut-bw',           label: t.calc_cut_bw,           href: '/field/calc/cut-bw' },
-    { id: 'cut-sw',           label: t.calc_cut_sw,           href: '/field/calc/cut-sw' },
-    { id: 'cut-threaded',     label: t.calc_cut_threaded,     href: '/field/calc/cut-threaded' },
-    { id: 'odd-angle',        label: t.calc_odd_angle,        href: '/field/calc/odd-angle' },
-    { id: 'two-hole-flange',  label: t.calc_two_hole_flange,  href: '/field/calc/two-hole-flange' },
-    { id: 'branch-layout',    label: t.calc_branch_layout,    href: '/field/calc/branch-layout' },
-    { id: 'miter',            label: t.calc_miter,            href: '/field/calc/miter' },
-    { id: 'pipe-weight',      label: t.calc_pipe_weight,      href: '/field/calc/pipe-weight' },
-    { id: 'rigging',          label: t.calc_rigging,          href: '/field/calc/rigging', isRigging: true },
-    { id: 'stud-lookup',      label: t.calc_stud_lookup,      href: '/field/calc/stud-lookup' },
+    { id: 'simple-offset',    label: t.calc_simple_offset,    href: '/calc/simple-offset' },
+    { id: 'rolling-offset',   label: t.calc_rolling_offset,   href: '/calc/rolling-offset' },
+    { id: 'parallel-offsets', label: t.calc_parallel_offsets, href: '/calc/parallel-offsets' },
+    { id: 'cut-bw',           label: t.calc_cut_bw,           href: '/calc/cut-bw' },
+    { id: 'cut-sw',           label: t.calc_cut_sw,           href: '/calc/cut-sw' },
+    { id: 'cut-threaded',     label: t.calc_cut_threaded,     href: '/calc/cut-threaded' },
+    { id: 'odd-angle',        label: t.calc_odd_angle,        href: '/calc/odd-angle' },
+    { id: 'two-hole-flange',  label: t.calc_two_hole_flange,  href: '/calc/two-hole-flange' },
+    { id: 'branch-layout',    label: t.calc_branch_layout,    href: '/calc/branch-layout' },
+    { id: 'miter',            label: t.calc_miter,            href: '/calc/miter' },
+    { id: 'pipe-weight',      label: t.calc_pipe_weight,      href: '/calc/pipe-weight' },
+    { id: 'rigging',          label: t.calc_rigging,          href: '/calc/rigging', isRigging: true },
+    { id: 'stud-lookup',      label: t.calc_stud_lookup,      href: '/calc/stud-lookup' },
   ]
 
   function handleCardClick(id: string) {

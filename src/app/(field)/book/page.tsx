@@ -75,7 +75,7 @@ export default function BookPage() {
               {cat.tables.map((table) => (
                 <Link
                   key={table}
-                  href={`/field/book/${table}`}
+                  href={`/book/${table}`}
                   className="flex items-center justify-between px-4 py-3 min-h-[56px] active:bg-surface-800 transition-colors"
                 >
                   <span className="text-surface-200 text-sm font-mono">{table.replace('ref_', '').replace(/_/g, ' ')}</span>

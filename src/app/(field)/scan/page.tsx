@@ -59,7 +59,7 @@ export default function ScanPage() {
 
   // Redirect if flag off
   if (!FLAGS.PFOS_FIELD_SCAN_LOG) {
-    if (typeof window !== 'undefined') router.replace('/field/home')
+    if (typeof window !== 'undefined') router.replace('/home')
     return null
   }
 

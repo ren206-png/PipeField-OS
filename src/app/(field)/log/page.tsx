@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic'
 
 // ── Flag gate ─────────────────────────────────────────────────
 if (!FLAGS.PFOS_FIELD_PERSONAL_LOG) {
-  redirect('/field/home')
+  redirect('/home')
 }
 
 // ── Types ─────────────────────────────────────────────────────

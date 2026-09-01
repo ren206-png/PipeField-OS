@@ -78,7 +78,7 @@ export default function VerifyConsolePage() {
 
   useEffect(() => {
     if (!FLAGS.PFOS_FIELD_REF_VERIFY_CONSOLE) {
-      window.location.replace('/field/home')
+      window.location.replace('/home')
       return
     }
     // Check role via Supabase session
