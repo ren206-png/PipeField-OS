@@ -13,8 +13,15 @@ import { createClient } from '@/lib/supabase/server'
 import { WELD_STATUS_LABELS, SPOOL_STATUS_LABELS, DFR_STATUS_COLORS, DFR_STATUS_LABELS, type WeldStatus, type SpoolStatus, type DfrStatus } from '@/types'
 import { formatDateTime } from '@/lib/utils'
 import { OnboardingBanner } from '@/components/dashboard/OnboardingBanner'
-import { CertExpiryBanner } from '@/components/welders/CertExpiryBanner'
+import dynamic from 'next/dynamic'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+
+// Load client-only banner after hydration — prevents SSR/hydration
+// errors from escaping the ErrorBoundary and crashing the dashboard.
+const CertExpiryBanner = dynamic(
+  () => import('@/components/welders/CertExpiryBanner').then(m => ({ default: m.CertExpiryBanner })),
+  { ssr: false }
+)
 import { WelderRiskWidget } from '@/components/dashboard/WelderRiskWidget'
 
 export const metadata: Metadata = { title: 'Dashboard — PipeField OS' }
