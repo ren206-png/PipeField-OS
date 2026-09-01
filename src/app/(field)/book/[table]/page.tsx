@@ -6,7 +6,7 @@
 // RLS: ref tables have "read_all for authenticated" policy —
 // anon client with active user session is sufficient.
 // ============================================================
-import React, { use, useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getCachedRef, setCachedRef, getCacheDate } from '@/lib/field-mode/offline-reference-cache'
@@ -18,7 +18,7 @@ const RIGGING_TABLES = [
 ]
 
 interface PageProps {
-  params: Promise<{ table: string }>
+  params: { table: string }
 }
 
 interface RefRecord {
@@ -65,7 +65,7 @@ function RowBadges({ row }: { row: RefRecord }) {
 }
 
 export default function TableBrowserPage({ params }: PageProps) {
-  const { table } = use(params)
+  const { table } = params
   const t = useFieldStrings('en')
   const isRigging = RIGGING_TABLES.includes(table)
 
@@ -124,7 +124,7 @@ export default function TableBrowserPage({ params }: PageProps) {
     <div className="min-h-screen bg-surface-950 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-safe pt-4 pb-3 bg-surface-950 border-b border-surface-800">
-        <Link href="/field/book"
+        <Link href="/book"
           className="min-h-[56px] min-w-[56px] flex items-center justify-center rounded-xl text-surface-300 active:bg-surface-800"
           aria-label="Back">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">

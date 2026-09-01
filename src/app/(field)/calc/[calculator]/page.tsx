@@ -4,7 +4,6 @@
 // Maps params.calculator to the correct calculator component.
 // ============================================================
 import React from 'react'
-import { use } from 'react'
 import Link from 'next/link'
 import { SimpleOffsetCalc }       from '@/components/field-mode/calculators/SimpleOffsetCalc'
 import { RollingOffsetCalc }      from '@/components/field-mode/calculators/RollingOffsetCalc'
@@ -38,18 +37,18 @@ const CALCULATOR_MAP: Record<string, { label: string; Component: React.Component
 }
 
 interface PageProps {
-  params: Promise<{ calculator: string }>
+  params: { calculator: string }
 }
 
 export default function CalculatorPage({ params }: PageProps) {
-  const { calculator } = use(params)
+  const { calculator } = params
   const entry = CALCULATOR_MAP[calculator]
 
   if (!entry) {
     return (
       <div className="min-h-screen bg-surface-950 flex flex-col items-center justify-center gap-4 p-8">
         <p className="text-surface-400">Calculator not found: {calculator}</p>
-        <Link href="/field/calc" className="min-h-[56px] px-6 flex items-center rounded-xl bg-surface-800 text-surface-200 font-semibold">
+        <Link href="/calc" className="min-h-[56px] px-6 flex items-center rounded-xl bg-surface-800 text-surface-200 font-semibold">
           Back to Calculators
         </Link>
       </div>
@@ -62,7 +61,7 @@ export default function CalculatorPage({ params }: PageProps) {
     <div className="min-h-screen bg-surface-950 flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-safe pt-4 pb-3 bg-surface-950 border-b border-surface-800">
-        <Link href="/field/calc"
+        <Link href="/calc"
           className="min-h-[56px] min-w-[56px] flex items-center justify-center rounded-xl text-surface-300 active:bg-surface-800"
           aria-label="Back">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
