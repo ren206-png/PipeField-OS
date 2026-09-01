@@ -50,6 +50,8 @@ import {
   Link2,
   CreditCard,
   Tag,
+  Smartphone,
+  BookMarked,
 } from 'lucide-react'
 import { cn, getInitials, truncate } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -127,6 +129,16 @@ const NAV_GROUPS: DrawerNavGroup[] = [
       { label: 'Drawing Analysis',   href: '/intelligence/drawing-analysis',   icon: Layers        },
       { label: 'Upload Knowledge',   href: '/intelligence/upload',             icon: Upload        },
       { label: 'Knowledge Library',  href: '/intelligence/sources',            icon: BookOpen      },
+    ],
+  },
+  {
+    title: 'Field Mode',
+    items: [
+      { label: 'Field Home',     href: '/home', icon: Smartphone },
+      { label: 'Reference Book', href: '/book', icon: BookMarked },
+      { label: 'Flanges',        href: '/book/ref_flanges',    icon: CircleDot },
+      { label: 'Stud Bolts',     href: '/book/ref_stud_bolts', icon: Disc },
+      { label: 'Calculators',    href: '/calc', icon: Calculator },
     ],
   },
   {

@@ -54,6 +54,8 @@ import {
   BarChart3,
   Link2,
   Tag,
+  Smartphone,
+  BookMarked,
 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -125,6 +127,16 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'System Packages', href: '/commissioning', icon: Zap },
       { label: 'Weld Map',        href: '/weld-map',      icon: Map },
+    ],
+  },
+  {
+    title: 'Field Mode',
+    items: [
+      { label: 'Field Home',      href: '/home',  icon: Smartphone },
+      { label: 'Reference Book',  href: '/book',  icon: BookMarked },
+      { label: 'Flanges',         href: '/book/ref_flanges',    icon: CircleDot },
+      { label: 'Stud Bolts',      href: '/book/ref_stud_bolts', icon: Disc },
+      { label: 'Calculators',     href: '/calc',  icon: Calculator },
     ],
   },
   {
