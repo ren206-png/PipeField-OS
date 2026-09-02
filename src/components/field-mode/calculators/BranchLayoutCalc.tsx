@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { BranchDiagram } from '@/components/field-mode/diagrams/BranchDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
-import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
+import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 // For a 90° branch: ordinate at station x = sqrt(R² - (R - x)²) for saddle layout
@@ -16,7 +16,7 @@ export function BranchLayoutCalc({ displayOpts = { unit: 'imperial', precision: 
   const [headerOdStr, setHeaderOdStr] = useState('')
   const [branchOdStr, setBranchOdStr] = useState('')
   const [activeField, setActive]      = useState<'header' | 'branch' | null>(null)
-  const [ordinates, setOrdinates]     = useState<string[] | null>(null)
+  const [ordinates, setOrdinates]     = useState<{ imperial: string; metric: string }[] | null>(null)
   const [error, setError]             = useState<string | null>(null)
 
   function compute() {
@@ -28,11 +28,11 @@ export function BranchLayoutCalc({ displayOpts = { unit: 'imperial', precision: 
       const r = branchOd._mm / 2
       if (r >= R) { setError('Branch OD must be smaller than header OD'); return }
       // 8 stations from CL to edge
-      const results: string[] = []
+      const results: { imperial: string; metric: string }[] = []
       for (let i = 0; i <= 8; i++) {
         const x = (r * i) / 8
         const ordMm = Math.sqrt(R * R - x * x) - Math.sqrt(R * R - r * r)
-        results.push(formatLength({ _mm: ordMm } as ReturnType<typeof fromFeetInchesFraction>, displayOpts))
+        results.push(dualFormat(ordMm))
       }
       setOrdinates(results)
     } catch { setError('Check input') }
@@ -64,7 +64,10 @@ export function BranchLayoutCalc({ displayOpts = { unit: 'imperial', precision: 
             {ordinates.map((o, i) => (
               <div key={i} className="flex justify-between text-sm font-mono">
                 <span className="text-surface-500">S{i}</span>
-                <span className="text-surface-100">{o}</span>
+                <div className="text-right">
+                  <div className="text-surface-100">{o.imperial}</div>
+                  <div className="text-blue-400 text-xs">{o.metric}</div>
+                </div>
               </div>
             ))}
           </div>

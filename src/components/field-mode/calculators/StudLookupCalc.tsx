@@ -7,6 +7,12 @@ import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapt
 const NPS_OPTIONS = ['½','¾','1','1¼','1½','2','2½','3','4','6','8','10','12','14','16','18','20','24']
 const CLASSES = [150, 300, 600, 900, 1500, 2500]
 
+function inchesToMm(inStr: string): string {
+  const n = parseFloat(inStr)
+  if (isNaN(n)) return '—'
+  return `${(n * 25.4).toFixed(1)} mm`
+}
+
 export function StudLookupCalc() {
   const t = useFieldStrings('en')
   const [nps, setNps] = useState('4')
@@ -59,11 +65,29 @@ export function StudLookupCalc() {
       {unverified && <div className="px-3 py-2 rounded-lg bg-amber-900/40 text-amber-300 text-sm">{t.calc_unverified_badge}</div>}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex flex-col gap-2">
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">STUDS / FLANGE</span><span className="text-surface-100 font-mono text-lg">{result.studs}</span></div>
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">STUD DIA</span><span className="text-surface-100 font-mono text-lg">{result.dia}"</span></div>
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">STUD LENGTH</span><span className="text-surface-100 font-mono text-lg">{result.length}"</span></div>
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">WRENCH SIZE</span><span className="text-surface-100 font-mono text-lg">{result.wrench}</span></div>
+        <div className="bg-surface-800 rounded-xl p-4 space-y-3 border border-surface-700">
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">STUDS / FLANGE</span>
+            <span className="text-surface-100 font-mono text-lg">{result.studs}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">STUD DIA</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.dia}"</div>
+              <div className="text-blue-400 font-mono text-sm">{inchesToMm(result.dia)}</div>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">STUD LENGTH</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.length}"</div>
+              <div className="text-blue-400 font-mono text-sm">{inchesToMm(result.length)}</div>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">WRENCH SIZE</span>
+            <span className="text-surface-100 font-mono text-lg">{result.wrench}</span>
+          </div>
         </div>
       )}
     </div>

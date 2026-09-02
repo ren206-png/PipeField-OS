@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { RollingOffsetDiagram } from '@/components/field-mode/diagrams/RollingOffsetDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
-import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
+import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 // Rolling offset: true offset = sqrt(rise² + roll²), travel = true_offset / sin(θ)
@@ -14,7 +14,7 @@ export function RollingOffsetCalc({ displayOpts = { unit: 'imperial', precision:
   const [rollStr, setRollStr]     = useState('')
   const [activeField, setActive]  = useState<'rise' | 'roll' | null>(null)
   const [angleDeg, setAngleDeg]   = useState(45)
-  const [result, setResult]       = useState<{ trueOffset: string; travel: string } | null>(null)
+  const [result, setResult]       = useState<{ trueOffset: { imperial: string; metric: string }; travel: { imperial: string; metric: string } } | null>(null)
   const [error, setError]         = useState<string | null>(null)
 
   function compute() {
@@ -25,8 +25,8 @@ export function RollingOffsetCalc({ displayOpts = { unit: 'imperial', precision:
       const trueMm  = Math.sqrt(rise._mm ** 2 + roll._mm ** 2)
       const travelMm = trueMm / Math.sin((angleDeg * Math.PI) / 180)
       setResult({
-        trueOffset: formatLength({ _mm: trueMm   } as ReturnType<typeof fromFeetInchesFraction>, displayOpts),
-        travel:     formatLength({ _mm: travelMm } as ReturnType<typeof fromFeetInchesFraction>, displayOpts),
+        trueOffset: dualFormat(trueMm),
+        travel:     dualFormat(travelMm),
       })
     } catch { setError('Check input') }
   }
@@ -71,9 +71,21 @@ export function RollingOffsetCalc({ displayOpts = { unit: 'imperial', precision:
       <button type="button" onClick={compute} className="min-h-[56px] rounded-xl bg-blue-700 text-white font-semibold text-base">Calculate</button>
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex flex-col gap-2">
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">TRUE OFFSET</span><span className="text-surface-100 font-mono text-lg">{result.trueOffset}</span></div>
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">TRAVEL</span><span className="text-surface-100 font-mono text-lg">{result.travel}</span></div>
+        <div className="bg-surface-800 rounded-xl p-4 space-y-3 border border-surface-700">
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">TRUE OFFSET</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.trueOffset.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.trueOffset.metric}</div>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">TRAVEL</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.travel.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.travel.metric}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

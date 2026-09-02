@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { MiterDiagram } from '@/components/field-mode/diagrams/MiterDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
-import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
+import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 interface Props { displayOpts?: DisplayOpts }
@@ -12,7 +12,7 @@ export function MiterCalc({ displayOpts = { unit: 'imperial', precision: '1/16' 
   const [odStr, setOdStr]        = useState('')
   const [angleStr, setAngleStr]  = useState('')
   const [active, setActive]      = useState(false)
-  const [result, setResult]      = useState<{ long: string; short: string } | null>(null)
+  const [result, setResult]      = useState<{ long: { imperial: string; metric: string }; short: { imperial: string; metric: string } } | null>(null)
   const [error, setError]        = useState<string | null>(null)
 
   function compute() {
@@ -24,8 +24,8 @@ export function MiterCalc({ displayOpts = { unit: 'imperial', precision: '1/16' 
       const rad = (theta / 2) * Math.PI / 180
       const diffMm = (od._mm / 2) * Math.tan(rad)
       setResult({
-        long:  formatLength({ _mm: od._mm / 2 + diffMm } as ReturnType<typeof fromFeetInchesFraction>, displayOpts),
-        short: formatLength({ _mm: od._mm / 2 - diffMm } as ReturnType<typeof fromFeetInchesFraction>, displayOpts),
+        long:  dualFormat(od._mm / 2 + diffMm),
+        short: dualFormat(od._mm / 2 - diffMm),
       })
     } catch { setError('Check input') }
   }
@@ -49,9 +49,21 @@ export function MiterCalc({ displayOpts = { unit: 'imperial', precision: '1/16' 
       <button type="button" onClick={compute} className="min-h-[56px] rounded-xl bg-blue-700 text-white font-semibold text-base">Calculate</button>
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex flex-col gap-2">
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">LONG SIDE</span><span className="text-surface-100 font-mono text-lg">{result.long}</span></div>
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">SHORT SIDE</span><span className="text-surface-100 font-mono text-lg">{result.short}</span></div>
+        <div className="bg-surface-800 rounded-xl p-4 space-y-3 border border-surface-700">
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">LONG SIDE</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.long.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.long.metric}</div>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">SHORT SIDE</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.short.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.short.metric}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

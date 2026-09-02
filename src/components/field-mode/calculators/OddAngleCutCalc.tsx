@@ -5,7 +5,7 @@
 import React, { useState } from 'react'
 import { OddAngleDiagram } from '@/components/field-mode/diagrams/OddAngleDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
-import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
+import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 interface Props { displayOpts?: DisplayOpts }
@@ -14,7 +14,7 @@ export function OddAngleCutCalc({ displayOpts = { unit: 'imperial', precision: '
   const [radiusStr, setRadiusStr]   = useState('')
   const [angleStr, setAngleStr]     = useState('')
   const [activeField, setActive]    = useState<'radius' | 'angle' | null>(null)
-  const [result, setResult]         = useState<string | null>(null)
+  const [result, setResult]         = useState<{ imperial: string; metric: string } | null>(null)
   const [error, setError]           = useState<string | null>(null)
 
   function compute() {
@@ -25,7 +25,7 @@ export function OddAngleCutCalc({ displayOpts = { unit: 'imperial', precision: '
       if (isNaN(angle) || angle <= 0 || angle >= 90) { setError('Angle must be 1–89°'); return }
       const halfAngle = ((90 - angle) / 2) * Math.PI / 180
       const cutBackMm = radius._mm * Math.tan(halfAngle)
-      setResult(formatLength({ _mm: cutBackMm } as ReturnType<typeof fromFeetInchesFraction>, displayOpts))
+      setResult(dualFormat(cutBackMm))
     } catch { setError('Check input') }
   }
 
@@ -48,9 +48,14 @@ export function OddAngleCutCalc({ displayOpts = { unit: 'imperial', precision: '
       <button type="button" onClick={compute} className="min-h-[56px] rounded-xl bg-blue-700 text-white font-semibold text-base">Calculate</button>
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex justify-between">
-          <span className="text-surface-400 text-sm">CUT BACK</span>
-          <span className="text-surface-100 font-mono text-lg">{result}</span>
+        <div className="bg-surface-800 rounded-xl p-4 space-y-2 border border-surface-700">
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">CUT BACK</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.metric}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

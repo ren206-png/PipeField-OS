@@ -10,7 +10,7 @@ export function RiggingCalc() {
   const t = useFieldStrings('en')
   const [loadKg, setLoadKg]       = useState('')
   const [angleDeg, setAngleDeg]   = useState('')
-  const [result, setResult]       = useState<{ legLoad: string; factor: string } | null>(null)
+  const [result, setResult]       = useState<{ legLoad: string; legLoadLbs: string; factor: string } | null>(null)
   const [unverified, setUnverified] = useState(false)
   const [error, setError]         = useState<string | null>(null)
   const [loading, setLoading]     = useState(false)
@@ -28,18 +28,22 @@ export function RiggingCalc() {
         if (!row.verified) setUnverified(true)
         const factor = row.data.leg_load_multiplier
         const legLoadKg = (load / 2) * factor
+        const legLoadLbs = legLoadKg * 2.20462
         setResult({
-          legLoad: `${legLoadKg.toFixed(1)} kg`,
-          factor:  `${factor.toFixed(3)}`,
+          legLoad:    `${legLoadKg.toFixed(1)} kg`,
+          legLoadLbs: `${legLoadLbs.toFixed(1)} lb`,
+          factor:     `${factor.toFixed(3)}`,
         })
       } else {
         // Fallback calculation: F = 1 / sin(θ_from_horiz)
         const rad = angle * Math.PI / 180
         const factor = 1 / Math.sin(rad)
         const legLoadKg = (load / 2) * factor
+        const legLoadLbs = legLoadKg * 2.20462
         setResult({
-          legLoad: `${legLoadKg.toFixed(1)} kg (calc)`,
-          factor:  `${factor.toFixed(3)} (calc — no ref row found)`,
+          legLoad:    `${legLoadKg.toFixed(1)} kg (calc)`,
+          legLoadLbs: `${legLoadLbs.toFixed(1)} lb (calc)`,
+          factor:     `${factor.toFixed(3)} (calc — no ref row found)`,
         })
         setUnverified(true)
       }
@@ -72,9 +76,18 @@ export function RiggingCalc() {
       {unverified && <div className="px-3 py-2 rounded-lg bg-amber-900/40 text-amber-300 text-sm">{t.calc_unverified_badge}</div>}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex flex-col gap-2">
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">LEG LOAD (per sling)</span><span className="text-surface-100 font-mono text-lg">{result.legLoad}</span></div>
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">LOAD FACTOR</span><span className="text-surface-100 font-mono text-base">{result.factor}</span></div>
+        <div className="bg-surface-800 rounded-xl p-4 space-y-3 border border-surface-700">
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">LEG LOAD (per sling)</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.legLoad}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.legLoadLbs}</div>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">LOAD FACTOR</span>
+            <span className="text-surface-100 font-mono text-base">{result.factor}</span>
+          </div>
         </div>
       )}
     </div>

@@ -5,7 +5,7 @@ import React, { useState } from 'react'
 import { CutLengthDiagram } from '@/components/field-mode/diagrams/CutLengthDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
-import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
+import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 import type { RefRow } from '@/lib/field-mode/calc/types'
@@ -22,7 +22,7 @@ export function CutLengthBwCalc({ displayOpts = { unit: 'imperial', precision: '
   const [nps, setNps] = useState('2')
   const [fittingType, setFittingType] = useState('90° LR')
   const [active, setActive] = useState(false)
-  const [result, setResult] = useState<string | null>(null)
+  const [result, setResult] = useState<{ imperial: string; metric: string } | null>(null)
   const [unverified, setUnverified] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -38,7 +38,7 @@ export function CutLengthBwCalc({ displayOpts = { unit: 'imperial', precision: '
       const ctc = fromFeetInchesFraction(ctcStr)
       const takeout = row.data.center_to_end_in ?? 0
       const cutMm = ctc._mm - 2 * takeout * 25.4
-      setResult(formatLength({ _mm: cutMm } as ReturnType<typeof fromFeetInchesFraction>, displayOpts))
+      setResult(dualFormat(cutMm))
     } catch (e) {
       setError('Check input')
     } finally { setLoading(false) }
@@ -75,9 +75,14 @@ export function CutLengthBwCalc({ displayOpts = { unit: 'imperial', precision: '
       {unverified && <div className="px-3 py-2 rounded-lg bg-amber-900/40 text-amber-300 text-sm">{t.calc_unverified_badge}</div>}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex justify-between">
-          <span className="text-surface-400 text-sm">CUT LENGTH</span>
-          <span className="text-surface-100 font-mono text-lg">{result}</span>
+        <div className="bg-surface-800 rounded-xl p-4 space-y-2 border border-surface-700">
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">CUT LENGTH</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.metric}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

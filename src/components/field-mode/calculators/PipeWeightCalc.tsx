@@ -16,7 +16,7 @@ export function PipeWeightCalc({ displayOpts = { unit: 'imperial', precision: '1
   const [wtStr, setWtStr]       = useState('')
   const [lengthStr, setLengthStr] = useState('')
   const [material, setMaterial] = useState('Carbon Steel')
-  const [result, setResult]     = useState<{ perFoot: string; total: string } | null>(null)
+  const [result, setResult]     = useState<{ perFoot: string; perFootMetric: string; total: string; totalMetric: string } | null>(null)
   const [unverified, setUnverified] = useState(false)
   const [error, setError]       = useState<string | null>(null)
   const [loading, setLoading]   = useState(false)
@@ -41,9 +41,14 @@ export function PipeWeightCalc({ displayOpts = { unit: 'imperial', precision: '1
       const areaFt2 = areaIn2 / 144
       const perFoot = areaFt2 * densityLbFt3
       const total = perFoot * length
+      // Metric conversions: 1 lb/ft = 1.48816 kg/m, 1 lb = 0.453592 kg
+      const perFootKgM = perFoot * 1.48816
+      const totalKg = total * 0.453592
       setResult({
-        perFoot: `${perFoot.toFixed(2)} lb/ft`,
-        total:   `${total.toFixed(2)} lb`,
+        perFoot:      `${perFoot.toFixed(2)} lb/ft`,
+        perFootMetric: `${perFootKgM.toFixed(2)} kg/m`,
+        total:        `${total.toFixed(2)} lb`,
+        totalMetric:  `${totalKg.toFixed(2)} kg`,
       })
     } catch { setError('Check input') } finally { setLoading(false) }
   }
@@ -78,9 +83,21 @@ export function PipeWeightCalc({ displayOpts = { unit: 'imperial', precision: '1
       {unverified && <div className="px-3 py-2 rounded-lg bg-amber-900/40 text-amber-300 text-sm">{t.calc_unverified_badge}</div>}
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex flex-col gap-2">
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">PER FOOT</span><span className="text-surface-100 font-mono text-lg">{result.perFoot}</span></div>
-          <div className="flex justify-between"><span className="text-surface-400 text-sm">TOTAL</span><span className="text-surface-100 font-mono text-lg">{result.total}</span></div>
+        <div className="bg-surface-800 rounded-xl p-4 space-y-3 border border-surface-700">
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">PER FOOT</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.perFoot}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.perFootMetric}</div>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">TOTAL</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.total}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.totalMetric}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

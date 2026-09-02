@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { SimpleOffsetDiagram } from '@/components/field-mode/diagrams/SimpleOffsetDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
-import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
+import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 // Parallel offsets: shift = spacing / sin(θ) gives the travel offset
@@ -12,7 +12,7 @@ export function ParallelOffsetsCalc({ displayOpts = { unit: 'imperial', precisio
   const [spacingStr, setSpacingStr] = useState('')
   const [active, setActive]         = useState(false)
   const [angleDeg, setAngleDeg]     = useState(45)
-  const [result, setResult]         = useState<string | null>(null)
+  const [result, setResult]         = useState<{ imperial: string; metric: string } | null>(null)
   const [error, setError]           = useState<string | null>(null)
 
   function compute() {
@@ -20,7 +20,7 @@ export function ParallelOffsetsCalc({ displayOpts = { unit: 'imperial', precisio
     try {
       const spacing = fromFeetInchesFraction(spacingStr)
       const shiftMm = spacing._mm / Math.sin((angleDeg * Math.PI) / 180)
-      setResult(formatLength({ _mm: shiftMm } as ReturnType<typeof fromFeetInchesFraction>, displayOpts))
+      setResult(dualFormat(shiftMm))
     } catch { setError('Check input') }
   }
 
@@ -45,9 +45,14 @@ export function ParallelOffsetsCalc({ displayOpts = { unit: 'imperial', precisio
       <button type="button" onClick={compute} className="min-h-[56px] rounded-xl bg-blue-700 text-white font-semibold text-base">Calculate</button>
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex justify-between">
-          <span className="text-surface-400 text-sm">TRAVEL SHIFT</span>
-          <span className="text-surface-100 font-mono text-lg">{result}</span>
+        <div className="bg-surface-800 rounded-xl p-4 space-y-2 border border-surface-700">
+          <div className="flex justify-between items-center">
+            <span className="text-surface-400 text-sm">TRAVEL SHIFT</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.metric}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { SimpleOffsetDiagram } from '@/components/field-mode/diagrams/SimpleOffsetDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
-import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
+import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 // Simple offset: travel = offset / sin(θ), run = offset / tan(θ)
@@ -26,7 +26,7 @@ export function SimpleOffsetCalc({ displayOpts = { unit: 'imperial', precision: 
   const [offsetStr, setOffsetStr] = useState('')
   const [activeField, setActiveField] = useState<'offset' | null>(null)
   const [angleDeg, setAngleDeg] = useState(45)
-  const [result, setResult] = useState<{ travel: string; run: string } | null>(null)
+  const [result, setResult] = useState<{ travel: { imperial: string; metric: string }; run: { imperial: string; metric: string } } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   function compute() {
@@ -37,8 +37,8 @@ export function SimpleOffsetCalc({ displayOpts = { unit: 'imperial', precision: 
       const travelMm = offset._mm / Math.sin(rad)
       const runMm    = offset._mm / Math.tan(rad)
       setResult({
-        travel: formatLength({ _mm: travelMm } as ReturnType<typeof fromFeetInchesFraction>, displayOpts),
-        run:    formatLength({ _mm: runMm    } as ReturnType<typeof fromFeetInchesFraction>, displayOpts),
+        travel: dualFormat(travelMm),
+        run:    dualFormat(runMm),
       })
     } catch {
       setError('Check input')
@@ -98,14 +98,20 @@ export function SimpleOffsetCalc({ displayOpts = { unit: 'imperial', precision: 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
       {result && (
-        <div className="rounded-xl border border-surface-700 bg-surface-900 p-4 flex flex-col gap-2">
-          <div className="flex justify-between">
+        <div className="bg-surface-800 rounded-xl p-4 space-y-3 border border-surface-700">
+          <div className="flex justify-between items-center">
             <span className="text-surface-400 text-sm">TRAVEL</span>
-            <span className="text-surface-100 font-mono text-lg">{result.travel}</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.travel.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.travel.metric}</div>
+            </div>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <span className="text-surface-400 text-sm">RUN</span>
-            <span className="text-surface-100 font-mono text-lg">{result.run}</span>
+            <div className="text-right">
+              <div className="text-surface-100 font-mono text-lg">{result.run.imperial}</div>
+              <div className="text-blue-400 font-mono text-sm">{result.run.metric}</div>
+            </div>
           </div>
         </div>
       )}

@@ -281,3 +281,12 @@ export function formatLength(l: Length, opts: DisplayOpts): string {
   }
   return `${sign}${inchPart}`
 }
+
+/** Format a length in BOTH units. */
+export function dualFormat(mm: number): { imperial: string; metric: string } {
+  const l = { _mm: mm } as Length
+  return {
+    imperial: formatLength(l, { unit: 'imperial', precision: '1/16' }),
+    metric:   formatLength(l, { unit: 'metric',   precision: '1mm'  }),
+  }
+}
