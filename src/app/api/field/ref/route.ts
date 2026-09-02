@@ -10,7 +10,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
-import { createClient as createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // Allowlist — prevents arbitrary table access
 const ALLOWED_TABLES = new Set([
@@ -37,7 +37,7 @@ const ALLOWED_TABLES = new Set([
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
-  if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (auth.error) return auth.error
 
   const { searchParams } = req.nextUrl
   const table = searchParams.get('table')
@@ -50,12 +50,14 @@ export async function GET(req: NextRequest) {
   const filters: Record<string, string> = {}
   searchParams.forEach((v, k) => { if (k !== 'table') filters[k] = v })
 
+  // Build query using raw REST to avoid TypeScript deep-type issues
   const supabase = createAdminClient()
-  let q = supabase.from(table as never).select('*').neq('rejected', true as never)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q: any = supabase.from(table).select('*').neq('rejected', true)
 
   // Apply equality filters
   for (const [col, val] of Object.entries(filters)) {
-    q = (q as ReturnType<typeof q.eq>).eq(col, val)
+    q = q.eq(col, val)
   }
 
   const { data, error } = await q

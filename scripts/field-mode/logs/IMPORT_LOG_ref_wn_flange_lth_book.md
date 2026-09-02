@@ -2,7 +2,7 @@
 
 - Source file: `data/sources/pocket-tradesman/ref_wn_flange_lth_pocket_tradesman.csv`
 - File SHA-256: `25b2e1927c58edeb9ad0706ef103776277c320841260d9fc18948d1e77f9508d`
-- Run at: 2026-08-31T03:10:02.151Z
+- Run at: 2026-09-01T02:29:51.070Z
 - Status: **no-op**
 - Total CSV rows: 40
 - Accepted (passed validation): 0

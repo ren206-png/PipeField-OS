@@ -2,7 +2,7 @@
 
 - Source file: `data/sources/recall/ref_plate_steel_weights.csv`
 - File SHA-256: `94403f52948281ac48f6ac1a30f5d993f502dcdd2ddf82b110b74ce58e5d2add`
-- Run at: 2026-08-31T03:10:01.151Z
+- Run at: 2026-09-01T02:29:50.101Z
 - Status: **no-op**
 - Total CSV rows: 19
 - Accepted (passed validation): 0

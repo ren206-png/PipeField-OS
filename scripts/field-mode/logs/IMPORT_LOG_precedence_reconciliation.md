@@ -1,8 +1,8 @@
 # IMPORT_LOG_precedence_reconciliation
 
-Run at: 2026-08-31T03:10:06.512Z
+Run at: 2026-09-01T02:29:55.337Z
 
-Reconciliation batch id: a403ab1f-da6c-4d97-a40c-a9bc31baa955
+Reconciliation batch id: bcff3d40-823b-4c83-9195-7d8fa9e8bc2b
 
 ## Stud length (ref_stud_bolts -> ref_flange_bolting_book)
 - SKIP class 150 NPS 3/4: row missing (recall=false, book=true)

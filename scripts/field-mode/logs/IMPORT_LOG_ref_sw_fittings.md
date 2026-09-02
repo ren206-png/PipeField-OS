@@ -2,7 +2,7 @@
 
 - Source file: `data/sources/recall/ref_sw_fittings_b16_11.csv`
 - File SHA-256: `d6005e7d5685c6a6a0e04d1e0a9c4c76aac5d89a0c6730800ceeedc590ee0877`
-- Run at: 2026-08-31T03:10:00.144Z
+- Run at: 2026-09-01T02:29:49.016Z
 - Status: **no-op**
 - Total CSV rows: 24
 - Accepted (passed validation): 0

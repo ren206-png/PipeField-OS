@@ -2,7 +2,7 @@
 
 - Source file: `data/sources/pocket-tradesman/ref_wire_rope_clips_pocket_tradesman.csv`
 - File SHA-256: `e4fff05d2959da8a3582d0b8b335d261ef3f815402b90c7b84a5174645f11eb4`
-- Run at: 2026-08-31T03:10:01.322Z
+- Run at: 2026-09-01T02:29:50.291Z
 - Status: **no-op**
 - Total CSV rows: 14
 - Accepted (passed validation): 0

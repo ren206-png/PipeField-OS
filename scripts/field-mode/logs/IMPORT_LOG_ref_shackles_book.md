@@ -2,7 +2,7 @@
 
 - Source file: `data/sources/pocket-tradesman/ref_shackles_pocket_tradesman.csv`
 - File SHA-256: `61488c43387e47e39054ddaf88305e99ce7fbfe758bb6103f1df574fb49e48bc`
-- Run at: 2026-08-31T03:10:02.027Z
+- Run at: 2026-09-01T02:29:50.954Z
 - Status: **no-op**
 - Total CSV rows: 20
 - Accepted (passed validation): 0

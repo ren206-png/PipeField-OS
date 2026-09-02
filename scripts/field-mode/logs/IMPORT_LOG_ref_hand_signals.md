@@ -2,7 +2,7 @@
 
 - Source file: `data/sources/recall/ref_hand_signals.csv`
 - File SHA-256: `11152169557081ff70c14969b2a4dd58613474394287cee9b441bbc097609553`
-- Run at: 2026-08-31T03:10:00.849Z
+- Run at: 2026-09-01T02:29:49.782Z
 - Status: **no-op**
 - Total CSV rows: 20
 - Accepted (passed validation): 0

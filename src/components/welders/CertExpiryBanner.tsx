@@ -11,7 +11,8 @@ export function CertExpiryBanner() {
 
   if (dismissed || expiring.length === 0) return null
 
-  const critical = expiring.filter(c => {
+  const safeExpiring = Array.isArray(expiring) ? expiring : []
+  const critical = safeExpiring.filter(c => {
     const days = Math.ceil((new Date(c.expiry_date).getTime() - Date.now()) / 86400000)
     return days <= 7
   })
@@ -25,7 +26,7 @@ export function CertExpiryBanner() {
       <AlertTriangle className={`h-4 w-4 shrink-0 ${critical.length > 0 ? 'text-danger' : 'text-warning'}`} />
       <p className="flex-1 text-sm text-surface-200">
         <span className="font-semibold">
-          {expiring.length} welder cert{expiring.length > 1 ? 's' : ''} expiring within 30 days
+          {safeExpiring.length} welder cert{safeExpiring.length > 1 ? 's' : ''} expiring within 30 days
         </span>
         {critical.length > 0 && (
           <span className="text-danger ml-1">({critical.length} within 7 days!)</span>

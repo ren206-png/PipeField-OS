@@ -2,7 +2,7 @@
 
 - Source file: `data/sources/recall/ref_threaded_fittings_ctr_to_end.csv`
 - File SHA-256: `943bf1aed78da0c45b098e90cb08816237c94578250e9c1242800f55767bd996`
-- Run at: 2026-08-31T03:10:00.266Z
+- Run at: 2026-09-01T02:29:49.153Z
 - Status: **no-op**
 - Total CSV rows: 56
 - Accepted (passed validation): 0

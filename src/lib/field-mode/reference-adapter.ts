@@ -99,7 +99,7 @@ export function createSupabaseReferenceAdapter(): ReferenceAdapter {
       // For shackle we need >= wll_kg filter — handled partially; full filter on client
       const rows = await fetchRef<ShackleRow>('ref_shackles', { bow_size_in })
       if (min_wll_kg !== undefined) {
-        return rows.filter(r => ((r.data as Record<string,unknown>).wll_kg as number) >= min_wll_kg)
+        return rows.filter(r => ((r.data as unknown as Record<string,unknown>).wll_kg as number) >= min_wll_kg)
       }
       return rows
     },
@@ -115,7 +115,7 @@ export function createSupabaseReferenceAdapter(): ReferenceAdapter {
     async getWireRopeSling({ diameter_in, min_swl_kg }) {
       const rows = await fetchRef<WireRopeSlingRow>('ref_wire_rope_slings', { rope_dia_in: diameter_in })
       if (min_swl_kg !== undefined) {
-        return rows.filter(r => ((r.data as Record<string,unknown>).swl_vertical_short_tons as number) >= min_swl_kg / 907.185)
+        return rows.filter(r => (((r.data as unknown as Record<string,unknown>)).swl_vertical_short_tons as number) >= min_swl_kg / 907.185)
       }
       return rows
     },
@@ -123,7 +123,7 @@ export function createSupabaseReferenceAdapter(): ReferenceAdapter {
     async getSyntheticSling({ width_in, min_wll_kg }) {
       const rows = await fetchRef<SyntheticSlingRow>('ref_synthetic_slings', { size_or_color: width_in })
       if (min_wll_kg !== undefined) {
-        return rows.filter(r => ((r.data as Record<string,unknown>).wll_vertical_kg as number) >= min_wll_kg)
+        return rows.filter(r => (((r.data as unknown as Record<string,unknown>)).wll_vertical_kg as number) >= min_wll_kg)
       }
       return rows
     },
@@ -131,7 +131,7 @@ export function createSupabaseReferenceAdapter(): ReferenceAdapter {
     async getChainSling({ chain_size, min_wll_kg }) {
       const rows = await fetchRef<ChainSlingRow>('ref_chain_slings', { chain_size_in: chain_size })
       if (min_wll_kg !== undefined) {
-        return rows.filter(r => ((r.data as Record<string,unknown>).wll_single_vertical_kg as number) >= min_wll_kg)
+        return rows.filter(r => (((r.data as unknown as Record<string,unknown>)).wll_single_vertical_kg as number) >= min_wll_kg)
       }
       return rows
     },
