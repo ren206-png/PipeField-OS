@@ -8,7 +8,24 @@ import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
-const NPS_OPTIONS = ['⅛','¼','⅜','½','¾','1','1¼','1½','2','2½','3','4']
+// DB stores NPS as '1/8', '1/4', etc. — value = DB value, label = display
+const NPS_OPTIONS: { value: string; label: string }[] = [
+  { value: '1/8',  label: '⅛"'  },
+  { value: '1/4',  label: '¼"'  },
+  { value: '3/8',  label: '⅜"'  },
+  { value: '1/2',  label: '½"'  },
+  { value: '3/4',  label: '¾"'  },
+  { value: '1',    label: '1"'   },
+  { value: '1-1/4',label: '1¼"' },
+  { value: '1-1/2',label: '1½"' },
+  { value: '2',    label: '2"'   },
+  { value: '2-1/2',label: '2½"' },
+  { value: '3',    label: '3"'   },
+  { value: '4',    label: '4"'   },
+  { value: '5',    label: '5"'   },
+  { value: '6',    label: '6"'   },
+  { value: '8',    label: '8"'   },
+]
 const FITTING_TYPES = ['90°', '45°', 'Tee']
 
 interface Props { displayOpts?: DisplayOpts }
@@ -28,7 +45,7 @@ export function CutLengthThreadedCalc({ displayOpts = { unit: 'imperial', precis
     setError(null); setLoading(true); setUnverified(false)
     try {
       const adapter = createSupabaseReferenceAdapter()
-      const rows = await adapter.getThreadedFitting({ nps, fitting_type: fittingType })
+      const rows = await adapter.getThreadedFitting({ nps })
       if (!rows.length) { setError(t.calc_missing_ref('ref_threaded_fittings')); return }
       const row = rows[0]
       if (!row.verified) setUnverified(true)
@@ -47,7 +64,7 @@ export function CutLengthThreadedCalc({ displayOpts = { unit: 'imperial', precis
           <label className="block text-xs text-surface-400 mb-1 uppercase tracking-wide">NPS</label>
           <select value={nps} onChange={e => setNps(e.target.value)}
             className="min-h-[56px] w-full px-4 rounded-xl border bg-surface-900 border-surface-700 text-surface-100 text-base">
-            {NPS_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+            {NPS_OPTIONS.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
           </select>
         </div>
         <div className="flex-1">

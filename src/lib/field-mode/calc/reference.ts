@@ -271,7 +271,7 @@ export interface ReferenceAdapter {
 
   getThreadedFitting(p: {
     nps: string
-    fitting_type: string
+    fitting_type?: string
   }): Promise<RefRow<ThreadedFittingRow>[]>
 
   getNptThread(p: {

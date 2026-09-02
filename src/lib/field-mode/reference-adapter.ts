@@ -109,10 +109,10 @@ export function createSupabaseReferenceAdapter(): ReferenceAdapter {
       return (data ?? []).filter(r => !isBadRow(r)).map(r => toRefRow<SwCouplingRow>(r))
     },
 
-    async getThreadedFitting({ nps, fitting_type }) {
+    async getThreadedFitting({ nps }) {
+      // Note: no fitting_type column in DB — dimension selection handled by caller
       const { data } = await supabase.from('ref_threaded_fittings').select('*')
         .eq('nps', nps)
-        .eq('fitting_type', fitting_type)
         .neq('rejected', true)
       return (data ?? []).filter(r => !isBadRow(r)).map(r => toRefRow<ThreadedFittingRow>(r))
     },

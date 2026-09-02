@@ -11,7 +11,30 @@ import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 import type { RefRow } from '@/lib/field-mode/calc/types'
 import type { BwFittingRow } from '@/lib/field-mode/calc/reference'
 
-const NPS_OPTIONS = ['½','¾','1','1¼','1½','2','2½','3','3½','4','5','6','8','10','12','14','16','18','20','24']
+// DB stores NPS as '1/2', '1-1/4' etc.
+const NPS_OPTIONS: { value: string; label: string }[] = [
+  { value: '1/2',   label: '½"'   },
+  { value: '3/4',   label: '¾"'   },
+  { value: '1',     label: '1"'   },
+  { value: '1-1/4', label: '1¼"'  },
+  { value: '1-1/2', label: '1½"'  },
+  { value: '2',     label: '2"'   },
+  { value: '2-1/2', label: '2½"'  },
+  { value: '3',     label: '3"'   },
+  { value: '3-1/2', label: '3½"'  },
+  { value: '4',     label: '4"'   },
+  { value: '5',     label: '5"'   },
+  { value: '6',     label: '6"'   },
+  { value: '8',     label: '8"'   },
+  { value: '10',    label: '10"'  },
+  { value: '12',    label: '12"'  },
+  { value: '14',    label: '14"'  },
+  { value: '16',    label: '16"'  },
+  { value: '18',    label: '18"'  },
+  { value: '20',    label: '20"'  },
+  { value: '22',    label: '22"'  },
+  { value: '24',    label: '24"'  },
+]
 const FITTING_TYPES = ['90° LR', '90° SR', '45°', '180° LR', '180° SR', 'Tee']
 
 interface Props { displayOpts?: DisplayOpts }
@@ -51,7 +74,7 @@ export function CutLengthBwCalc({ displayOpts = { unit: 'imperial', precision: '
         <label className="block text-xs text-surface-400 mb-1 uppercase tracking-wide">NPS</label>
         <select value={nps} onChange={e => setNps(e.target.value)}
           className="min-h-[56px] w-full px-4 rounded-xl border bg-surface-900 border-surface-700 text-surface-100 text-base">
-          {NPS_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+          {NPS_OPTIONS.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
         </select>
       </div>
       <div>

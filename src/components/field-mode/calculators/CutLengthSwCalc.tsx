@@ -8,7 +8,20 @@ import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
 import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
-const NPS_OPTIONS = ['½','¾','1','1¼','1½','2','2½','3']
+const NPS_OPTIONS: { value: string; label: string }[] = [
+  { value: '1/8',   label: '⅛"'  },
+  { value: '1/4',   label: '¼"'  },
+  { value: '3/8',   label: '⅜"'  },
+  { value: '1/2',   label: '½"'  },
+  { value: '3/4',   label: '¾"'  },
+  { value: '1',     label: '1"'  },
+  { value: '1-1/4', label: '1¼"' },
+  { value: '1-1/2', label: '1½"' },
+  { value: '2',     label: '2"'  },
+  { value: '2-1/2', label: '2½"' },
+  { value: '3',     label: '3"'  },
+  { value: '4',     label: '4"'  },
+]
 
 interface Props { displayOpts?: DisplayOpts }
 
@@ -45,7 +58,7 @@ export function CutLengthSwCalc({ displayOpts = { unit: 'imperial', precision: '
         <label className="block text-xs text-surface-400 mb-1 uppercase tracking-wide">NPS</label>
         <select value={nps} onChange={e => setNps(e.target.value)}
           className="min-h-[56px] w-full px-4 rounded-xl border bg-surface-900 border-surface-700 text-surface-100 text-base">
-          {NPS_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+          {NPS_OPTIONS.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
         </select>
       </div>
       <div>
