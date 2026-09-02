@@ -6,7 +6,7 @@
 // Builds strings parseable by fromFeetInchesFraction() from types.ts.
 // All buttons: min 56×56 px tap target.
 // ============================================================
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 
 export interface FractionKeypadProps {
   value: string
@@ -45,6 +45,57 @@ function KeyBtn({ label, onPress, className = '', wide = false }: KeyBtnProps) {
   )
 }
 
+// ── Backspace button — tap to delete one char, hold to clear all ──
+interface BackspaceBtnProps {
+  onBackspace: () => void
+  onClear: () => void
+}
+
+function BackspaceBtn({ onBackspace, onClear }: BackspaceBtnProps) {
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [holding, setHolding] = useState(false)
+
+  function startHold(e: React.PointerEvent) {
+    e.preventDefault()
+    holdTimer.current = setTimeout(() => {
+      setHolding(true)
+      onClear()
+    }, 600)
+  }
+
+  function endHold(e: React.PointerEvent) {
+    e.preventDefault()
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current)
+      holdTimer.current = null
+    }
+    if (!holding) onBackspace()
+    setHolding(false)
+  }
+
+  return (
+    <button
+      type="button"
+      onPointerDown={startHold}
+      onPointerUp={endHold}
+      onPointerLeave={endHold}
+      className={`
+        min-h-[56px] flex flex-col items-center justify-center gap-0.5
+        rounded-xl text-base font-semibold select-none
+        border transition-colors duration-75
+        ${holding
+          ? 'bg-red-700 border-red-600 text-white'
+          : 'bg-surface-800 border-surface-700 text-red-400 active:bg-surface-700'
+        }
+      `}
+      aria-label="Backspace (hold to clear)"
+    >
+      <span className="text-lg leading-none">⌫</span>
+      <span className="text-[9px] text-surface-500 leading-none">hold=clear</span>
+    </button>
+  )
+}
+
 // ── Fraction constants ────────────────────────────────────────
 const FRACTIONS_16: { label: string; value: string }[] = [
   { label: '1/16',  value: '1/16'  },
@@ -75,6 +126,10 @@ export function FractionKeypad({ value, onChange, onSubmit, unit }: FractionKeyp
     onChange(value.slice(0, -1))
   }
 
+  function clearAll() {
+    onChange('')
+  }
+
   function appendFraction(frac: string) {
     // If current value ends with a whole number (no fraction yet), add space separator
     const trimmed = value.trimEnd()
@@ -103,7 +158,7 @@ export function FractionKeypad({ value, onChange, onSubmit, unit }: FractionKeyp
         {['4','5','6'].map(d => (
           <KeyBtn key={d} label={d} onPress={() => append(d)} />
         ))}
-        <KeyBtn label="⌫" onPress={backspace} className="text-red-400" />
+        <BackspaceBtn onBackspace={backspace} onClear={clearAll} />
         {['1','2','3'].map(d => (
           <KeyBtn key={d} label={d} onPress={() => append(d)} />
         ))}
@@ -137,7 +192,7 @@ export function FractionKeypad({ value, onChange, onSubmit, unit }: FractionKeyp
       {/* Row 4 */}
       <KeyBtn label="0" onPress={() => append('0')} />
       <KeyBtn label="/" onPress={() => append('/')} />
-      <KeyBtn label="⌫" onPress={backspace} className="text-red-400" />
+      <BackspaceBtn onBackspace={backspace} onClear={clearAll} />
       <KeyBtn label="↵" onPress={() => onSubmit(value)} className="bg-blue-700 text-white border-blue-600" />
 
       {/* Fraction rows or decimal mode toggle */}
