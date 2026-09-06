@@ -1,6 +1,6 @@
 'use client'
 // Cut Length — Socket Weld
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { CutLengthDiagram } from '@/components/field-mode/diagrams/CutLengthDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'

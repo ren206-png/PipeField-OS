@@ -139,10 +139,16 @@ export async function GET(req: NextRequest) {
 
           // 3. Mark milestone as sent (idempotency)
           const updatedSent = { ...sentKeys, [milestone.key]: now }
-          await admin
+          const { error: idempotencyErr } = await admin
             .from('organizations')
             .update({ trial_notifications_sent: updatedSent })
             .eq('id', org.id)
+
+          if (idempotencyErr) {
+            console.error(`[trial-notifications] idempotency update failed org=${org.id}`, idempotencyErr)
+            // Do not push to orgResult.sent — next run will retry sending
+            throw idempotencyErr
+          }
 
           orgResult.sent.push(milestone.key)
 

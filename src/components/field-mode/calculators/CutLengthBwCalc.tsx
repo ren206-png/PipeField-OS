@@ -1,7 +1,7 @@
 'use client'
 // Cut Length — Butt Weld
 // Fetches take-out from ref_bw_fittings via ReferenceAdapter
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { CutLengthDiagram } from '@/components/field-mode/diagrams/CutLengthDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'

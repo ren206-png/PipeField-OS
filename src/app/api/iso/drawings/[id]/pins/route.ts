@@ -24,12 +24,13 @@ interface RouteContext {
 
 async function verifyDrawing(drawingId: string, orgId: string) {
   const admin = createAdminClient()
-  const { data } = await admin
+  const { data, error } = await admin
     .from('iso_drawings')
     .select('id, organization_id')
     .eq('id', drawingId)
     .eq('organization_id', orgId)
     .maybeSingle()
+  if (error) throw error
   return data
 }
 
@@ -41,7 +42,12 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
   }
 
   const { id } = await params
-  const drawing = await verifyDrawing(id, caller.organization_id)
+  let drawing: Awaited<ReturnType<typeof verifyDrawing>>
+  try {
+    drawing = await verifyDrawing(id, caller.organization_id)
+  } catch (dbErr) {
+    return NextResponse.json({ error: (dbErr as Error).message }, { status: 500 })
+  }
   if (!drawing) return NextResponse.json({ error: 'Drawing not found' }, { status: 404 })
 
   const admin = createAdminClient()
@@ -81,7 +87,12 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   }
 
   const { id } = await params
-  const drawing = await verifyDrawing(id, caller.organization_id)
+  let drawing: Awaited<ReturnType<typeof verifyDrawing>>
+  try {
+    drawing = await verifyDrawing(id, caller.organization_id)
+  } catch (dbErr) {
+    return NextResponse.json({ error: (dbErr as Error).message }, { status: 500 })
+  }
   if (!drawing) return NextResponse.json({ error: 'Drawing not found' }, { status: 404 })
 
   const body = await req.json()

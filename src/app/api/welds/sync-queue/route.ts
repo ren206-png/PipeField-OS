@@ -53,26 +53,34 @@ export async function POST(req: NextRequest) {
       }
 
       // Verify project belongs to caller's org
-      const { data: project } = await admin
+      const { data: project, error: projectErr } = await admin
         .from('projects')
         .select('id')
         .eq('id', project_id)
         .eq('organization_id', caller.organization_id)
         .maybeSingle()
 
+      if (projectErr) {
+        results.push({ local_id, status: 'error', error: projectErr.message })
+        continue
+      }
       if (!project) {
         results.push({ local_id, status: 'error', error: 'Project not found' })
         continue
       }
 
       // Duplicate check by weld_id_number in same project
-      const { data: existing } = await admin
+      const { data: existing, error: existingErr } = await admin
         .from('welds')
         .select('id')
         .eq('project_id', project_id)
         .eq('weld_id_number', weld_id_number)
         .maybeSingle()
 
+      if (existingErr) {
+        results.push({ local_id, status: 'error', error: existingErr.message })
+        continue
+      }
       if (existing) {
         results.push({ local_id, status: 'duplicate', weld_id: existing.id as string })
         continue

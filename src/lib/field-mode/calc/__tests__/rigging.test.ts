@@ -13,7 +13,7 @@ describe('rigging — unverified row refusal', () => {
     const ref = makeMockRefAdapter({
       getSlingLegFactor: async () => [
         makeRefRow(
-          { angle_from_horizontal_deg: 60, angle_from_vertical_deg: 30, leg_load_multiplier: 1.155, note: null },
+          { angle_from_horizontal_deg: 60, angle_from_vertical_deg: 30, leg_load_multiplier: 1.155, note: null, standard: null, edition: null },
           { verified: false, recall_confidence: 'low' }, // verified=false, low confidence
         ),
       ],
@@ -31,7 +31,7 @@ describe('rigging — unverified row refusal', () => {
     const ref = makeMockRefAdapter({
       getSlingLegFactor: async () => [
         makeRefRow(
-          { angle_from_horizontal_deg: 60, angle_from_vertical_deg: 30, leg_load_multiplier: 1.155, note: null },
+          { angle_from_horizontal_deg: 60, angle_from_vertical_deg: 30, leg_load_multiplier: 1.155, note: null, standard: null, edition: null },
           { verified: true, recall_confidence: 'low' }, // verified=true even though low confidence
         ),
       ],

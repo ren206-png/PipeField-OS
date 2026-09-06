@@ -33,13 +33,14 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     const admin = createAdminClient()
 
     // Verify weld belongs to this org
-    const { data: weld } = await admin
+    const { data: weld, error: weldErr } = await admin
       .from('welds')
       .select('id')
       .eq('id', weldId)
       .eq('organization_id', caller.organization_id)
       .maybeSingle()
 
+    if (weldErr) return NextResponse.json({ error: weldErr.message }, { status: 500 })
     if (!weld) {
       return NextResponse.json({ error: 'Weld not found' }, { status: 404 })
     }
@@ -82,13 +83,14 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     const admin = createAdminClient()
 
     // Verify weld belongs to this org
-    const { data: weld } = await admin
+    const { data: weld, error: weldErr } = await admin
       .from('welds')
       .select('id')
       .eq('id', weldId)
       .eq('organization_id', caller.organization_id)
       .maybeSingle()
 
+    if (weldErr) return NextResponse.json({ error: weldErr.message }, { status: 500 })
     if (!weld) {
       return NextResponse.json({ error: 'Weld not found' }, { status: 404 })
     }

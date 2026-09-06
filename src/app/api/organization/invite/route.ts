@@ -45,13 +45,14 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient()
 
   // Check if user already exists in this org
-  const { data: existing } = await admin
+  const { data: existing, error: existingErr } = await admin
     .from('user_profiles')
     .select('id, email')
     .eq('email', email)
     .eq('organization_id', caller.organization_id)
     .maybeSingle()
 
+  if (existingErr) return NextResponse.json({ error: existingErr.message }, { status: 500 })
   if (existing) {
     return NextResponse.json(
       { error: 'This email is already a member of your organization.' },
@@ -60,12 +61,16 @@ export async function POST(req: NextRequest) {
   }
 
   // Cancel any prior pending invite for same email+org
-  await admin
+  const { error: cancelErr } = await admin
     .from('pending_invites')
     .update({ status: 'cancelled' })
     .eq('email', email)
     .eq('organization_id', caller.organization_id)
     .eq('status', 'pending')
+
+  if (cancelErr) {
+    console.error('[invite] failed to cancel prior invites', cancelErr)
+  }
 
   // Create the pending invite row
   const { data: invite, error: inviteError } = await admin

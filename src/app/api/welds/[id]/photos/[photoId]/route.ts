@@ -28,7 +28,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     const admin = createAdminClient()
 
     // Fetch the photo, verifying org ownership in the same query
-    const { data: photo } = await admin
+    const { data: photo, error: photoErr } = await admin
       .from('weld_photos')
       .select('id, storage_path, organization_id')
       .eq('id', photoId)
@@ -36,6 +36,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
       .eq('organization_id', caller.organization_id)
       .maybeSingle()
 
+    if (photoErr) return NextResponse.json({ error: photoErr.message }, { status: 500 })
     if (!photo) {
       return NextResponse.json({ error: 'Photo not found' }, { status: 404 })
     }

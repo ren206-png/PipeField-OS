@@ -1,6 +1,6 @@
 'use client'
 // Stud & Wrench lookup
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
 

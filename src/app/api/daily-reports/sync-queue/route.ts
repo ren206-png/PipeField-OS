@@ -72,20 +72,24 @@ export async function POST(req: NextRequest) {
       }
 
       // Verify project belongs to caller's org
-      const { data: project } = await admin
+      const { data: project, error: projectErr } = await admin
         .from('projects')
         .select('id')
         .eq('id', project_id)
         .eq('organization_id', caller.organization_id)
         .maybeSingle()
 
+      if (projectErr) {
+        results.push({ local_id, status: 'error', error: projectErr.message })
+        continue
+      }
       if (!project) {
         results.push({ local_id, status: 'error', error: 'Project not found' })
         continue
       }
 
       // Duplicate check: same project + same date
-      const { data: existing } = await admin
+      const { data: existing, error: existingErr } = await admin
         .from('daily_field_reports')
         .select('id')
         .eq('project_id', project_id)
@@ -93,6 +97,10 @@ export async function POST(req: NextRequest) {
         .eq('organization_id', caller.organization_id)
         .maybeSingle()
 
+      if (existingErr) {
+        results.push({ local_id, status: 'error', error: existingErr.message })
+        continue
+      }
       if (existing) {
         results.push({ local_id, status: 'duplicate', report_id: existing.id as string })
         continue

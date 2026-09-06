@@ -46,11 +46,13 @@ export async function POST(req: NextRequest) {
 
     // Verify all project IDs belong to the caller's org
     const uniqueProjectIds = Array.from(new Set(parsed.data.rows.map(r => r.project_id)))
-    const { data: projects } = await admin
+    const { data: projects, error: projectsErr } = await admin
       .from('projects')
       .select('id')
       .eq('organization_id', caller.organization_id)
       .in('id', uniqueProjectIds)
+
+    if (projectsErr) return NextResponse.json({ error: projectsErr.message }, { status: 500 })
 
     const validProjectIds = new Set((projects ?? []).map(p => p.id))
     const invalidProjects = uniqueProjectIds.filter(id => !validProjectIds.has(id))
@@ -62,10 +64,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Check for existing weld_id_numbers in those projects to avoid dupes
-    const { data: existing } = await admin
+    const { data: existing, error: existingErr } = await admin
       .from('welds')
       .select('weld_id_number, project_id')
       .eq('organization_id', caller.organization_id)
+
+    if (existingErr) return NextResponse.json({ error: existingErr.message }, { status: 500 })
 
     const existingKeys = new Set(
       (existing ?? []).map(w => `${w.project_id}::${w.weld_id_number}`)

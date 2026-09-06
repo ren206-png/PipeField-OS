@@ -1,7 +1,7 @@
 'use client'
 // Rigging Calculator — sling leg load from total load and angle
 // RIGGING DISCLAIMER shown persistently on every render.
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { RiggingDiagram } from '@/components/field-mode/diagrams/RiggingDiagram'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'

@@ -85,11 +85,12 @@ export async function GET(req: NextRequest) {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
   // Load all active orgs
-  const { data: orgs } = await admin
+  const { data: orgs, error: orgsErr } = await admin
     .from('organizations')
     .select('id, name')
     .eq('is_active', true)
 
+  if (orgsErr) return NextResponse.json({ error: orgsErr.message }, { status: 500 })
   if (!orgs?.length) return NextResponse.json({ processed: 0 })
 
   let processed = 0; let emails = 0; let errors = 0

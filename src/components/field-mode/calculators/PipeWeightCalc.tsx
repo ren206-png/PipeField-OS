@@ -1,6 +1,6 @@
 'use client'
 // Pipe Weight — weight per foot using material density
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'

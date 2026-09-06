@@ -1,6 +1,6 @@
 'use client'
 // Miter — long side / short side of a miter cut
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { MiterDiagram } from '@/components/field-mode/diagrams/MiterDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
