@@ -4,14 +4,24 @@ import React, { useState } from 'react'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
 
-const MATERIALS = ['Carbon Steel', 'Stainless 304', 'Stainless 316', 'Aluminum', 'Copper']
+// Values must match the 'material' column in ref_material_weights exactly
+const MATERIALS: { value: string; label: string }[] = [
+  { value: 'Steel, carbon',    label: 'Carbon Steel'    },
+  { value: 'Steel, stainless', label: 'Stainless Steel' },
+  { value: 'Cast iron',        label: 'Cast Iron'       },
+  { value: 'Aluminum',         label: 'Aluminum'        },
+  { value: 'Copper',           label: 'Copper'          },
+  { value: 'Brass',            label: 'Brass'           },
+  { value: 'Bronze',           label: 'Bronze'          },
+  { value: 'Titanium',         label: 'Titanium'        },
+]
 
 export function PipeWeightCalc() {
   const t = useFieldStrings('en')
   const [odStr, setOdStr]       = useState('')
   const [wtStr, setWtStr]       = useState('')
   const [lengthStr, setLengthStr] = useState('')
-  const [material, setMaterial] = useState('Carbon Steel')
+  const [material, setMaterial] = useState('Steel, carbon')
   const [result, setResult]     = useState<{ perFoot: string; perFootMetric: string; total: string; totalMetric: string } | null>(null)
   const [unverified, setUnverified] = useState(false)
   const [error, setError]       = useState<string | null>(null)
@@ -66,7 +76,7 @@ export function PipeWeightCalc() {
         <label className="block text-xs text-surface-400 mb-1 uppercase tracking-wide">Material</label>
         <select value={material} onChange={e => setMaterial(e.target.value)}
           className="min-h-[56px] w-full px-4 rounded-xl border bg-surface-900 border-surface-700 text-surface-100 text-base">
-          {MATERIALS.map(m => <option key={m} value={m}>{m}</option>)}
+          {MATERIALS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
       </div>
       <NumberInput label="OD (in)" value={odStr} onChange={setOdStr} placeholder="e.g. 4.5" />
