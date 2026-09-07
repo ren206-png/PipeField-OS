@@ -138,6 +138,9 @@ export default withMDX(withBundleAnalyzer(withPWA({
   },
   workboxOptions: {
     disableDevLogs: true,
+    // Bump cacheId to force all old workbox caches to be abandoned on next SW install.
+    // Change this value whenever a deployment is breaking due to stale cached JS chunks.
+    cacheId: 'pipefield-v2',
     runtimeCaching: [
       {
         // Supabase API — network first, fall back to cache for 24h
@@ -154,7 +157,7 @@ export default withMDX(withBundleAnalyzer(withPWA({
         urlPattern: /\/_next\/static\/.*/i,
         handler: 'CacheFirst',
         options: {
-          cacheName: 'next-static',
+          cacheName: 'next-static-v2',
           // 1 day — Next.js static chunks are content-hashed so they're
           // safe to cache, but a short TTL ensures deploys reach mobile fast.
           expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 },
