@@ -34,13 +34,23 @@ const NPS_OPTIONS: { value: string; label: string }[] = [
   { value: '22',    label: '22"'  },
   { value: '24',    label: '24"'  },
 ]
-const FITTING_TYPES = ['90° LR', '90° SR', '45°', '180° LR', '180° SR', 'Tee']
+// DB fitting_type values → display labels
+const FITTING_TYPES: { value: string; label: string }[] = [
+  { value: 'LR90',           label: '90° LR'   },
+  { value: 'SR90',           label: '90° SR'   },
+  { value: 'LR45',           label: '45° LR'   },
+  { value: 'LR180_RETURN_O', label: '180° LR (O)' },
+  { value: 'LR180_RETURN_K', label: '180° LR (K)' },
+  { value: 'TEE_EQUAL',      label: 'Tee (Equal)' },
+  { value: 'REDUCER',        label: 'Reducer'  },
+  { value: 'CAP',            label: 'Cap'      },
+]
 
 export function CutLengthBwCalc() {
   const t = useFieldStrings('en')
   const [ctcStr, setCtcStr] = useState('')
   const [nps, setNps] = useState('2')
-  const [fittingType, setFittingType] = useState('90° LR')
+  const [fittingType, setFittingType] = useState('LR90')
   const [active, setActive] = useState(false)
   const [result, setResult] = useState<{ imperial: string; metric: string } | null>(null)
   const [unverified, setUnverified] = useState(false)
@@ -78,7 +88,7 @@ export function CutLengthBwCalc() {
         <label className="block text-xs text-surface-400 mb-1 uppercase tracking-wide">Fitting Type</label>
         <select value={fittingType} onChange={e => setFittingType(e.target.value)}
           className="min-h-[56px] w-full px-4 rounded-xl border bg-surface-900 border-surface-700 text-surface-100 text-base">
-          {FITTING_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
+          {FITTING_TYPES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
         </select>
       </div>
       <div>
