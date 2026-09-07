@@ -8,12 +8,21 @@ import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
 
-const NPS_OPTIONS = ['½','¾','1','1¼','1½','2','2½','3','4','6','8','10','12']
+const NPS_OPTIONS: { value: string; label: string }[] = [
+  { value: '1/2',   label: '½"'  },
+  { value: '1',     label: '1"'  },
+  { value: '1-1/4', label: '1¼"' },
+  { value: '1-1/2', label: '1½"' },
+  { value: '10',    label: '10"' },
+  { value: '12',    label: '12"' },
+  { value: '14',    label: '14"' },
+  { value: '16',    label: '16"' },
+]
 const CLASSES = [150, 300, 600, 900, 1500, 2500]
 
 export function TwoHoleFlangeCalc() {
   const t = useFieldStrings('en')
-  const [nps, setNps] = useState('4')
+  const [nps, setNps] = useState('1')
   const [flangeClass, setFlangeClass] = useState(150)
   const [result, setResult] = useState<{ bc: { imperial: string; metric: string }; offset: { imperial: string; metric: string } } | null>(null)
   const [unverified, setUnverified] = useState(false)
@@ -46,7 +55,7 @@ export function TwoHoleFlangeCalc() {
           <label className="block text-xs text-surface-400 mb-1 uppercase tracking-wide">NPS</label>
           <select value={nps} onChange={e => setNps(e.target.value)}
             className="min-h-[56px] w-full px-4 rounded-xl border bg-surface-900 border-surface-700 text-surface-100 text-base">
-            {NPS_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+            {NPS_OPTIONS.map(n => <option key={n.value} value={n.value}>{n.label}</option>)}
           </select>
         </div>
         <div className="flex-1">
