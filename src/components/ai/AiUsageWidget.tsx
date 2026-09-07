@@ -77,7 +77,7 @@ export function AiUsageWidget() {
     );
   }
 
-  const activeUsage = data.usage.filter((item) => item.invocations > 0);
+  const activeUsage = (Array.isArray(data.usage) ? data.usage : []).filter((item) => item.invocations > 0);
 
   return (
     <div className="rounded-xl bg-surface-800 p-6">

@@ -38,7 +38,7 @@ export function WelderRiskWidget() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const flagged = data?.welders.filter(w => w.risk !== 'good') ?? []
+  const flagged = Array.isArray(data?.welders) ? data.welders.filter(w => w.risk !== 'good') : []
   const allGood = !isLoading && flagged.length === 0
 
   return (
@@ -92,7 +92,7 @@ export function WelderRiskWidget() {
               </div>
             )
           })}
-          {data && data.welders.filter(w => w.risk === 'good').length > 0 && (
+          {Array.isArray(data?.welders) && data.welders.filter(w => w.risk === 'good').length > 0 && (
             <p className="text-xs text-surface-600 pt-1 text-center">
               {data.welders.filter(w => w.risk === 'good').length} other welders performing well
             </p>

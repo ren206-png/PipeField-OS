@@ -12,10 +12,16 @@ export function CertExpiryBanner() {
   if (dismissed || expiring.length === 0) return null
 
   const safeExpiring = Array.isArray(expiring) ? expiring : []
-  const critical = safeExpiring.filter(c => {
-    const days = Math.ceil((new Date(c.expiry_date).getTime() - Date.now()) / 86400000)
-    return days <= 7
-  })
+  let critical: typeof safeExpiring = []
+  try {
+    critical = safeExpiring.filter(c => {
+      const days = Math.ceil((new Date(c.expiry_date).getTime() - Date.now()) / 86400000)
+      return days <= 7
+    })
+  } catch {
+    // Defensive: if any cert has a malformed expiry_date, skip the critical filter
+    critical = []
+  }
 
   return (
     <div className={`rounded-xl border px-4 py-3 flex items-center gap-3 ${
