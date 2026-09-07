@@ -2,15 +2,11 @@
 // Pipe Weight — weight per foot using material density
 import React, { useState } from 'react'
 import { useFieldStrings } from '@/lib/field-mode/locale'
-import { fromFeetInchesFraction, formatLength } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 const MATERIALS = ['Carbon Steel', 'Stainless 304', 'Stainless 316', 'Aluminum', 'Copper']
 
-interface Props { displayOpts?: DisplayOpts }
-
-export function PipeWeightCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function PipeWeightCalc() {
   const t = useFieldStrings('en')
   const [odStr, setOdStr]       = useState('')
   const [wtStr, setWtStr]       = useState('')

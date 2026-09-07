@@ -4,11 +4,8 @@ import React, { useState } from 'react'
 import { MiterDiagram } from '@/components/field-mode/diagrams/MiterDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
-interface Props { displayOpts?: DisplayOpts }
-
-export function MiterCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function MiterCalc() {
   const [odStr, setOdStr]        = useState('')
   const [angleStr, setAngleStr]  = useState('')
   const [active, setActive]      = useState(false)

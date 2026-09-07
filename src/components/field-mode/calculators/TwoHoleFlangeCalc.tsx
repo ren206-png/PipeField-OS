@@ -7,14 +7,11 @@ import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 const NPS_OPTIONS = ['½','¾','1','1¼','1½','2','2½','3','4','6','8','10','12']
 const CLASSES = [150, 300, 600, 900, 1500, 2500]
 
-interface Props { displayOpts?: DisplayOpts }
-
-export function TwoHoleFlangeCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function TwoHoleFlangeCalc() {
   const t = useFieldStrings('en')
   const [nps, setNps] = useState('4')
   const [flangeClass, setFlangeClass] = useState(150)

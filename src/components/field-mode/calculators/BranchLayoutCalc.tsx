@@ -4,15 +4,12 @@ import React, { useState } from 'react'
 import { BranchDiagram } from '@/components/field-mode/diagrams/BranchDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 // For a 90° branch: ordinate at station x = sqrt(R² - (R - x)²) for saddle layout
 // R = header OD / 2, r = branch OD / 2
 // ordinates at 16 stations across branch diameter
 
-interface Props { displayOpts?: DisplayOpts }
-
-export function BranchLayoutCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function BranchLayoutCalc() {
   const [headerOdStr, setHeaderOdStr] = useState('')
   const [branchOdStr, setBranchOdStr] = useState('')
   const [activeField, setActive]      = useState<'header' | 'branch' | null>(null)

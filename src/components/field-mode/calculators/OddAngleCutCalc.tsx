@@ -6,11 +6,8 @@ import React, { useState } from 'react'
 import { OddAngleDiagram } from '@/components/field-mode/diagrams/OddAngleDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
-interface Props { displayOpts?: DisplayOpts }
-
-export function OddAngleCutCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function OddAngleCutCalc() {
   const [radiusStr, setRadiusStr]   = useState('')
   const [angleStr, setAngleStr]     = useState('')
   const [activeField, setActive]    = useState<'radius' | 'angle' | null>(null)

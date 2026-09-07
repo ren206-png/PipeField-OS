@@ -4,12 +4,9 @@ import { RollingOffsetDiagram } from '@/components/field-mode/diagrams/RollingOf
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 // Rolling offset: true offset = sqrt(rise² + roll²), travel = true_offset / sin(θ)
-interface Props { displayOpts?: DisplayOpts }
-
-export function RollingOffsetCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function RollingOffsetCalc() {
   const [riseStr, setRiseStr]     = useState('')
   const [rollStr, setRollStr]     = useState('')
   const [activeField, setActive]  = useState<'rise' | 'roll' | null>(null)

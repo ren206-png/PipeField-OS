@@ -4,7 +4,6 @@ import { SimpleOffsetDiagram } from '@/components/field-mode/diagrams/SimpleOffs
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 // Simple offset: travel = offset / sin(θ), run = offset / tan(θ)
 // Angle is derived from fitting type (45°, 22.5°, etc.)
@@ -17,11 +16,7 @@ const ANGLES = [
   { label: '30°',   deg: 30 },
 ]
 
-interface Props {
-  displayOpts?: DisplayOpts
-}
-
-export function SimpleOffsetCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function SimpleOffsetCalc() {
   const t = useFieldStrings('en')
   const [offsetStr, setOffsetStr] = useState('')
   const [activeField, setActiveField] = useState<'offset' | null>(null)

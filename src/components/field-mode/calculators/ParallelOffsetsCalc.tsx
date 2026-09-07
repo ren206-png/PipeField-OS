@@ -3,12 +3,9 @@ import React, { useState } from 'react'
 import { SimpleOffsetDiagram } from '@/components/field-mode/diagrams/SimpleOffsetDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 
 // Parallel offsets: shift = spacing / sin(θ) gives the travel offset
-interface Props { displayOpts?: DisplayOpts }
-
-export function ParallelOffsetsCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function ParallelOffsetsCalc() {
   const [spacingStr, setSpacingStr] = useState('')
   const [active, setActive]         = useState(false)
   const [angleDeg, setAngleDeg]     = useState(45)

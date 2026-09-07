@@ -6,8 +6,6 @@ import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
-
 const NPS_OPTIONS: { value: string; label: string }[] = [
   { value: '1/8',   label: '⅛"'  },
   { value: '1/4',   label: '¼"'  },
@@ -23,9 +21,7 @@ const NPS_OPTIONS: { value: string; label: string }[] = [
   { value: '4',     label: '4"'  },
 ]
 
-interface Props { displayOpts?: DisplayOpts }
-
-export function CutLengthSwCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function CutLengthSwCalc() {
   const t = useFieldStrings('en')
   const [ctcStr, setCtcStr] = useState('')
   const [nps, setNps] = useState('1')

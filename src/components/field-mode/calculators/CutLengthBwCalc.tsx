@@ -7,7 +7,6 @@ import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
-import type { DisplayOpts } from '@/lib/field-mode/calc/types'
 import type { RefRow } from '@/lib/field-mode/calc/types'
 import type { BwFittingRow } from '@/lib/field-mode/calc/reference'
 
@@ -37,9 +36,7 @@ const NPS_OPTIONS: { value: string; label: string }[] = [
 ]
 const FITTING_TYPES = ['90° LR', '90° SR', '45°', '180° LR', '180° SR', 'Tee']
 
-interface Props { displayOpts?: DisplayOpts }
-
-export function CutLengthBwCalc({ displayOpts = { unit: 'imperial', precision: '1/16' } }: Props) {
+export function CutLengthBwCalc() {
   const t = useFieldStrings('en')
   const [ctcStr, setCtcStr] = useState('')
   const [nps, setNps] = useState('2')
