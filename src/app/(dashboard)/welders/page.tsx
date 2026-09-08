@@ -27,13 +27,12 @@ type FormValues = z.infer<typeof schema>
 
 // ── Continuity types ──────────────────────────────────────────
 interface WelderContinuity {
-  welder_id: string
   process: string
   position: string
+  standard: string | null
   last_weld_date: string | null
-  qualification_date: string | null
-  expiry_date: string | null
-  status: 'ACTIVE' | 'CLOSE_TO_EXPIRY' | 'EXPIRED'
+  expires_date: string | null
+  continuity_status: string
   days_remaining: number | null
 }
 
@@ -71,7 +70,9 @@ function ContinuityTab({ welders }: { welders: Welder[] }) {
         welders.map(async w => {
           try {
             const res = await apiFetch(`/api/welders/${w.id}/continuity`)
-            const data: WelderContinuity[] = res.ok ? await res.json() : []
+            if (!res.ok) return [w.id, []] as const
+            const json = await res.json() as { continuity_records?: WelderContinuity[] }
+            const data: WelderContinuity[] = Array.isArray(json.continuity_records) ? json.continuity_records : []
             return [w.id, data] as const
           } catch {
             return [w.id, []] as const
@@ -203,13 +204,13 @@ function ContinuityTab({ welders }: { welders: Welder[] }) {
                     )}
                     <td className="py-3 px-3 text-surface-300">{c.process}</td>
                     <td className="py-3 px-3 text-surface-300">{c.position}</td>
-                    <td className="py-3 px-3 text-surface-400 text-xs">{c.qualification_date ? formatDate(c.qualification_date) : '—'}</td>
-                    <td className="py-3 px-3 text-surface-400 text-xs">{c.expiry_date ? formatDate(c.expiry_date) : '—'}</td>
-                    <td className="py-3 px-3">{continuityBadge(c.status)}</td>
+                    <td className="py-3 px-3 text-surface-400 text-xs">{c.last_weld_date ? formatDate(c.last_weld_date) : '—'}</td>
+                    <td className="py-3 px-3 text-surface-400 text-xs">{c.expires_date ? formatDate(c.expires_date) : '—'}</td>
+                    <td className="py-3 px-3">{continuityBadge(c.continuity_status as 'ACTIVE' | 'CLOSE_TO_EXPIRY' | 'EXPIRED')}</td>
                     <td className={cn(
                       'py-3 px-3 text-sm font-medium',
-                      c.status === 'EXPIRED'         ? 'text-red-400' :
-                      c.status === 'CLOSE_TO_EXPIRY' ? 'text-yellow-400' : 'text-green-400'
+                      c.continuity_status === 'EXPIRED'         ? 'text-red-400' :
+                      c.continuity_status === 'CLOSE_TO_EXPIRY' ? 'text-yellow-400' : 'text-green-400'
                     )}>
                       {c.days_remaining !== null ? `${c.days_remaining}d` : '—'}
                     </td>
