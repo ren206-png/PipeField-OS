@@ -16,7 +16,7 @@ import { getCallerProfile } from '@/lib/api-auth'
 import { WeldDetailClient } from '@/components/welds/WeldDetailClient'
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 async function fetchWeldServer(id: string, organizationId: string) {
@@ -55,13 +55,14 @@ async function fetchWeldServer(id: string, organizationId: string) {
 
 export default async function WeldDetailPage({ params }: PageProps) {
   try {
+    const { id } = await params
     const caller = await getCallerProfile()
     // Fail-closed: missing auth OR null organization_id → 404 before any query
     if (!caller || !caller.organization_id) notFound()
 
-    const initialData = await fetchWeldServer(params.id, caller.organization_id)
+    const initialData = await fetchWeldServer(id, caller.organization_id)
     if (!initialData) notFound()
-    return <WeldDetailClient id={params.id} initialData={initialData} />
+    return <WeldDetailClient id={id} initialData={initialData} />
   } catch {
     notFound()
   }

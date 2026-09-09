@@ -17,7 +17,7 @@ export async function generateMetadata(
   const { token } = await params
   const admin = createAdminClient()
   const { data: link } = await admin
-    .from('share_links')
+    .from('client_share_links')
     .select('label, organizations(name)')
     .eq('token', token)
     .maybeSingle()

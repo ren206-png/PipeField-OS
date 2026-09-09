@@ -798,35 +798,40 @@ export async function GET(req: NextRequest) {
         .select('id, weld_id_number, joint_type, pipe_size, welder_name, status, weld_date')
         .eq('project_id', projectId)
         .eq('organization_id', caller.organization_id)
-        .order('weld_id_number'),
+        .order('weld_id_number')
+        .limit(2000),
 
       supabase
         .from('itps')
         .select('id, itp_number, title, discipline, status, approved_date')
         .eq('project_id', projectId)
         .eq('organization_id', caller.organization_id)
-        .order('itp_number'),
+        .order('itp_number')
+        .limit(500),
 
       supabase
         .from('ncrs')
         .select('id, ncr_number, title, status, disposition')
         .eq('project_id', projectId)
         .eq('organization_id', caller.organization_id)
-        .order('ncr_number'),
+        .order('ncr_number')
+        .limit(500),
 
       supabase
         .from('rfis')
         .select('id, rfi_number, title, status, answered_date')
         .eq('project_id', projectId)
         .eq('organization_id', caller.organization_id)
-        .order('rfi_number'),
+        .order('rfi_number')
+        .limit(500),
 
       supabase
         .from('pressure_tests')
         .select('id, test_number, system_name, test_pressure, pressure_unit, result, test_date')
         .eq('project_id', projectId)
         .eq('organization_id', caller.organization_id)
-        .order('test_number'),
+        .order('test_number')
+        .limit(200),
     ])
 
     // ── Guard project existence / org scope ─────────────────────

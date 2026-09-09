@@ -86,6 +86,10 @@ export async function requireAuth(req?: NextRequest): Promise<
   if (!caller) {
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
+  // Reject suspended or inactive accounts
+  if (caller.status && caller.status !== 'active') {
+    return { error: NextResponse.json({ error: 'Account suspended' }, { status: 403 }) }
+  }
   return { caller }
 }
 

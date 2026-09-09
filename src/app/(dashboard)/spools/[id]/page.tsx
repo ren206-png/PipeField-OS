@@ -16,11 +16,12 @@ import type { SpoolWithRelations } from '@/types'
 export const dynamic = 'force-dynamic'
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function SpoolDetailPage({ params }: PageProps) {
   try {
+    const { id } = await params
     const caller = await getCallerProfile()
     // Fail-closed: missing auth OR null organization_id → 404 before any query
     if (!caller || !caller.organization_id) notFound()
@@ -30,13 +31,13 @@ export default async function SpoolDetailPage({ params }: PageProps) {
     const { data, error } = await admin
       .from('spools')
       .select('*, projects(name), spool_items(*)')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('organization_id', caller.organization_id)
       .single()
 
     if (error || !data) notFound()
 
-    return <SpoolDetailClient id={params.id} initialData={data as SpoolWithRelations} />
+    return <SpoolDetailClient id={id} initialData={data as SpoolWithRelations} />
   } catch {
     notFound()
   }

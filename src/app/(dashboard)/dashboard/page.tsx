@@ -14,16 +14,18 @@ import { WELD_STATUS_LABELS, SPOOL_STATUS_LABELS, DFR_STATUS_COLORS, DFR_STATUS_
 import { OnboardingBanner } from '@/components/dashboard/OnboardingBanner'
 import { DashboardGreeting } from '@/components/shared/DashboardGreeting'
 import { LocalTime } from '@/components/shared/LocalTime'
-import dynamic from 'next/dynamic'
+import nextDynamic from 'next/dynamic'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import { WelderRiskWidget } from '@/components/dashboard/WelderRiskWidget'
+
+export const dynamic = 'force-dynamic'
 
 // Load client-only banner after hydration — prevents SSR/hydration
 // errors from escaping the ErrorBoundary and crashing the dashboard.
-const CertExpiryBanner = dynamic(
+const CertExpiryBanner = nextDynamic(
   () => import('@/components/welders/CertExpiryBanner').then(m => ({ default: m.CertExpiryBanner })),
   { ssr: false }
 )
-import { WelderRiskWidget } from '@/components/dashboard/WelderRiskWidget'
 
 export const metadata: Metadata = { title: 'Dashboard — PipeField OS' }
 
@@ -59,17 +61,19 @@ export default async function DashboardPage() {
     rfisRes,
     stpRes,
   ] = await Promise.all([
-    supabase.from('welds').select('id, status, welder_stamp, welder_name, weld_date, project_id, weld_id_number, created_at'),
-    supabase.from('spools').select('id, status, spool_number, project_id, priority, required_date'),
-    supabase.from('projects').select('id, name, status'),
+    supabase.from('welds').select('id, status, welder_stamp, welder_name, weld_date, project_id, weld_id_number, created_at').eq('organization_id', orgId),
+    supabase.from('spools').select('id, status, spool_number, project_id, priority, required_date').eq('organization_id', orgId),
+    supabase.from('projects').select('id, name, status').eq('organization_id', orgId),
     supabase
       .from('audit_logs')
       .select('id, action, table_name, record_id, new_values, previous_values, performed_at')
+      .eq('organization_id', orgId)
       .order('performed_at', { ascending: false })
       .limit(12),
     supabase
       .from('welders')
       .select('id, full_name, cert_expiry')
+      .eq('organization_id', orgId)
       .not('cert_expiry', 'is', null)
       .lte('cert_expiry', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
       .gte('cert_expiry', new Date().toISOString().split('T')[0])
@@ -77,13 +81,14 @@ export default async function DashboardPage() {
     supabase
       .from('daily_field_reports')
       .select('id, report_number, report_date, status, project_id, crew_size, welds_completed, project:projects(name)')
+      .eq('organization_id', orgId)
       .eq('report_date', new Date().toISOString().split('T')[0])
       .order('created_at', { ascending: false })
       .limit(5),
-    supabase.from('nde_inspections').select('id, result'),
-    supabase.from('punch_items').select('id, status, category'),
-    supabase.from('rfis').select('id, status'),
-    supabase.from('system_turnover_packages').select('id, status'),
+    supabase.from('nde_inspections').select('id, result').eq('organization_id', orgId),
+    supabase.from('punch_items').select('id, status, category').eq('organization_id', orgId),
+    supabase.from('rfis').select('id, status').eq('organization_id', orgId),
+    supabase.from('system_turnover_packages').select('id, status').eq('organization_id', orgId),
   ])
 
   // ── onboarding checks ────────────────────────────────────

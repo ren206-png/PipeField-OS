@@ -19,11 +19,12 @@ import { getCallerProfile } from '@/lib/api-auth'
 import { ProjectDetailClient } from '@/components/projects/ProjectDetailClient'
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function ProjectDetailPage({ params }: PageProps) {
   try {
+    const { id } = await params
     const caller = await getCallerProfile()
     // Fail-closed: missing auth OR null organization_id → 404 before any query
     if (!caller || !caller.organization_id) notFound()
@@ -33,7 +34,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
     const { data: project, error } = await admin
       .from('projects')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('organization_id', caller.organization_id)
       .maybeSingle()
 
@@ -41,7 +42,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
 
     return (
       <ProjectDetailClient
-        id={params.id}
+        id={id}
         initialData={project as Record<string, unknown>}
       />
     )

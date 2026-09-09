@@ -44,6 +44,7 @@ export function GlobalSearch() {
   const { profile } = useAuth()
   const supabaseRef = useRef(createClient())
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortRef    = useRef<AbortController | null>(null)
 
   // Cmd+K / Ctrl+K to open
   useEffect(() => {
@@ -67,6 +68,13 @@ export function GlobalSearch() {
       setRecentItems(getRecent())
       const timer = setTimeout(() => inputRef.current?.focus(), 50)
       return () => clearTimeout(timer)
+    } else {
+      // Cancel any in-flight search when modal closes
+      if (abortRef.current) {
+        abortRef.current.abort()
+        abortRef.current = null
+      }
+      setLoading(false)
     }
   }, [open])
 
@@ -76,6 +84,12 @@ export function GlobalSearch() {
       setResults([])
       return
     }
+
+    // Cancel any in-flight search
+    if (abortRef.current) abortRef.current.abort()
+    const ac = new AbortController()
+    abortRef.current = ac
+
     setLoading(true)
     const supabase = supabaseRef.current
     try {
@@ -143,10 +157,15 @@ export function GlobalSearch() {
           href: `/documents/mtrs/${m.id}`,
         })),
       ]
+      // Don't update state if this search was superseded
+      if (ac.signal.aborted) return
       setResults(out)
       setSelected(0)
+    } catch (err) {
+      if (ac.signal.aborted) return
+      console.error('[GlobalSearch] search error:', err)
     } finally {
-      setLoading(false)
+      if (!ac.signal.aborted) setLoading(false)
     }
   }, [profile?.organization_id])
 
