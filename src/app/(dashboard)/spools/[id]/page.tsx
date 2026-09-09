@@ -13,6 +13,8 @@ import { getCallerProfile } from '@/lib/api-auth'
 import { SpoolDetailClient } from '@/components/spools/SpoolDetailClient'
 import type { SpoolWithRelations } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: { id: string }
 }

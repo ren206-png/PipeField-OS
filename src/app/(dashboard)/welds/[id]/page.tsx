@@ -8,6 +8,8 @@
 // the organization_id checks below are what keep those reads tenant-scoped
 // since the admin client bypasses RLS.
 // ============================================================
+export const dynamic = 'force-dynamic'
+
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/api-auth'
