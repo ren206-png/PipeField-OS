@@ -16,6 +16,15 @@ import { Eye, EyeOff, Building2, UserPlus, AlertCircle, CheckCircle2 } from 'luc
 import { createClient } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils'
 
+// Detect Capacitor native environment
+function isCapacitorNative(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    !!(window as typeof window & { Capacitor?: { isNativePlatform(): boolean } })
+      .Capacitor?.isNativePlatform()
+  )
+}
+
 const registerSchema = z.object({
   organizationName: z
     .string()
@@ -43,6 +52,32 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
+  // On iOS/Capacitor, account registration is not available per App Store guideline 3.1.1.
+  // B2B enterprise accounts must be created on the web at pipefield-os.com.
+  if (isCapacitorNative()) {
+    return (
+      <div className="space-y-6 text-center py-8">
+        <Building2 className="w-12 h-12 text-brand-400 mx-auto" />
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-surface-50">Create Your Account</h2>
+          <p className="text-surface-400 text-sm leading-relaxed">
+            PipeField OS accounts are created on our website.
+          </p>
+        </div>
+        <div className="p-4 rounded-xl bg-surface-800 border border-surface-700 text-left space-y-1">
+          <p className="text-xs text-surface-500 font-medium uppercase tracking-wider">To get started:</p>
+          <p className="text-sm text-surface-300">Visit <span className="text-brand-400 font-semibold">pipefield-os.com</span> to register your organization, then sign in here.</p>
+        </div>
+        <Link
+          href="/login"
+          className="btn-primary w-full text-base flex items-center justify-center gap-2"
+        >
+          <UserPlus className="w-4 h-4" /> Back to Sign In
+        </Link>
+      </div>
+    )
+  }
+
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
