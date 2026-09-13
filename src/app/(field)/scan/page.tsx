@@ -57,12 +57,6 @@ export default function ScanPage() {
   const router = useRouter()
   const t = useFieldStrings('en')
 
-  // Redirect if flag off
-  if (!FLAGS.PFOS_FIELD_SCAN_LOG) {
-    if (typeof window !== 'undefined') router.replace('/home')
-    return null
-  }
-
   const [step, setStep]           = useState<FlowStep>('scan')
   const [qrError, setQrError]     = useState<string | null>(null)
   const [payload, setPayload]     = useState<QrPayload | null>(null)
@@ -78,6 +72,16 @@ export default function ScanPage() {
   const [undoDone, setUndoDone]   = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const undoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => { if (undoTimerRef.current) clearInterval(undoTimerRef.current) }
+  }, [])
+
+  // Redirect if flag off
+  if (!FLAGS.PFOS_FIELD_SCAN_LOG) {
+    if (typeof window !== 'undefined') router.replace('/home')
+    return null
+  }
 
   // ── QR file input handler ─────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -211,10 +215,6 @@ export default function ScanPage() {
     await markSynced(queuedId, 'field_weld')
     setUndoDone(true)
   }
-
-  useEffect(() => {
-    return () => { if (undoTimerRef.current) clearInterval(undoTimerRef.current) }
-  }, [])
 
   // ── Render ────────────────────────────────────────────────────
   return (
