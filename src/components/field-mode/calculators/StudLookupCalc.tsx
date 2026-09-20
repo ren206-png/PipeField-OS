@@ -83,14 +83,14 @@ export function StudLookupCalc() {
           <div className="flex justify-between items-center">
             <span className="text-surface-400 text-sm">STUD DIA</span>
             <div className="text-right">
-              <div className="text-surface-100 font-mono text-lg">{result.dia}"</div>
+              <div className="text-surface-100 font-mono text-lg">{result.dia}&quot;</div>
               <div className="text-blue-400 font-mono text-sm">{inchesToMm(result.dia)}</div>
             </div>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-surface-400 text-sm">STUD LENGTH</span>
             <div className="text-right">
-              <div className="text-surface-100 font-mono text-lg">{result.length}"</div>
+              <div className="text-surface-100 font-mono text-lg">{result.length}&quot;</div>
               <div className="text-blue-400 font-mono text-sm">{inchesToMm(result.length)}</div>
             </div>
           </div>

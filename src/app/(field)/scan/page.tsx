@@ -57,12 +57,7 @@ export default function ScanPage() {
   const router = useRouter()
   const t = useFieldStrings('en')
 
-  // Redirect if flag off
-  if (!FLAGS.PFOS_FIELD_SCAN_LOG) {
-    if (typeof window !== 'undefined') router.replace('/home')
-    return null
-  }
-
+  // Hooks must be called unconditionally before any early returns.
   const [step, setStep]           = useState<FlowStep>('scan')
   const [qrError, setQrError]     = useState<string | null>(null)
   const [payload, setPayload]     = useState<QrPayload | null>(null)
@@ -78,6 +73,20 @@ export default function ScanPage() {
   const [undoDone, setUndoDone]   = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const undoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Redirect to home when the feature flag is disabled
+  useEffect(() => {
+    if (!FLAGS.PFOS_FIELD_SCAN_LOG) {
+      router.replace('/home')
+    }
+  }, [router])
+
+  // Cleanup undo timer on unmount
+  useEffect(() => {
+    return () => { if (undoTimerRef.current) clearInterval(undoTimerRef.current) }
+  }, [])
+
+  if (!FLAGS.PFOS_FIELD_SCAN_LOG) return null
 
   // ── QR file input handler ─────────────────────────────────────
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -127,12 +136,16 @@ export default function ScanPage() {
   async function fetchJoints(spoolId: string) {
     const supabase = createClient()
     // Fetch welds for this spool (joints in fit_up or earlier)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('welds')
       .select('id, joint_number, weld_type, status')
       .eq('spool_id', spoolId)
       .in('status', ['pending', 'fit_up', 'not_started'])
       .order('joint_number')
+    if (error) {
+      setQrError(t.scan_invalid_qr)
+      return
+    }
     setJoints((data ?? []) as JointRecord[])
     setStep('select-joint')
   }
@@ -211,10 +224,6 @@ export default function ScanPage() {
     await markSynced(queuedId, 'field_weld')
     setUndoDone(true)
   }
-
-  useEffect(() => {
-    return () => { if (undoTimerRef.current) clearInterval(undoTimerRef.current) }
-  }, [])
 
   // ── Render ────────────────────────────────────────────────────
   return (

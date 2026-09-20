@@ -128,12 +128,9 @@ const S = StyleSheet.create({
 
 const el = React.createElement
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function footer(projectName: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return el(View, { style: S.footer, fixed: true } as any,
     el(Text, { style: S.footerText }, `Compliance Audit Package — ${projectName}`),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     el(Text, {
       style:  S.footerText,
       render: ({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>

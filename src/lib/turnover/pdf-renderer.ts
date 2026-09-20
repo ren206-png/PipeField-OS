@@ -212,10 +212,8 @@ function statusStyle(status: string) {
 }
 
 function footer(orgName: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return el(View, { style: S.footer, fixed: true } as any,
     el(Text, { style: S.footerText }, `${orgName} — Turnover Package`),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     el(Text, {
       style:  S.footerText,
       render: ({ pageNumber, totalPages }: { pageNumber: number; totalPages: number }) =>

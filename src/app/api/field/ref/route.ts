@@ -52,7 +52,6 @@ export async function GET(req: NextRequest) {
 
   // Build query using raw REST to avoid TypeScript deep-type issues
   const supabase = createAdminClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabase.from(table).select('*').neq('rejected', true)
 
   // Apply equality filters

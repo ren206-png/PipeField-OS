@@ -136,9 +136,7 @@ const EN_STRINGS = {
 } as const
 
 // Stub records — will use EN until translated
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _FR_CA_STUBS: Record<keyof typeof EN_STRINGS, unknown> = {} as Record<keyof typeof EN_STRINGS, unknown>
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _ES_STUBS:   Record<keyof typeof EN_STRINGS, unknown> = {} as Record<keyof typeof EN_STRINGS, unknown>
 
 const STRINGS: Record<FieldLocale, typeof EN_STRINGS> = {

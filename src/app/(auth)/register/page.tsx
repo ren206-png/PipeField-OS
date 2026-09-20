@@ -52,6 +52,24 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
+  // Hooks must be called unconditionally before any early returns.
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  const supabase = createClient()
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  })
+
   // On iOS/Capacitor, account registration is not available per App Store guideline 3.1.1.
   // B2B enterprise accounts must be created on the web at pipefield-os.com.
   if (isCapacitorNative()) {
@@ -77,23 +95,6 @@ export default function RegisterPage() {
       </div>
     )
   }
-
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [authError, setAuthError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [success, setSuccess] = useState(false)
-
-  const supabase = createClient()
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-  })
 
   const orgName = watch('organizationName', '')
   const orgSlug = slugify(orgName)

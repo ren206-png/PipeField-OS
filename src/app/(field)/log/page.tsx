@@ -333,7 +333,6 @@ export default function LogPage() {
   }
 
   // ── Append entry after voice confirmation ─────────────────
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function handleVoiceConfirm(entry: any) {
     setEntries(prev => [entry as LogEntry, ...prev])
     setShowVoice(false)
