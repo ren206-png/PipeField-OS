@@ -8,11 +8,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle2, Bug } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-// Detect Capacitor native environment
+// Detect Capacitor native environment (used for UI-only decisions)
 function isCapacitorNative(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -30,7 +30,6 @@ type LoginFormData = z.infer<typeof loginSchema>
 
 function LoginForm() {
   const searchParams = useSearchParams()
-  const router       = useRouter()
   const rawRedirect  = searchParams.get('redirect') ?? '/dashboard'
   // Reject protocol-relative URLs (//evil.com) and anything that isn't
   // a plain same-origin path. startsWith('/') passes '//…' so we add
@@ -94,17 +93,13 @@ function LoginForm() {
       // ✅ Success
       setSuccess(true)
 
-      if (isCapacitorNative()) {
-        // On iOS/Capacitor the WKWebView may not flush freshly-written JS
-        // cookies before the next navigation request reaches the server.
-        // Middleware would then see no session and loop back to /login.
-        // Client-side navigation avoids that server round-trip — AuthProvider
-        // already has the session in memory from onAuthStateChange.
-        router.push(redirectTo)
-      } else {
-        // Web: hard navigation so Next.js middleware sees the new session cookie.
-        window.location.href = redirectTo
-      }
+      // Reload the current page (/login) rather than navigating directly to
+      // /dashboard. This gives the WKWebView (iOS) time to flush the newly-written
+      // session cookies to the HTTP cookie store before the next server request.
+      // The middleware then sees the authenticated session on /login and issues
+      // a server-side redirect to /dashboard — no loop possible.
+      // On web this also works: middleware redirects authenticated users away from /login.
+      window.location.reload()
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)

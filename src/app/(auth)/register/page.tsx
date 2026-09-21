@@ -6,7 +6,7 @@
 // ============================================================
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -52,7 +52,16 @@ const registerSchema = z.object({
 type RegisterFormData = z.infer<typeof registerSchema>
 
 export default function RegisterPage() {
-  // Hooks must be called unconditionally before any early returns.
+  // isNative starts null (unknown during SSR) to avoid hydration mismatch.
+  // useEffect runs only on the client — after hydration — so the server and
+  // client render the same initial HTML (null → spinner), then the client
+  // corrects itself without React throwing a hydration error.
+  const [isNative, setIsNative] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    setIsNative(isCapacitorNative())
+  }, [])
+
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
@@ -70,9 +79,24 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
   })
 
-  // On iOS/Capacitor, account registration is not available per App Store guideline 3.1.1.
-  // B2B enterprise accounts must be created on the web at pipefield-os.com.
-  if (isCapacitorNative()) {
+  const orgName = watch('organizationName', '')
+  const orgSlug = slugify(orgName)
+
+  // isNative is null on first render (SSR + hydration) — show nothing so
+  // server and client HTML match. After mount, shows native gate or full form.
+  if (isNative === null) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <svg className="w-6 h-6 animate-spin text-brand-500" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+      </div>
+    )
+  }
+
+  // On iOS/Capacitor: registration not available — per App Store guideline 3.1.1
+  if (isNative) {
     return (
       <div className="space-y-6 text-center py-8">
         <Building2 className="w-12 h-12 text-brand-400 mx-auto" />
@@ -95,9 +119,6 @@ export default function RegisterPage() {
       </div>
     )
   }
-
-  const orgName = watch('organizationName', '')
-  const orgSlug = slugify(orgName)
 
   async function onSubmit(data: RegisterFormData) {
     setIsSubmitting(true)
