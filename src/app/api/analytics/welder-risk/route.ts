@@ -26,12 +26,14 @@ export async function GET(req: NextRequest) {
   const day7   = new Date(now.getTime() -  7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
   // Fetch all welds with a date in the last 30 days
-  const { data: welds } = await admin
+  const { data: welds, error: weldsErr } = await admin
     .from('welds')
     .select('welder_stamp, welder_name, status, weld_date')
     .eq('organization_id', orgId)
     .gte('weld_date', day30)
     .in('status', ['accepted', 'failed', 'rejected'])
+
+  if (weldsErr) return NextResponse.json({ error: weldsErr.message }, { status: 500 })
 
   if (!welds || welds.length === 0) {
     return NextResponse.json({ welders: [], generated_at: now.toISOString() })

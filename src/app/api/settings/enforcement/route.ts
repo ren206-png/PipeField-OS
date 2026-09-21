@@ -15,11 +15,13 @@ export async function GET(req: NextRequest) {
   if (!caller?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
   const admin = createAdminClient()
-  const { data } = await admin
+  const { data, error } = await admin
     .from('org_settings')
     .select('*')
     .eq('organization_id', caller.organization_id)
     .maybeSingle()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Return defaults if no row yet
   return NextResponse.json(data ?? {

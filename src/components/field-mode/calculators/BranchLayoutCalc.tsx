@@ -1,6 +1,6 @@
 'use client'
 // Branch Layout — ordinate marks for branch saddle cut
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { BranchDiagram } from '@/components/field-mode/diagrams/BranchDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'

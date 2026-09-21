@@ -66,11 +66,13 @@ export async function DELETE(req: NextRequest) {
   }
 
   const admin = createAdminClient()
-  await admin
+  const { error: deleteErr } = await admin
     .from('push_subscriptions')
     .delete()
     .eq('user_id', caller.auth_user_id)
     .eq('endpoint', body.endpoint)
+
+  if (deleteErr) return NextResponse.json({ error: deleteErr.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })
 }

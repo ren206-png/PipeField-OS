@@ -56,10 +56,14 @@ export async function GET(
     // Network error or timeout — leave status as FAILED
   }
 
-  await admin
+  const { error: updateErr } = await admin
     .from('erp_connectors')
     .update({ test_status: status, last_sync: tested_at })
     .eq('id', params.id)
+
+  if (updateErr) {
+    console.error('[erp/connectors/test] failed to persist test status', updateErr)
+  }
 
   return NextResponse.json({ connected, status, tested_at })
 }

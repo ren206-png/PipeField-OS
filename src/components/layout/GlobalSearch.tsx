@@ -107,6 +107,12 @@ export function GlobalSearch() {
         supabase.from('mtrs').select('id, heat_number, material_spec, status').eq('organization_id', orgId).or(`heat_number.ilike.%${term}%,material_spec.ilike.%${term}%`).limit(3),
       ])
 
+      const queryErrors = [weldsR, spoolsR, projectsR, rfisR, ncrsR, docsR, pressureTestsR, mtrsR]
+        .map(r => r.error).filter(Boolean)
+      if (queryErrors.length > 0) {
+        console.error('[GlobalSearch] Supabase query errors:', queryErrors)
+      }
+
       const out: SearchResult[] = [
         ...(weldsR.data ?? []).map((w) => ({
           id: w.id, type: 'weld' as const,

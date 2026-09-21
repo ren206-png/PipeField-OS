@@ -2,7 +2,7 @@
 // Odd-Angle Cut from 90
 // cut_back = radius × tan(half_angle)
 // where half_angle = (90 - desired_angle) / 2
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { OddAngleDiagram } from '@/components/field-mode/diagrams/OddAngleDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'

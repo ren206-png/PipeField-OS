@@ -1,7 +1,7 @@
 'use client'
 // 2-Hole Flange — bolt-hole straddling the centreline
 // offset = BC/2 × sin(half_straddle_angle)
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { TwoHoleFlangesDiagram } from '@/components/field-mode/diagrams/TwoHoleFlangesDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'

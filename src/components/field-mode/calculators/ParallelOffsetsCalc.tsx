@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { SimpleOffsetDiagram } from '@/components/field-mode/diagrams/SimpleOffsetDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
