@@ -2,14 +2,13 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  CreditCard, CheckCircle2, AlertCircle, Zap,
+  CreditCard, CheckCircle2, AlertCircle,
   ArrowRight, Loader2, ExternalLink, ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useOrganization } from '@/hooks/useOrganization'
 import { BillingStatusBanner } from '@/components/billing/BillingStatusBanner'
 import { TrialSignupCard } from '@/components/billing/TrialSignupCard'
-import type { PlanKey } from '@/lib/plans'
 import { apiFetch } from '@/lib/apiFetch'
 
 // ── Plan definitions (mirrors src/lib/stripe.ts — client-safe, no secret) ──

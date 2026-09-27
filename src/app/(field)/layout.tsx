@@ -10,6 +10,8 @@ import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/api-auth'
 import { FLAGS } from '@/intelligence/flags'
 
+export const dynamic = 'force-dynamic'
+
 export const FIELD_DEFAULT_ROLES = ['pipefitter', 'shop_fabricator'] as const
 export const FIELD_TOGGLE_ROLES  = ['foreman', 'qa_inspector', 'administrator', 'organization_owner', 'project_manager'] as const
 

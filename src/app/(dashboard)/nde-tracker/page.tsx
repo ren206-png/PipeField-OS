@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import {
   FlaskConical, CheckCircle2, XCircle, Clock, AlertTriangle,
-  ChevronRight, Search, Filter, BarChart3, TrendingUp, RefreshCw
+  ChevronRight, Search, BarChart3, TrendingUp, RefreshCw
 } from 'lucide-react'
 
 // ── Type constants ────────────────────────────────────────────

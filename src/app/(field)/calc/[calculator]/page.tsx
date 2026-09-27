@@ -18,8 +18,6 @@ import { MiterCalc }              from '@/components/field-mode/calculators/Mite
 import { PipeWeightCalc }         from '@/components/field-mode/calculators/PipeWeightCalc'
 import { RiggingCalc }            from '@/components/field-mode/calculators/RiggingCalc'
 import { StudLookupCalc }         from '@/components/field-mode/calculators/StudLookupCalc'
-import { useFieldStrings } from '@/lib/field-mode/locale'
-
 const CALCULATOR_MAP: Record<string, { label: string; Component: React.ComponentType }> = {
   'simple-offset':    { label: 'Simple Offset',         Component: SimpleOffsetCalc },
   'rolling-offset':   { label: 'Rolling Offset',        Component: RollingOffsetCalc },

@@ -12,6 +12,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+export const dynamic = 'force-dynamic'
+
 // Allowlist — prevents arbitrary table access
 const ALLOWED_TABLES = new Set([
   'ref_bw_fittings',

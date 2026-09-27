@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
-import type { WeldStatus } from '@/types'
 import type { WpsRecord } from '@/hooks/useWps'
 import { WeldingGuidancePanel } from '@/components/ai/WeldingGuidancePanel'
 

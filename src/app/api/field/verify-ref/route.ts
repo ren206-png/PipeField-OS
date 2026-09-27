@@ -105,8 +105,8 @@ export async function POST(req: NextRequest) {
 
     if (updateError) continue
 
-    // Insert into ref_verification_events (if table exists)
-    await supabase.from('ref_verification_events').insert({
+    // Insert into ref_verification_events (best-effort — table may not exist yet)
+    const { error: eventErr } = await supabase.from('ref_verification_events').insert({
       ref_table:        table_name,
       ref_row_id:       row_id,
       verified:         !reject,
@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
       reject:           reject ?? false,
       created_at:       now,
     })
+    if (eventErr) console.warn('[verify-ref] event insert non-fatal:', eventErr.message)
 
     updated++
   }

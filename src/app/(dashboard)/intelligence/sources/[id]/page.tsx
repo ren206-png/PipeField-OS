@@ -6,7 +6,7 @@ import { use } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, FileText, ExternalLink, Archive, Tag,
-  Calendar, User, Layers, Shield, AlertTriangle, Brain,
+  Calendar, Layers, Shield, AlertTriangle, Brain,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useKnowledgeSource, useUpdateKnowledgeSource } from '@/hooks/useKnowledge'

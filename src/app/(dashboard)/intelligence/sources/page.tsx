@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Search, Filter, Upload, FileText, Download,
+  ArrowLeft, Search, Upload, FileText, Download,
   Archive, Trash2, MoreVertical, Brain, ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'

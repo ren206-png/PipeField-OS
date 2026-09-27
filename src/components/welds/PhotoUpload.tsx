@@ -4,7 +4,6 @@ import { Camera, Upload, X, Loader2, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useQueryClient } from '@tanstack/react-query'
-import { cn } from '@/lib/utils'
 
 interface Photo {
   id:           string

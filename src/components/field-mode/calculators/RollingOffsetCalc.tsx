@@ -2,7 +2,6 @@
 import React, { useState } from 'react'
 import { RollingOffsetDiagram } from '@/components/field-mode/diagrams/RollingOffsetDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
-import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 
 // Rolling offset: true offset = sqrt(rise² + roll²), travel = true_offset / sin(θ)

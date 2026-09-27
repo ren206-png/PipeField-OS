@@ -10,6 +10,8 @@ import { getCallerProfile } from '@/lib/api-auth'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+export const dynamic = 'force-dynamic'
+
 interface Spool {
   id: string
   spool_number: string | null

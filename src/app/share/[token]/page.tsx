@@ -35,8 +35,8 @@ export async function generateMetadata(
 }
 import { sendShareViewEmail } from '@/lib/email'
 import {
-  Flame, Package, ShieldCheck, AlertCircle,
-  Activity, CheckCircle2, Clock, XCircle, ListChecks,
+  Flame, AlertCircle,
+  Activity, CheckCircle2, Clock, XCircle,
   MessageSquare, FileText, TrendingUp, CalendarDays,
 } from 'lucide-react'
 

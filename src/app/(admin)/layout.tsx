@@ -12,6 +12,8 @@ import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/api-auth'
 import { ShieldCheck } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminLayout({
   children,
 }: {

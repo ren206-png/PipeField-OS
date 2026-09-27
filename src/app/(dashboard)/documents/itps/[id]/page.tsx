@@ -12,7 +12,6 @@ import {
   ITP_LEVEL_LABELS,
   ITP_LEVEL_SHORT,
   ITP_LEVEL_COLORS,
-  ITP_ITEM_STATUS_COLORS,
   type ItpLevel,
   type ItpItemStatus,
   type ItpItem,
