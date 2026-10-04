@@ -57,7 +57,8 @@ export async function PATCH(
     metadata:       { previousFlag: weld.qualification_flag },
   })
 
-  await admin.from('welds').update({ qualification_flag: null }).eq('id', weldId)
+  const { error: updateError } = await admin.from('welds').update({ qualification_flag: null }).eq('id', weldId)
+  if (updateError) throw updateError
 
   return NextResponse.json({ success: true, weldId })
 }

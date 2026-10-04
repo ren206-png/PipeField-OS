@@ -21,13 +21,14 @@ export async function GET(
     const projectId = params.id
 
     // Verify project belongs to caller's org
-    const { data: project } = await admin
+    const { data: project, error: projectError } = await admin
       .from('projects')
       .select('id, governing_code')
       .eq('id', projectId)
       .eq('organization_id', caller.organization_id)
       .maybeSingle()
 
+    if (projectError) throw projectError
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }

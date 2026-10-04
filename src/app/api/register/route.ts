@@ -184,7 +184,8 @@ export async function POST(req: NextRequest) {
       })
 
     if (profileError) {
-      await admin.from('organizations').delete().eq('id', orgId)
+      const { error: orgDeleteError } = await admin.from('organizations').delete().eq('id', orgId)
+      if (orgDeleteError) console.error('[register] org rollback failed:', orgDeleteError.message)
       return NextResponse.json({ error: profileError.message }, { status: 500 })
     }
 

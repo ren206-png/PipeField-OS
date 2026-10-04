@@ -1,3 +1,5 @@
+// TODO: Dead route — no frontend callers found as of 2026-10.
+// ERP job sync is triggered from the ERP connector settings page via /api/erp/connectors/[id]/test.
 // GET  /api/erp/jobs?connector_id=UUID&status=IN_PROGRESS
 // POST /api/erp/jobs — create / trigger a job sync (Professional+ only)
 // Fetches jobs from the ERP and caches results in erp_job_mappings.

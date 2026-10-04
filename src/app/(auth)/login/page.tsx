@@ -3,12 +3,11 @@
 // ============================================================
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle2, Bug } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -29,15 +28,6 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>
 
 function LoginForm() {
-  const searchParams = useSearchParams()
-  const rawRedirect  = searchParams.get('redirect') ?? '/dashboard'
-  // Reject protocol-relative URLs (//evil.com) and anything that isn't
-  // a plain same-origin path. startsWith('/') passes '//…' so we add
-  // an explicit check for the double-slash pattern.
-  const redirectTo   = (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//'))
-    ? rawRedirect
-    : '/dashboard'
-
   const [showPassword, setShowPassword]   = useState(false)
   const [isSubmitting, setIsSubmitting]   = useState(false)
   const [success,      setSuccess]        = useState(false)
@@ -272,16 +262,5 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center py-24">
-        <svg className="w-6 h-6 animate-spin text-brand-500" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
-  )
+  return <LoginForm />
 }

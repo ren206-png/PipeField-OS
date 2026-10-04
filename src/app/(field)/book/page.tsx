@@ -3,7 +3,6 @@
 // Field Mode — Reference Book
 // Seven category cards linking to table lists.
 // ============================================================
-import React from 'react'
 import Link from 'next/link'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 

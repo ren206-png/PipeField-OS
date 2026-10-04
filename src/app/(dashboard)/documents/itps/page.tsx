@@ -12,8 +12,6 @@ import {
 } from '@/types'
 import { Plus, ClipboardCheck, ChevronRight, Award } from 'lucide-react'
 
-const DISCIPLINES = ['piping','mechanical','electrical','instrumentation','civil','structural','general']
-
 export default function ItpsPage() {
   const { data: itps = [], isLoading } = useItps()
   const { data: projects = [] } = useProjects()

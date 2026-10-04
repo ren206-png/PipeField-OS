@@ -1,3 +1,5 @@
+// TODO: Dead route — no frontend callers found as of 2026-10.
+// Weld export to ERP is not yet wired to a UI action.
 // POST /api/erp/jobs/[erp_job_id]/welds
 // Exports a single weld to the ERP job and records the result.
 import { NextRequest, NextResponse } from 'next/server'

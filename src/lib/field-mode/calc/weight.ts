@@ -8,7 +8,6 @@ import {
   type Length,
   type CalcResult,
   type RefRow,
-  toMm,
   toMetres,
   ok,
   err,

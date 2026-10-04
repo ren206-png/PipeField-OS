@@ -20,9 +20,6 @@ export function QRCodeModal({ open, onClose, url, label, subtitle }: QRCodeModal
   const [error, setError]       = useState(false)
   const printFrameRef           = useRef<HTMLIFrameElement | null>(null)
 
-  // Build the API URL
-  const apiUrl = `/api/qr?url=${encodeURIComponent(url)}&label=${encodeURIComponent(label)}`
-
   useEffect(() => {
     if (!open) return
     setLoading(true)
@@ -30,7 +27,7 @@ export function QRCodeModal({ open, onClose, url, label, subtitle }: QRCodeModal
     setImgSrc('')
 
     // Fetch as blob so we can also use it for download
-    fetch(apiUrl)
+    fetch(`/api/qr?url=${encodeURIComponent(url)}&label=${encodeURIComponent(label)}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed')
         return res.blob()
@@ -40,7 +37,6 @@ export function QRCodeModal({ open, onClose, url, label, subtitle }: QRCodeModal
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, url, label])
 
   // Clean up object URL on unmount / close

@@ -83,10 +83,11 @@ export async function DELETE(
     if (authError) return authError
     const supabase = await createClient()
     // Block delete if welds reference this WPS
-    const { count } = await supabase
+    const { count, error: countError } = await supabase
       .from('welds')
       .select('id', { count: 'exact', head: true })
       .eq('wps_id', id)
+    if (countError) throw countError
     if (count && count > 0) {
       return NextResponse.json(
         { error: `Cannot delete — ${count} weld(s) reference this WPS. Set it inactive instead.` },

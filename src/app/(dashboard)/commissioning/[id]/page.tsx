@@ -46,7 +46,7 @@ const STP_STATUS_OPTIONS = [
 ]
 
 // ── Add Item Form ─────────────────────────────────────────────
-function AddItemForm({ stpId, orgId, onDone }: { stpId: string; orgId: string; onDone: () => void }) {
+function AddItemForm({ stpId, onDone }: { stpId: string; orgId: string; onDone: () => void }) {
   const create = useCreatePrecommItem()
   const [form, setForm] = useState({ activity: '', description: '', discipline: '', responsible_party: '' })
   const [err, setErr] = useState<string | null>(null)
@@ -176,7 +176,7 @@ function ChecklistRow({ item, canEdit }: { item: PrecommItem; canEdit: boolean }
 }
 
 // ── Add Certificate Form ──────────────────────────────────────
-function AddCertForm({ stpId, orgId, onDone }: { stpId: string; orgId: string; onDone: () => void }) {
+function AddCertForm({ stpId, onDone }: { stpId: string; orgId: string; onDone: () => void }) {
   const create = useCreateCertificate()
   const [form, setForm] = useState({
     cert_number: '', cert_type: 'mechanical_completion' as HandoverCertificate['cert_type'],
@@ -447,12 +447,9 @@ export default function StpDetailPage({ params }: { params: Promise<{ id: string
           </div>
         ) : (
           <div className="divide-y divide-surface-800">
-            {certs.map((cert: HandoverCertificate) => {
-              const cfg = CERT_STATUS[cert.status]
-              return (
+            {certs.map((cert: HandoverCertificate) => (
                 <CertCard key={cert.id} cert={cert} canEdit={isOrgAdmin} />
-              )
-            })}
+            ))}
           </div>
         )}
       </div>

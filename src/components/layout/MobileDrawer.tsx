@@ -180,8 +180,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   // Close drawer on route change
   useEffect(() => {
     onClose()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
+  }, [pathname, onClose])
 
   // Lock body scroll when open
   useEffect(() => {

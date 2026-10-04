@@ -21,22 +21,24 @@ const patchSchema = z.object({
 async function verifyOwnership(projectId: string, milestoneId: string, orgId: string) {
   const admin = createAdminClient()
   // Verify project belongs to org
-  const { data: project } = await admin
+  const { data: project, error: projectError } = await admin
     .from('projects')
     .select('id')
     .eq('id', projectId)
     .eq('organization_id', orgId)
     .maybeSingle()
+  if (projectError) throw projectError
   if (!project) return null
 
   // Verify milestone belongs to project
-  const { data: milestone } = await admin
+  const { data: milestone, error: milestoneError } = await admin
     .from('project_milestones')
     .select('id')
     .eq('id', milestoneId)
     .eq('project_id', projectId)
     .maybeSingle()
 
+  if (milestoneError) throw milestoneError
   return milestone
 }
 

@@ -56,7 +56,6 @@ function StatusPipeline({ status }: { status: SystemTurnoverPackage['status'] })
 // ── Create Modal ──────────────────────────────────────────────
 function CreateStpModal({
   projectId,
-  organizationId,
   onClose,
 }: {
   projectId: string
