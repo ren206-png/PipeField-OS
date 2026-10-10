@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
           }
 
           // 2. In-app notification (org-wide, user_id null = show to all admins)
-          await admin.from('notifications').insert({
+          const { error: notifError } = await admin.from('notifications').insert({
             organization_id: org.id,
             user_id:         null,           // visible to all users in the org
             type:            'trial_ending',
@@ -136,13 +136,17 @@ export async function GET(req: NextRequest) {
             href:            '/settings/billing',
             is_read:         false,
           })
+          if (notifError) console.error(`[trial-notifications] in-app notification failed org=${org.id}:`, notifError.message)
 
-          // 3. Mark milestone as sent (idempotency)
+          // 3. Mark milestone as sent (idempotency) — throw on error so the catch
+          //    block records this milestone as skipped, preventing duplicate sends
+          //    on the next cron run.
           const updatedSent = { ...sentKeys, [milestone.key]: now }
-          await admin
+          const { error: markError } = await admin
             .from('organizations')
             .update({ trial_notifications_sent: updatedSent })
             .eq('id', org.id)
+          if (markError) throw markError
 
           orgResult.sent.push(milestone.key)
 

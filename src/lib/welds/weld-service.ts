@@ -318,8 +318,10 @@ export async function uploadWeldPhoto(
 
 export async function deleteWeldPhoto(photoId: string, storagePath: string): Promise<void> {
   const supabase = await createClient()
-  await supabase.storage.from('weld-photos').remove([storagePath])
-  await supabase.from('weld_photos').delete().eq('id', photoId)
+  const { error: storageError } = await supabase.storage.from('weld-photos').remove([storagePath])
+  if (storageError) throw storageError
+  const { error: dbError } = await supabase.from('weld_photos').delete().eq('id', photoId)
+  if (dbError) throw dbError
 }
 
 // ── Audit log helper ──────────────────────────────────────────

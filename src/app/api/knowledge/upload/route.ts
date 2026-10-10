@@ -178,12 +178,13 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       // Clean up orphaned storage file
-      await admin.storage.from(BUCKET).remove([storagePath])
+      const { error: cleanupError } = await admin.storage.from(BUCKET).remove([storagePath])
+      if (cleanupError) console.error('[knowledge/upload] orphaned storage cleanup failed:', cleanupError.message)
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
 
     // Audit log
-    await admin.from('knowledge_audit_log').insert({
+    const { error: auditError } = await admin.from('knowledge_audit_log').insert({
       organization_id: caller.organization_id,
       source_id:       source.id,
       action:          'upload',
@@ -195,6 +196,7 @@ export async function POST(req: NextRequest) {
         title,
       },
     })
+    if (auditError) console.error('[knowledge/upload] audit log failed:', auditError.message)
 
     // Trigger background processing (fire and forget)
     const host    = req.headers.get('host') ?? 'localhost:3000'

@@ -98,13 +98,14 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     // Audit
-    await admin.from('knowledge_audit_log').insert({
+    const { error: auditError } = await admin.from('knowledge_audit_log').insert({
       organization_id: caller.organization_id,
       source_id:       id,
       action:          body.status === 'archived' ? 'archive' : 'edit',
       performed_by:    caller.auth_user_id,
       details:         updates,
     })
+    if (auditError) console.error('[knowledge/sources/patch] audit log failed:', auditError.message)
 
     return NextResponse.json(data)
   } catch (err) {
@@ -142,16 +143,18 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     // Delete from storage
-    await admin.storage.from('knowledge-docs').remove([existing.storage_path])
+    const { error: storageError } = await admin.storage.from('knowledge-docs').remove([existing.storage_path])
+    if (storageError) throw storageError
 
     // Audit before delete
-    await admin.from('knowledge_audit_log').insert({
+    const { error: deleteAuditError } = await admin.from('knowledge_audit_log').insert({
       organization_id: caller.organization_id,
       source_id:       id,
       action:          'delete',
       performed_by:    caller.auth_user_id,
       details:         { file_name: existing.file_name },
     })
+    if (deleteAuditError) console.error('[knowledge/sources/delete] audit log failed:', deleteAuditError.message)
 
     const { error } = await admin
       .from('knowledge_sources')

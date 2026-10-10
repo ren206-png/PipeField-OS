@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
 
     // 7. Log query sources
     if (queryLog && matchedChunks.length > 0) {
-      await admin.from('knowledge_query_sources').insert(
+      const { error: sourcesError } = await admin.from('knowledge_query_sources').insert(
         matchedChunks.map(c => ({
           query_id:        queryLog.id,
           chunk_id:        c.chunk_id,
@@ -155,6 +155,7 @@ export async function POST(req: NextRequest) {
           similarity_score: c.similarity,
         }))
       )
+      if (sourcesError) console.error('[knowledge/ask] Failed to log query sources:', sourcesError.message)
     }
 
     // 8. Return answer + sources
