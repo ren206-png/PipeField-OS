@@ -87,12 +87,13 @@ export async function PATCH(
     // ── Progressive penalty check on fail ───────────────────
     if (parsed.data.result === 'fail') {
       // Count total fails in this plan
-      const { count: failCount } = await admin
+      const { count: failCount, error: failCountError } = await admin
         .from('nde_selections')
         .select('id', { count: 'exact', head: true })
         .eq('nde_plan_id', selection.nde_plan_id)
         .eq('organization_id', caller.organization_id!)
         .eq('result', 'fail')
+      if (failCountError) throw failCountError
 
       // Load the plan's code profile to get progressive_trigger_count
       const { data: planRow } = await admin

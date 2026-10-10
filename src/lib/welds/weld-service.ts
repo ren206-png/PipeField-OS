@@ -345,10 +345,11 @@ async function writeAuditLog(entry: {
 
 export async function getNextWeldId(projectId: string): Promise<string> {
   const supabase = await createClient()
-  const { count } = await supabase
+  const { count, error } = await supabase
     .from('welds')
     .select('*', { count: 'exact', head: true })
     .eq('project_id', projectId)
+  if (error) throw error
   const next = (count ?? 0) + 1
   return `W-${String(next).padStart(4, '0')}`
 }

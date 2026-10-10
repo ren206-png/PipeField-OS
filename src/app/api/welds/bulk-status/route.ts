@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Single batch audit log entry
-    await admin.from('audit_logs').insert({
+    const { error: auditError } = await admin.from('audit_logs').insert({
       organization_id: caller.organization_id,
       table_name:      'welds',
       record_id:       weldIds[0], // representative record
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
       new_values:      { status: newStatus, weld_ids: weldIds },
       performed_by:    caller.id,
     })
+    if (auditError) console.error('[welds/bulk-status] audit log failed:', auditError.message)
 
     return NextResponse.json({ updated: count ?? weldIds.length })
   } catch (err) {

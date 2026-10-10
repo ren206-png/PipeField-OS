@@ -19,10 +19,12 @@ export async function GET(req: NextRequest) {
     const admin = createAdminClient()
 
     // If org has no categories yet, seed defaults
-    const { count } = await admin
+    const { count, error: countError } = await admin
       .from('knowledge_categories')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', caller.organization_id)
+
+    if (countError) throw countError
 
     if ((count ?? 0) === 0) {
       // Insert defaults

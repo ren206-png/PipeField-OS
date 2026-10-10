@@ -144,11 +144,13 @@ export async function POST(req: NextRequest) {
           const orgId = session.metadata?.org_id as string | undefined
           if (orgId) {
             const admin = createAdminClient()
-            const { count } = await admin
+            const { count, error: countError } = await admin
               .from('user_profiles')
               .select('id', { count: 'exact', head: true })
               .eq('organization_id', orgId)
               .eq('is_active', true)
+
+            if (countError) throw countError
 
             if ((count ?? 0) > 1) {
               logger.error('billing.webhook.event_handler_failed', new Error(`field_pro checkout rejected for org ${orgId}: ${count} active seats exceed the 1-seat limit. Cancelling subscription ${subscriptionId}.`))

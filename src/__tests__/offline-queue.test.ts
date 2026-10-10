@@ -15,7 +15,7 @@
 // We build an in-memory store that mirrors the IndexedDB API
 // surface used by offline-queue.ts.
 
-type StoreName = 'weld_queue' | 'daily_report_queue' | 'spool_queue'
+type StoreName = 'weld_queue' | 'daily_report_queue' | 'spool_queue' | 'field_weld_queue'
 type IndexName = 'by-sync-status' | 'by-project'
 
 interface MockStore {
@@ -27,6 +27,7 @@ const _stores: Record<StoreName, MockStore> = {
   weld_queue:          {},
   daily_report_queue:  {},
   spool_queue:         {},
+  field_weld_queue:    {},
 }
 
 function resetStores() {
