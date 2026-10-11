@@ -9,13 +9,22 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
 
-const ALLOWED_TYPES = ['pdf', 'png', 'jpg', 'jpeg'] as const
-type FileType = (typeof ALLOWED_TYPES)[number]
 const MAX_BYTES = 20 * 1024 * 1024 // 20MB
 
-function extToType(ext: string): FileType | null {
-  const lower = ext.toLowerCase().replace('.', '') as FileType
-  return ALLOWED_TYPES.includes(lower) ? lower : null
+// Validate from MIME type (not user-supplied filename) to prevent double-extension attacks
+const MIME_EXT_MAP: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'image/png':       'png',
+  'image/jpeg':      'jpg',
+}
+
+function mimeToExt(mimeType: string): string | null {
+  return MIME_EXT_MAP[mimeType] ?? null
+}
+
+/** Sanitize drawing_number / revision for safe use in storage paths */
+function sanitizePathSegment(value: string, maxLen: number): string {
+  return value.replace(/[^a-zA-Z0-9_\-]/g, '_').slice(0, maxLen)
 }
 
 export async function GET(req: NextRequest) {
@@ -82,15 +91,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'File exceeds 20MB limit' }, { status: 413 })
   }
 
-  // Determine extension / file type
-  const originalName = file.name ?? ''
-  const dotIndex = originalName.lastIndexOf('.')
-  const ext = dotIndex >= 0 ? originalName.slice(dotIndex + 1) : ''
-  const fileType = extToType(ext)
-  if (!fileType) {
+  // Validate from MIME type — never trust the user-supplied filename extension
+  const fileExt = mimeToExt(file.type)
+  if (!fileExt) {
     return NextResponse.json(
-      { error: 'Only pdf, png, jpg, jpeg files are allowed' },
-      { status: 400 },
+      { error: 'Only PDF, PNG, and JPEG files are allowed' },
+      { status: 415 },
     )
   }
 
@@ -108,8 +114,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Project not found' }, { status: 404 })
   }
 
+  // Sanitize path segments to prevent path traversal attacks
+  const safeDrawingNumber = sanitizePathSegment(drawingNumber, 80)
+  const safeRevision      = sanitizePathSegment(revision, 20)
+
   // Build storage path
-  const storagePath = `${caller.organization_id}/${projectId}/${drawingNumber}-${revision}.${fileType}`
+  const storagePath = `${caller.organization_id}/${projectId}/${safeDrawingNumber}-${safeRevision}.${fileExt}`
 
   // Upload to Supabase Storage
   const arrayBuffer = await file.arrayBuffer()
@@ -117,7 +127,7 @@ export async function POST(req: NextRequest) {
 
   const { error: storageError } = await admin.storage
     .from('iso-drawings')
-    .upload(storagePath, buffer, { contentType: file.type, upsert: true })
+    .upload(storagePath, buffer, { contentType: file.type, upsert: false })
 
   if (storageError) {
     return NextResponse.json({ error: storageError.message }, { status: 500 })
@@ -129,11 +139,11 @@ export async function POST(req: NextRequest) {
     .insert({
       organization_id: caller.organization_id,
       project_id:      projectId,
-      drawing_number:  drawingNumber,
-      revision,
+      drawing_number:  safeDrawingNumber,
+      revision:        safeRevision,
       title,
       storage_path:    storagePath,
-      file_type:       fileType,
+      file_type:       fileExt,
       uploaded_by:     caller.id,
     })
     .select()

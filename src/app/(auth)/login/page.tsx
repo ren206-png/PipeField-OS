@@ -154,8 +154,8 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Raw debug block */}
-          {debugInfo && (
+          {/* Raw debug block — development only */}
+          {process.env.NODE_ENV === 'development' && debugInfo && (
             <details className="group">
               <summary className="flex items-center gap-2 text-xs text-surface-500 cursor-pointer hover:text-surface-300 transition-colors select-none">
                 <Bug className="w-3.5 h-3.5" />
@@ -237,24 +237,13 @@ function LoginForm() {
           </p>
         </div>
       ) : (
-        <div className="pt-2 border-t border-surface-800 space-y-2">
-          <p className="text-xs text-surface-600 text-center">Troubleshooting tools</p>
-          <div className="flex gap-2">
-            <a
-              href="/api/debug-auth"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 text-center text-xs py-2 px-3 rounded-lg bg-surface-800 text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors border border-surface-700"
-            >
-              🔍 Check Supabase connection
-            </a>
-            <Link
-              href="/register"
-              className="flex-1 text-center text-xs py-2 px-3 rounded-lg bg-surface-800 text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors border border-surface-700"
-            >
-              + Create account
-            </Link>
-          </div>
+        <div className="pt-2 border-t border-surface-800">
+          <Link
+            href="/register"
+            className="block w-full text-center text-xs py-2 px-3 rounded-lg bg-surface-800 text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors border border-surface-700"
+          >
+            + Create account
+          </Link>
         </div>
       )}
     </div>

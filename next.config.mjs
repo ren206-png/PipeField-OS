@@ -80,10 +80,15 @@ const securityHeaders = [
     // Camera and microphone are allowed for potential future QR / inspection features.
     value: 'camera=(), microphone=(), geolocation=(), payment=()',
   },
-  {
+  // HSTS: only apply in production — dev uses HTTP and would lock the browser
+  ...(isDev ? [] : [{
     key:   'Strict-Transport-Security',
-    // 1 year HSTS — only set in production (dev uses HTTP)
     value: 'max-age=31536000; includeSubDomains; preload',
+  }]),
+  {
+    key:   'Cross-Origin-Opener-Policy',
+    // allow-popups required for Stripe Checkout which opens a popup window
+    value: 'same-origin-allow-popups',
   },
   {
     key:   'X-DNS-Prefetch-Control',

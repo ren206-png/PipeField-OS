@@ -52,6 +52,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing or invalid audio field' }, { status: 400 })
   }
 
+  const MAX_AUDIO_BYTES = 25 * 1024 * 1024 // 25 MB — Whisper API hard limit
+  if (audioField.size > MAX_AUDIO_BYTES) {
+    return NextResponse.json({ error: 'Audio file too large. Maximum is 25 MB.' }, { status: 413 })
+  }
+
   // Validate caller has an org (belt-and-suspenders — not strictly needed for this route
   // since we are not writing to the DB, but required by org-scoped operations)
   if (!caller.organization_id) {

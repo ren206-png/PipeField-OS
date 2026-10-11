@@ -64,11 +64,23 @@ export function rateLimit({ key, limit, windowMs }: RateLimitOptions): boolean {
   return true
 }
 
-/** Extracts a best-effort client IP from the Next.js request headers. */
+/** Extracts a best-effort client IP from the Next.js request headers.
+ *  On Vercel, x-real-ip is injected by the edge network and cannot be
+ *  spoofed by the client. x-forwarded-for is avoided as the primary
+ *  source because attackers can prepend arbitrary values to it.
+ */
 export function getClientIp(headers: Headers): string {
-  return (
-    headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    headers.get('x-real-ip') ??
-    'unknown'
-  )
+  // Vercel edge sets x-real-ip to the true client IP — use it first
+  const realIp = headers.get('x-real-ip')
+  if (realIp) return realIp.trim()
+
+  // Fall back to the LAST entry of x-forwarded-for, which is appended by
+  // Vercel's load balancer and cannot be forged from outside the network
+  const forwarded = headers.get('x-forwarded-for')
+  if (forwarded) {
+    const last = forwarded.split(',').pop()?.trim()
+    if (last) return last
+  }
+
+  return 'unknown'
 }
