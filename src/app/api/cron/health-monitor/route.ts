@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getResend } from '@/lib/email'
+import { timingSafeStringEqual } from '@/lib/api-auth'
 import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   // Auth
   const authHeader = req.headers.get('authorization') ?? ''
   const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || !timingSafeStringEqual(authHeader, `Bearer ${cronSecret}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import OpenAI from 'openai'
 import { logger } from '@/lib/logger'
+import { timingSafeStringEqual } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,7 +84,7 @@ export async function POST(
 
   // Auth: only accept the internal secret header (no user session path)
   const authHeader = req.headers.get('authorization') ?? ''
-  const isInternal = authHeader === `Bearer ${INTERNAL_SECRET}`
+  const isInternal = timingSafeStringEqual(authHeader, `Bearer ${INTERNAL_SECRET}`)
 
   if (!isInternal) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

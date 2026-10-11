@@ -6,6 +6,19 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+import { createHash, timingSafeEqual } from 'crypto'
+
+/**
+ * Timing-safe string comparison for secrets.
+ * Uses SHA-256 to normalize lengths before timingSafeEqual so the comparison
+ * cost is constant regardless of where the strings first differ.
+ */
+export function timingSafeStringEqual(a: string, b: string): boolean {
+  const ha = createHash('sha256').update(a).digest()
+  const hb = createHash('sha256').update(b).digest()
+  return timingSafeEqual(ha, hb)
+}
+
 // ── Role sets ─────────────────────────────────────────────────
 export const ORG_ADMIN_ROLES = [
   'platform_admin',
