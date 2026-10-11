@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAllBreakerStates } from '@/lib/circuit-breaker'
+import { timingSafeStringEqual } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
   // Auth check
   const authHeader = req.headers.get('authorization') ?? ''
   const cronSecret = process.env.CRON_SECRET
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || !timingSafeStringEqual(authHeader, `Bearer ${cronSecret}`)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

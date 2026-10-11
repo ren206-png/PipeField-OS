@@ -3,7 +3,7 @@
 // Pure TypeScript. No framework/DB imports.
 // ============================================================
 
-import type { ReferenceAdapter, StudBoltRow } from './reference'
+import type { ReferenceAdapter } from './reference'
 import {
   type CalcResult,
   type RefRow,

@@ -78,7 +78,6 @@ export default function FieldHomePage() {
   const t = useFieldStrings('en')
   const [syncState, setSyncState] = useState<SyncState>('synced')
   const [pendingCount, setPendingCount] = useState(0)
-  const [failedCount, setFailedCount] = useState(0)
 
   useEffect(() => {
     async function checkSync() {
@@ -86,7 +85,6 @@ export default function FieldHomePage() {
         const items: FieldWeldQueueItem[] = await getPendingFieldWelds()
         const failed = items.filter(i => i.sync_status === 'failed').length
         const pending = items.filter(i => i.sync_status === 'pending').length
-        setFailedCount(failed)
         setPendingCount(pending)
         if (failed > 0) {
           setSyncState('failed')

@@ -2,7 +2,7 @@
 // Project Service — server-side project operations
 // ============================================================
 import { createClient } from '@/lib/supabase/server'
-import type { Project, ProjectStatus } from '@/types'
+import type { Project } from '@/types'
 
 export async function getProjects(organizationId: string): Promise<Project[]> {
   const supabase = await createClient()

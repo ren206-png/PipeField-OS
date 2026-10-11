@@ -3,7 +3,7 @@
 // RFI Detail Page
 // ============================================================
 import { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Pencil, Check, Send } from 'lucide-react'
 import { differenceInCalendarDays, isAfter, startOfDay } from 'date-fns'
@@ -19,7 +19,6 @@ const TODAY = startOfDay(new Date())
 
 export default function RfiDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const router  = useRouter()
   const { data: rfi, isLoading } = useRfi(id)
   const updateRfi = useUpdateRfi()
 

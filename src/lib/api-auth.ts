@@ -6,6 +6,19 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+import { createHash, timingSafeEqual } from 'crypto'
+
+/**
+ * Timing-safe string comparison for secrets.
+ * Uses SHA-256 to normalize lengths before timingSafeEqual so the comparison
+ * cost is constant regardless of where the strings first differ.
+ */
+export function timingSafeStringEqual(a: string, b: string): boolean {
+  const ha = createHash('sha256').update(a).digest()
+  const hb = createHash('sha256').update(b).digest()
+  return timingSafeEqual(ha, hb)
+}
+
 // ── Role sets ─────────────────────────────────────────────────
 export const ORG_ADMIN_ROLES = [
   'platform_admin',
@@ -86,8 +99,8 @@ export async function requireAuth(req?: NextRequest): Promise<
   if (!caller) {
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
-  // Reject suspended or inactive accounts
-  if (caller.status && caller.status !== 'active') {
+  // Reject suspended or inactive accounts — treat NULL status as inactive
+  if (caller.status !== 'active') {
     return { error: NextResponse.json({ error: 'Account suspended' }, { status: 403 }) }
   }
   return { caller }
@@ -101,6 +114,9 @@ export async function requireOrgAdmin(req?: NextRequest): Promise<
   if (!caller || !ORG_ADMIN_ROLES.includes(caller.role as OrgAdminRole)) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
+  if (caller.status !== 'active') {
+    return { error: NextResponse.json({ error: 'Account suspended' }, { status: 403 }) }
+  }
   return { caller }
 }
 
@@ -111,6 +127,9 @@ export async function requirePlatformAdmin(req?: NextRequest): Promise<
   const caller = await getCallerProfile(req)
   if (!caller || caller.role !== 'platform_admin') {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+  }
+  if (caller.status !== 'active') {
+    return { error: NextResponse.json({ error: 'Account suspended' }, { status: 403 }) }
   }
   return { caller }
 }

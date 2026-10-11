@@ -19,7 +19,6 @@ import {
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { MobileDrawer } from './MobileDrawer'
-import { useAuth } from '@/hooks/useAuth'
 
 interface MobileNavItem {
   label: string

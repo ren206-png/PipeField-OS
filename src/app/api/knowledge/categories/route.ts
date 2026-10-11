@@ -46,9 +46,10 @@ export async function GET(req: NextRequest) {
         { name: 'Defect Prevention',     slug: 'defect-prevention',     color: '#ef4444', sort_order: 15 },
         { name: 'Crew Management',       slug: 'crew-management',       color: '#64748b', sort_order: 16 },
       ]
-      await admin.from('knowledge_categories').insert(
+      const { error: seedError } = await admin.from('knowledge_categories').insert(
         defaults.map(d => ({ ...d, organization_id: caller.organization_id, is_default: true }))
       )
+      if (seedError) throw seedError
     }
 
     const { data, error } = await admin

@@ -78,7 +78,7 @@ function WeldNode({
 
 // ── Spool Row (SVG horizontal pipe) ──────────────────────────
 function SpoolRow({
-  spool, y, selectedWeldId, onSelectWeld, lineColor,
+  spool, y, selectedWeldId, onSelectWeld,
 }: {
   spool: SpoolData
   y: number

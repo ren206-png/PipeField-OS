@@ -42,9 +42,11 @@ const ACCEPTED_TYPES = new Set([
   'image/webp',
   'image/tiff',
   'image/svg+xml',
-  // CAD / other
+  // CAD formats — explicit MIME types only; application/octet-stream removed
+  // because it is a wildcard that accepts any binary file.
   'application/dxf',
-  'application/octet-stream', // generic for DWG, DXF
+  'image/vnd.dxf',
+  'image/vnd.dwg',
 ])
 
 const BUCKET = 'knowledge-docs'
@@ -127,7 +129,8 @@ export async function POST(req: NextRequest) {
       'image/tiff': 'tiff',
       'image/svg+xml': 'svg',
       'application/dxf': 'dxf',
-      'application/octet-stream': 'bin',
+      'image/vnd.dxf':  'dxf',
+      'image/vnd.dwg':  'dwg',
     }
     const fileId    = uuidv4()
     const yearMonth = new Date().toISOString().slice(0, 7)
@@ -198,16 +201,22 @@ export async function POST(req: NextRequest) {
     })
     if (auditError) console.error('[knowledge/upload] audit log failed:', auditError.message)
 
-    // Trigger background processing (fire and forget)
-    const host    = req.headers.get('host') ?? 'localhost:3000'
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? `https://${host}`
-    fetch(`${baseUrl}/api/knowledge/process/${source.id}`, {
-      method:  'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.INTERNAL_API_SECRET ?? ''}`,
-        'Content-Type':  'application/json',
-      },
-    }).catch(() => {}) // fire and forget — errors are handled inside the process route
+    // Trigger background processing (fire and forget).
+    // Never fall back to the user-controlled Host header — doing so would
+    // send INTERNAL_API_SECRET to an attacker-controlled server if
+    // NEXT_PUBLIC_APP_URL is misconfigured.
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (baseUrl) {
+      fetch(`${baseUrl}/api/knowledge/process/${source.id}`, {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.INTERNAL_API_SECRET ?? ''}`,
+          'Content-Type':  'application/json',
+        },
+      }).catch(() => {})
+    } else {
+      logger.error('knowledge.upload.missing_app_url', new Error('NEXT_PUBLIC_APP_URL not set — background processing skipped'))
+    }
 
     return NextResponse.json(source, { status: 201 })
   } catch (err) {

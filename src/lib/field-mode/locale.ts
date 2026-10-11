@@ -135,10 +135,6 @@ const EN_STRINGS = {
   err_unauthorized:     'Not authorised',
 } as const
 
-// Stub records — will use EN until translated
-const _FR_CA_STUBS: Record<keyof typeof EN_STRINGS, unknown> = {} as Record<keyof typeof EN_STRINGS, unknown>
-const _ES_STUBS:   Record<keyof typeof EN_STRINGS, unknown> = {} as Record<keyof typeof EN_STRINGS, unknown>
-
 const STRINGS: Record<FieldLocale, typeof EN_STRINGS> = {
   'en':    EN_STRINGS,
   'fr-CA': EN_STRINGS, // stub — will use EN until translated

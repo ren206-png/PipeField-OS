@@ -158,10 +158,23 @@ const DESCRIPTOR: CapabilityDescriptor = {
 }
 
 // ── Adapter ───────────────────────────────────────────────────
+function isValidDrawingUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 async function invoke(
   ctx:   InvocationContext,
   input: DrawingAnalysisInput,
 ): Promise<AdapterResult<DrawingAnalysisOutput>> {
+  if (!isValidDrawingUrl(input.drawing_url)) {
+    throw new Error('drawing_url must be an https:// URL')
+  }
+
   const startTime = Date.now()
   const openai    = getOpenAIClient()
   const admin     = createAdminClient()
