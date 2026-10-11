@@ -3,10 +3,10 @@
 // Intelligence Center — Knowledge Library (Sources List)
 // ============================================================
 import { useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Search, Upload, FileText, Download,
+  ArrowLeft, Search, Upload, FileText,
   Archive, Trash2, MoreVertical, Brain, ExternalLink,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -37,7 +37,6 @@ function formatFileSize(bytes: number | null) {
 
 export default function KnowledgeSourcesPage() {
   const searchParams = useSearchParams()
-  const router       = useRouter()
   const { profile }  = useAuth()
 
   const [q,            setQ]            = useState(searchParams.get('q') ?? '')

@@ -23,15 +23,6 @@ import { createClient } from '@/lib/supabase/server'
 import { FLAGS } from '@/intelligence/flags'
 
 // ── Helpers ───────────────────────────────────────────────────
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toISOString().slice(0, 10)
-  } catch {
-    return iso
-  }
-}
-
 function formatDatetime(iso: string | null | undefined): string {
   if (!iso) return ''
   try {

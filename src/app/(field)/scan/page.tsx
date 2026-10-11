@@ -67,7 +67,6 @@ export default function ScanPage() {
   const [wps, setWps]             = useState('')
   const [heatA, setHeatA]         = useState('')
   const [heatB, setHeatB]         = useState('')
-  const [queued, setQueued]       = useState(false)
   const [queuedId, setQueuedId]   = useState<string | null>(null)
   const [undoSecondsLeft, setUndoSecondsLeft] = useState(10)
   const [undoDone, setUndoDone]   = useState(false)
@@ -191,7 +190,6 @@ export default function ScanPage() {
       entity_type: 'field_weld',
     })
     setQueuedId(localId)
-    setQueued(true)
     setStep('confirm')
     startUndoTimer(localId)
   }
@@ -400,7 +398,7 @@ export default function ScanPage() {
 
             <button
               type="button"
-              onClick={() => { setStep('scan'); setPayload(null); setSelectedJoint(null); setQueued(false) }}
+              onClick={() => { setStep('scan'); setPayload(null); setSelectedJoint(null) }}
               className="min-h-[56px] px-8 rounded-xl bg-surface-800 text-surface-200 font-semibold"
             >
               Scan another

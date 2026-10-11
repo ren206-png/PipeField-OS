@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Validation error' }, { status: 400 })
   }
 
-  const { table_name, row_ids, verified, verified_against, note, reject } = parsed.data
+  const { table_name, row_ids, verified_against, note, reject } = parsed.data
 
   // 4. Validate table name against allowlist
   if (!VALID_REF_TABLES.has(table_name)) {

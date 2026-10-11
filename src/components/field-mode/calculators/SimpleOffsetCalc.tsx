@@ -2,7 +2,6 @@
 import React, { useState } from 'react'
 import { SimpleOffsetDiagram } from '@/components/field-mode/diagrams/SimpleOffsetDiagram'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
-import { useFieldStrings } from '@/lib/field-mode/locale'
 import { fromFeetInchesFraction, dualFormat } from '@/lib/field-mode/calc/types'
 
 // Simple offset: travel = offset / sin(θ), run = offset / tan(θ)
@@ -17,7 +16,6 @@ const ANGLES = [
 ]
 
 export function SimpleOffsetCalc() {
-  const t = useFieldStrings('en')
   const [offsetStr, setOffsetStr] = useState('')
   const [activeField, setActiveField] = useState<'offset' | null>(null)
   const [angleDeg, setAngleDeg] = useState(45)
