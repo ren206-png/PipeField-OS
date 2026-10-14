@@ -3,13 +3,15 @@
 // ============================================================
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle2, Bug } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { Turnstile, TURNSTILE_SITE_KEY } from '@/components/turnstile'
 
 // Detect Capacitor native environment (used for UI-only decisions)
 function isCapacitorNative(): boolean {
@@ -28,9 +30,22 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>
 
 function LoginForm() {
+  const searchParams = useSearchParams()
+  const rawRedirect  = searchParams.get('redirect') ?? '/dashboard'
+  // Reject protocol-relative URLs (//evil.com) and anything that isn't
+  // a plain same-origin path. startsWith('/') passes '//…' so we add
+  // an explicit check for the double-slash pattern.
+  const redirectTo   = (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//'))
+    ? rawRedirect
+    : '/dashboard'
+
   const [showPassword, setShowPassword]   = useState(false)
   const [isSubmitting, setIsSubmitting]   = useState(false)
   const [success,      setSuccess]        = useState(false)
+  const [captchaToken, setCaptchaToken]   = useState<string | null>(null)
+  const [captchaResetKey, setCaptchaResetKey] = useState(0)
+  // Never block on native iOS — Turnstile isn't rendered there
+  const captchaMissing = !isCapacitorNative() && TURNSTILE_SITE_KEY !== '' && captchaToken === null
 
   // We now store the FULL Supabase error object for diagnosis
   const [errorMsg,     setErrorMsg]       = useState<string | null>(null)
@@ -55,13 +70,17 @@ function LoginForm() {
         setTimeout(() => reject(new Error('Sign-in timed out. Please check your connection and try again.')), 20_000)
       )
 
+      // Only pass a real token — not the load-failed sentinel
+      const captcha = (captchaToken && captchaToken !== '__load_failed__') ? { captchaToken } : {}
       const { data: authData, error } = await Promise.race([
         supabase.auth.signInWithPassword({
           email:    data.email.trim(),
           password: data.password,
+          options:  captcha,
         }),
         timeoutPromise,
       ])
+      setCaptchaResetKey(k => k + 1)
 
       if (error) {
         // Show the EXACT error Supabase returns — nothing hidden
@@ -80,16 +99,28 @@ function LoginForm() {
         return
       }
 
-      // ✅ Success
+      // ✅ Success — write session cookies via HTTP Set-Cookie header.
+      // WKWebView delays syncing JS-set cookies (document.cookie) to its HTTP
+      // cookie store. By POSTing the tokens to an API route first, the server
+      // returns Set-Cookie headers that ARE immediately available to the next
+      // HTTP request — so when we navigate to /dashboard, middleware sees the
+      // session and lets the user through. This fixes "Sign In does not proceed"
+      // on iOS (Apple rejection guideline 2.1a).
       setSuccess(true)
-
-      // Reload the current page (/login) rather than navigating directly to
-      // /dashboard. This gives the WKWebView (iOS) time to flush the newly-written
-      // session cookies to the HTTP cookie store before the next server request.
-      // The middleware then sees the authenticated session on /login and issues
-      // a server-side redirect to /dashboard — no loop possible.
-      // On web this also works: middleware redirects authenticated users away from /login.
-      window.location.reload()
+      try {
+        await fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: authData.session.access_token,
+            refresh_token: authData.session.refresh_token,
+          }),
+        })
+      } catch {
+        // Non-fatal: cookies may already be set via document.cookie.
+        // Navigation will still succeed if middleware can read them.
+      }
+      window.location.href = redirectTo
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -210,7 +241,9 @@ function LoginForm() {
           {errors.password && <p className="error-message">{errors.password.message}</p>}
         </div>
 
-        <button type="submit" disabled={isSubmitting} className="btn-primary w-full text-base">
+        {!isCapacitorNative() && <Turnstile onToken={setCaptchaToken} resetKey={captchaResetKey} />}
+
+        <button type="submit" disabled={isSubmitting || captchaMissing} className="btn-primary w-full text-base">
           {isSubmitting ? (
             <>
               <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -262,5 +295,16 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return <LoginForm />
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-24">
+        <svg className="w-6 h-6 animate-spin text-brand-500" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
+  )
 }

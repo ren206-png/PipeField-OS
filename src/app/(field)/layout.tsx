@@ -12,9 +12,6 @@ import { FLAGS } from '@/intelligence/flags'
 
 export const dynamic = 'force-dynamic'
 
-export const FIELD_DEFAULT_ROLES = ['pipefitter', 'shop_fabricator'] as const
-export const FIELD_TOGGLE_ROLES  = ['foreman', 'qa_inspector', 'administrator', 'organization_owner', 'project_manager'] as const
-
 export default async function FieldLayout({ children }: { children: React.ReactNode }) {
   if (!FLAGS.PFOS_FIELD_MODE) {
     redirect('/dashboard')   // flag is off → back to main dashboard
