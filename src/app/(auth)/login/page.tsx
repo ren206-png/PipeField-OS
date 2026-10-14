@@ -32,10 +32,15 @@ type LoginFormData = z.infer<typeof loginSchema>
 function LoginForm() {
   const searchParams = useSearchParams()
   const rawRedirect  = searchParams.get('redirect') ?? '/dashboard'
-  // Reject protocol-relative URLs (//evil.com) and anything that isn't
-  // a plain same-origin path. startsWith('/') passes '//…' so we add
-  // an explicit check for the double-slash pattern.
-  const redirectTo   = (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//'))
+  // Only allow a plain same-origin path. Browsers treat '\' as '/' and strip
+  // tabs/newlines, so '/\evil.com' and '/\t/evil.com' both become the
+  // protocol-relative '//evil.com'. Reject backslashes and control characters
+  // anywhere, and a second '/' right after the leading one.
+  const redirectTo   = (
+    rawRedirect.startsWith('/') &&
+    !rawRedirect.startsWith('//') &&
+    !/[\\\u0000-\u001f\u007f]/.test(rawRedirect)
+  )
     ? rawRedirect
     : '/dashboard'
 
