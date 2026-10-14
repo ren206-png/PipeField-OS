@@ -24,6 +24,9 @@ const PUBLIC_ROUTES = [
   '/invite',
   '/share/',
   '/billing',
+  '/privacy',          // Legal pages must be reachable logged-out (App Store review)
+  '/terms',
+  '/blog',
   '/api/',             // API routes: refresh session but never redirect to /login
 ]
 
