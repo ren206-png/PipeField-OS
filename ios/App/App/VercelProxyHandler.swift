@@ -49,13 +49,16 @@ class VercelProxyHandler: NSObject, WKURLSchemeHandler {
         let task = session.dataTask(with: proxiedRequest) { [weak self] data, response, error in
             guard let self = self else { return }
 
-            // Remove from active map before calling task methods
-            self.lock.lock()
-            self.activeTasks.removeValue(forKey: ObjectIdentifier(urlSchemeTask))
-            self.lock.unlock()
-
             // All WKURLSchemeTask calls must happen on the main thread
             DispatchQueue.main.async {
+                // WebKit throws ("This task has already been stopped") if we touch a
+                // task after webView(_:stop:). stop() also runs on the main thread and
+                // removes the task from the map, so only a task still in the map is live.
+                self.lock.lock()
+                let stillActive = self.activeTasks.removeValue(forKey: ObjectIdentifier(urlSchemeTask)) != nil
+                self.lock.unlock()
+                guard stillActive else { return }
+
                 if let error = error {
                     urlSchemeTask.didFailWithError(error)
                     return
