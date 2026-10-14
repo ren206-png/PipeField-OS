@@ -23,13 +23,23 @@ function isInStandaloneMode(): boolean {
   )
 }
 
+/** Detect the Capacitor native shell (iOS/Android app), where install prompts don't apply */
+function isCapacitorNative(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    !!(window as typeof window & { Capacitor?: { isNativePlatform(): boolean } })
+      .Capacitor?.isNativePlatform()
+  )
+}
+
 export function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showBanner, setShowBanner] = useState(false)
   const [isIOSDevice, setIsIOSDevice] = useState(false)
 
   useEffect(() => {
-    // Don't show if already installed or user dismissed before
+    // Don't show inside the native app, if already installed, or if dismissed before
+    if (isCapacitorNative()) return
     if (isInStandaloneMode()) return
     if (localStorage.getItem(DISMISSED_KEY)) return
 
