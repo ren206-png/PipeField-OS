@@ -1,5 +1,5 @@
 // ============================================================
-// Login Page — with full diagnostic error display
+// Login Page
 // ============================================================
 'use client'
 
@@ -9,9 +9,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle2, Bug } from 'lucide-react'
+import { Eye, EyeOff, LogIn, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Turnstile, TURNSTILE_SITE_KEY } from '@/components/turnstile'
+import { friendlyAuthError } from '@/lib/auth/friendly-error'
 
 // Detect Capacitor native environment (used for UI-only decisions)
 function isCapacitorNative(): boolean {
@@ -52,10 +53,8 @@ function LoginForm() {
   // Never block on native iOS — Turnstile isn't rendered there
   const captchaMissing = !isCapacitorNative() && TURNSTILE_SITE_KEY !== '' && captchaToken === null
 
-  // We now store the FULL Supabase error object for diagnosis
   const [errorMsg,     setErrorMsg]       = useState<string | null>(null)
-  const [errorCode,    setErrorCode]      = useState<string | null>(null)
-  const [debugInfo,    setDebugInfo]      = useState<string | null>(null)
+  const [needsConfirm, setNeedsConfirm]   = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -64,13 +63,12 @@ function LoginForm() {
   async function onSubmit(data: LoginFormData) {
     setIsSubmitting(true)
     setErrorMsg(null)
-    setErrorCode(null)
-    setDebugInfo(null)
+    setNeedsConfirm(false)
 
     try {
       const supabase = createClient()
 
-      // Race against a 10-second timeout so the button never spins forever
+      // Race against a 20-second timeout so the button never spins forever
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Sign-in timed out. Please check your connection and try again.')), 20_000)
       )
@@ -88,18 +86,19 @@ function LoginForm() {
       setCaptchaResetKey(k => k + 1)
 
       if (error) {
-        // Show the EXACT error Supabase returns — nothing hidden
-        setErrorMsg(error.message)
-        setErrorCode(error.status?.toString() ?? error.name ?? 'unknown')
-        setDebugInfo(JSON.stringify({ message: error.message, status: error.status, name: error.name }, null, 2))
+        // Raw details stay in the console; users get a plain-language message
+        console.error('Sign-in failed', { message: error.message, status: error.status, code: error.code })
+        const friendly = friendlyAuthError(error)
+        setErrorMsg(friendly.message)
+        setNeedsConfirm(friendly.needsConfirm)
         setIsSubmitting(false)
         return
       }
 
       if (!authData.session) {
-        // Signed up but email not yet confirmed — very common
-        setErrorMsg('Email confirmation required. Check your inbox and click the confirmation link, then try signing in again.')
-        setErrorCode('email_not_confirmed')
+        // Signed up but email not yet confirmed
+        setErrorMsg('Please confirm your email address before signing in.')
+        setNeedsConfirm(true)
         setIsSubmitting(false)
         return
       }
@@ -128,8 +127,11 @@ function LoginForm() {
       window.location.href = redirectTo
 
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setErrorMsg(`Unexpected error: ${msg}`)
+      console.error('Sign-in error', err)
+      const msg = err instanceof Error ? err.message : ''
+      setErrorMsg(msg.startsWith('Sign-in timed out')
+        ? msg
+        : 'Something went wrong signing in. Please check your connection and try again.')
       setIsSubmitting(false)
     }
   }
@@ -152,55 +154,22 @@ function LoginForm() {
         <p className="text-surface-400 text-sm">Sign in to your PipeField OS account</p>
       </div>
 
-      {/* ── Error display — shows exact Supabase message ── */}
       {errorMsg && (
         <div className="space-y-3">
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-red-300 text-sm">
+          <div role="alert" className="flex items-start gap-3 p-4 rounded-lg bg-danger/10 border border-danger/30 text-red-300 text-sm">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-semibold">{errorMsg}</p>
-              {errorCode && (
-                <p className="text-xs text-red-400">Code: {errorCode}</p>
-              )}
-            </div>
+            <p className="font-semibold">{errorMsg}</p>
           </div>
 
-          {/* ── Contextual help based on the error ── */}
-          {(errorCode === 'email_not_confirmed' || errorMsg.toLowerCase().includes('confirm')) && (
+          {needsConfirm && (
             <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 text-sm space-y-2">
-              <p className="font-semibold">📧 Email confirmation is required</p>
-              <p>Supabase sent a confirmation email when you registered. Please:</p>
+              <p className="font-semibold">📧 Check your inbox</p>
               <ol className="list-decimal list-inside space-y-1 text-blue-300/80">
-                <li>Open the email from Supabase</li>
+                <li>Open the confirmation email we sent when you registered</li>
                 <li>Click &ldquo;Confirm your email&rdquo;</li>
                 <li>Return here and sign in</li>
               </ol>
-              <p className="text-xs text-blue-400 pt-1">
-                Or: go to your Supabase Dashboard → Authentication → Providers → Email → turn off &ldquo;Confirm email&rdquo; to skip this for development.
-              </p>
             </div>
-          )}
-
-          {errorMsg.toLowerCase().includes('invalid login') && (
-            <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm">
-              <p className="font-semibold">Wrong email or password</p>
-              <p className="text-yellow-300/80 text-xs mt-1">
-                If you just registered, check your email for a confirmation link first.
-              </p>
-            </div>
-          )}
-
-          {/* Raw debug block */}
-          {debugInfo && (
-            <details className="group">
-              <summary className="flex items-center gap-2 text-xs text-surface-500 cursor-pointer hover:text-surface-300 transition-colors select-none">
-                <Bug className="w-3.5 h-3.5" />
-                Show raw error details
-              </summary>
-              <pre className="mt-2 p-3 rounded-lg bg-surface-900 border border-surface-700 text-xs text-surface-400 overflow-x-auto">
-                {debugInfo}
-              </pre>
-            </details>
           )}
         </div>
       )}
@@ -275,24 +244,13 @@ function LoginForm() {
           </p>
         </div>
       ) : (
-        <div className="pt-2 border-t border-surface-800 space-y-2">
-          <p className="text-xs text-surface-600 text-center">Troubleshooting tools</p>
-          <div className="flex gap-2">
-            <a
-              href="/api/debug-auth"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 text-center text-xs py-2 px-3 rounded-lg bg-surface-800 text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors border border-surface-700"
-            >
-              🔍 Check Supabase connection
-            </a>
-            <Link
-              href="/register"
-              className="flex-1 text-center text-xs py-2 px-3 rounded-lg bg-surface-800 text-surface-400 hover:text-surface-200 hover:bg-surface-700 transition-colors border border-surface-700"
-            >
-              + Create account
+        <div className="pt-2 border-t border-surface-800 text-center">
+          <p className="text-xs text-surface-500">
+            New to PipeField OS?{' '}
+            <Link href="/register" className="text-brand-400 hover:underline">
+              Create an account
             </Link>
-          </div>
+          </p>
         </div>
       )}
     </div>

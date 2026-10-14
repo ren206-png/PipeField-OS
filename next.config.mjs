@@ -25,9 +25,10 @@ const isDev = process.env.NODE_ENV === 'development'
 const ContentSecurityPolicy = [
   "default-src 'self'",
   // Next.js hydration requires inline scripts; eval is needed for source maps in dev
+  // challenges.cloudflare.com: Turnstile CAPTCHA on the web login page
   isDev
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com"
-    : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://challenges.cloudflare.com"
+    : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   // Images: self + Supabase storage + data URIs (avatars, QR codes) + Google
   "img-src 'self' data: blob: https://*.supabase.co https://www.google.com https://www.gstatic.com",
@@ -47,8 +48,8 @@ const ContentSecurityPolicy = [
     'https://www.googletagmanager.com',
   ].filter(Boolean).join(' '),
   "font-src 'self'",
-  // Stripe.js renders in an iframe
-  "frame-src https://js.stripe.com",
+  // Stripe.js and the Turnstile widget render in iframes
+  "frame-src https://js.stripe.com https://challenges.cloudflare.com",
   // Never allow embedding this app in a frame on another origin
   "frame-ancestors 'none'",
   "object-src 'none'",

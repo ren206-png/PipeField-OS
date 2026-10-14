@@ -66,7 +66,9 @@ export function Turnstile({
           action: 'login',
           callback: (token: string) => onTokenRef.current(token),
           'expired-callback': () => onTokenRef.current(null),
-          'error-callback': () => onTokenRef.current(null),
+          // Same fallback as a script load failure: never lock users out of
+          // sign-in client-side; Supabase enforces CAPTCHA if it's turned on.
+          'error-callback': () => onTokenRef.current('__load_failed__'),
         })
       })
       .catch(() => {
