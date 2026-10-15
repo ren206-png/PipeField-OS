@@ -16,8 +16,7 @@ const config: CapacitorConfig = {
     scheme:             'pipefield',    // deep-link scheme  pipefield://
     contentInset:       'automatic',    // respects safe areas
     backgroundColor:    '#0a0d12',      // matches surface-900
-    // false — WKAppBoundDomains is NOT used. Browser toolbar suppressed via
-    // apphttps:// custom scheme proxy (VercelProxyHandler in MainViewController).
+    // false — WKAppBoundDomains is NOT used.
     limitsNavigationsToAppBoundDomains: false,
     preferredContentMode: 'mobile',
     allowsLinkPreview:  false,
@@ -25,8 +24,9 @@ const config: CapacitorConfig = {
   },
 
   // ── Server (live production domain) ───────────────────────
-  // Android WebView uses this directly — no custom scheme proxy needed.
-  // iOS ignores this because MainViewController loads apphttps:// manually.
+  // Both iOS and Android load this origin directly, so the WebView gets real
+  // https cookies, same-origin /api calls and normal redirects. (iOS used to
+  // proxy it through a custom apphttps:// scheme, which can't store cookies.)
   server: {
     url: 'https://pipefield-os.com',
     cleartext: false,

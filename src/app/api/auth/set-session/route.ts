@@ -10,8 +10,8 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   // Login-CSRF guard: cross-site forms and no-preflight fetches can only send
   // text/plain, form-urlencoded or multipart bodies, so refuse anything that
-  // declares a non-JSON type. (A missing header is allowed so the iOS
-  // apphttps:// proxy can never be locked out.)
+  // declares a non-JSON type. (A missing header is allowed so older iOS
+  // builds, which proxy requests through apphttps://, can't be locked out.)
   const contentType = request.headers.get('content-type')
   if (contentType && !contentType.toLowerCase().includes('application/json')) {
     return NextResponse.json({ ok: false, error: 'Unsupported content type' }, { status: 415 })

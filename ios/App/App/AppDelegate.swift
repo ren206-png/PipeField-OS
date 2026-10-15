@@ -7,11 +7,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Replace the storyboard-instantiated CAPBridgeViewController with our
-        // MainViewController subclass so that webViewConfiguration(for:) override
-        // runs, registering the "apphttps" URL scheme handler before WKWebView is created.
-        let mainVC = MainViewController()
-        window?.rootViewController = mainVC
+        // The storyboard's CAPBridgeViewController loads server.url
+        // (https://pipefield-os.com) directly; see capacitor.config.ts.
         return true
     }
 
