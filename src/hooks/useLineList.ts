@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from './useAuth'
-import type { PipeLine, LineStatus, LinePriority } from '@/types'
+import type { PipeLine } from '@/types'
 
 export function useLines(projectId?: string) {
   const { profile } = useAuth()

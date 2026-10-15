@@ -32,7 +32,7 @@ export interface AiRateLimitResult {
 export async function checkAiRateLimit({
   userId,
   organizationId,
-  capability,
+  capability: _capability,
   limitPerHour,
 }: AiRateLimitOptions): Promise<AiRateLimitResult> {
   const admin = createAdminClient()

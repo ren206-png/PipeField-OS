@@ -128,7 +128,7 @@ export function TakeOutPanel({ nps }: TakeOutPanelProps) {
       <div className="space-y-3">
         <p className="label mb-0">Fittings</p>
 
-        {fittings.map((row, i) => (
+        {fittings.map((row) => (
           <div key={row.id} className="space-y-2">
             <div className="flex gap-2 items-start">
               {/* Type select — populated from existing FITTING_TYPES constant */}

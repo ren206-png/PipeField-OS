@@ -1,3 +1,5 @@
+// TODO: Dead route — no frontend callers found as of 2026-10.
+// The SupportCalculator component uses /api/pipe-support/calculate (not this route).
 // GET  /api/pipe-support/calculations   → list for org (optional ?project_id=)
 // POST /api/pipe-support/calculations   → save new calculation
 import { NextRequest, NextResponse } from 'next/server'

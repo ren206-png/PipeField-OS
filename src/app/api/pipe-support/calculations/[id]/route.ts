@@ -1,3 +1,5 @@
+// TODO: Dead route — no frontend callers found as of 2026-10.
+// The SupportCalculator component uses /api/pipe-support/calculate (not this route).
 // GET    /api/pipe-support/calculations/[id]  → single record
 // PATCH  /api/pipe-support/calculations/[id]  → update name/notes
 // DELETE /api/pipe-support/calculations/[id]  → delete record

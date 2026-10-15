@@ -155,7 +155,6 @@ export function useCreateStp() {
 // ── Update STP status ────────────────────────────────────────
 export function useUpdateStp() {
   const supabase = createClient()
-  const { organizationId } = useOrganization()
   const qc = useQueryClient()
 
   return useMutation({

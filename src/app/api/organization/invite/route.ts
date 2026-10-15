@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
 }
 
 // ── GET — list pending invites for caller's org ───────────────
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const getAuth = await requireOrgAdmin()
     if (getAuth.error) return getAuth.error
