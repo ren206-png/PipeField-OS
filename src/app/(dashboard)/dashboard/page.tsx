@@ -341,11 +341,11 @@ export default async function DashboardPage() {
           { label: 'NDE Pass Rate',   value: `${ndePassRate}%`, icon: TrendingUp, bg: 'bg-teal-500/10',   color: 'text-teal-400'   },
           { label: 'Open Punch',      value: openPunch,      icon: AlertTriangle, bg: openPunch > 0 ? 'bg-red-500/10' : 'bg-surface-700', color: openPunch > 0 ? 'text-red-400' : 'text-surface-500' },
         ].map(({ label, value, icon: Icon, bg, color }) => (
-          <div key={label} className="card p-3 flex items-center gap-2.5">
+          <div key={label} className="card p-3 flex flex-col items-center justify-center text-center gap-1.5">
             <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
               <Icon className={`w-4 h-4 ${color}`} />
             </div>
-            <div className="min-w-0">
+            <div>
               <p className="text-lg font-bold text-surface-50 leading-none">{value}</p>
               <p className="text-[10px] text-surface-500 mt-0.5 leading-tight">{label}</p>
             </div>
