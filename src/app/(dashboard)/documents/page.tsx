@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react'
 import { useDocuments, useUploadDocument, useDeleteDocument, useDocumentUrl } from '@/hooks/useDocuments'
 import { useProjects } from '@/hooks/useProjects'
-import { useAuth } from '@/hooks/useAuth'
 import { formatDate } from '@/lib/utils'
 import {
   DOC_TYPE_LABELS,
@@ -42,7 +41,7 @@ function DocCard({
   doc: Document
   onDelete: (id: string, path: string) => void
 }) {
-  const { data: signedUrl, refetch } = useDocumentUrl(doc.storage_path)
+  const { refetch } = useDocumentUrl(doc.storage_path)
   const [downloading, setDownloading] = useState(false)
 
   async function handleDownload() {
@@ -128,7 +127,6 @@ interface UploadForm {
 export default function DocumentsPage() {
   const { data: docs = [], isLoading } = useDocuments()
   const { data: projects = [] } = useProjects()
-  const { isOrgAdmin } = useAuth()
   const uploadMutation = useUploadDocument()
   const deleteMutation = useDeleteDocument()
 
@@ -212,8 +210,6 @@ export default function DocumentsPage() {
   const drawings = docs.filter(d => d.document_type === 'drawing').length
   const specs = docs.filter(d => d.document_type === 'specification').length
   const certs = docs.filter(d => d.document_type === 'certificate').length
-  const other = docs.filter(d => !['drawing','specification','certificate'].includes(d.document_type)).length
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}

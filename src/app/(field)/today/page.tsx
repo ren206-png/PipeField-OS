@@ -47,13 +47,14 @@ export default async function TodayPage() {
 
   // Fetch spools assigned to this user's crew (by name or ID)
   // Priority column governs the sequence (Phase 0 schema finding)
-  const { data: spools } = await supabase
+  const { data: spools, error: spoolsError } = await supabase
     .from('spools')
     .select('id, spool_number, priority, status')
     .eq('organization_id', caller.organization_id ?? '')
     .or(`assigned_crew.cs.{${caller.id}},assigned_crew.cs.{${caller.full_name ?? ''}}`)
     .order('priority', { ascending: true })
     .limit(50)
+  if (spoolsError) console.error('Failed to load spools', spoolsError)
 
   const spoolList = (spools ?? []) as Spool[]
   const spoolIds = spoolList.map(s => s.id)
