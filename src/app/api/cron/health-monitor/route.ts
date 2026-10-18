@@ -45,11 +45,12 @@ export async function POST(req: NextRequest) {
   // ── Job 1: Error spike detection ─────────────────────────────
   try {
     const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    const { data: caps } = await supabase
+    const { data: caps, error: capsErr } = await supabase
       .from('ai_invocations')
       .select('capability')
       .gte('invoked_at', since7d.toISOString())
       .order('capability')
+    if (capsErr) throw capsErr
 
     const distinctCaps = Array.from(new Set((caps ?? []).map(r => r.capability as string)))
 
@@ -104,10 +105,11 @@ export async function POST(req: NextRequest) {
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 
-    const { data: usage } = await supabase
+    const { data: usage, error: usageErr } = await supabase
       .from('ai_invocations')
       .select('organization_id, tokens_used')
       .gte('invoked_at', todayStart.toISOString())
+    if (usageErr) throw usageErr
 
     const orgTokens = new Map<string, number>()
     for (const row of usage ?? []) {
@@ -117,10 +119,11 @@ export async function POST(req: NextRequest) {
 
     if (orgTokens.size > 0) {
       const orgIds = Array.from(orgTokens.keys())
-      const { data: orgs } = await supabase
+      const { data: orgs, error: orgsErr } = await supabase
         .from('organizations')
         .select('id, subscription_tier')
         .in('id', orgIds)
+      if (orgsErr) throw orgsErr
 
       for (const org of orgs ?? []) {
         const tier   = (org.subscription_tier as string) ?? 'starter'
@@ -149,10 +152,11 @@ export async function POST(req: NextRequest) {
   // ── Job 3: Self-healing auto-disable ─────────────────────────
   try {
     const window30m = new Date(Date.now() - 30 * 60 * 1000)
-    const { data: recent } = await supabase
+    const { data: recent, error: recentErr } = await supabase
       .from('ai_invocations')
       .select('capability, status')
       .gte('invoked_at', window30m.toISOString())
+    if (recentErr) throw recentErr
 
     const capStats = new Map<string, { total: number; errors: number }>()
     for (const row of recent ?? []) {
@@ -196,17 +200,19 @@ export async function POST(req: NextRequest) {
 
   // ── Job 4: Notify platform admins for critical alerts ─────────
   try {
-    const { data: criticalAlerts } = await supabase
+    const { data: criticalAlerts, error: criticalAlertsErr } = await supabase
       .from('system_alerts')
       .select('*')
       .eq('severity', 'critical')
       .gte('created_at', cronStartedAt.toISOString())
+    if (criticalAlertsErr) throw criticalAlertsErr
 
     if (criticalAlerts && criticalAlerts.length > 0) {
-      const { data: admins } = await supabase
+      const { data: admins, error: adminsErr } = await supabase
         .from('user_profiles')
         .select('id, organization_id, email')
         .eq('role', 'platform_admin')
+      if (adminsErr) throw adminsErr
 
       const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://pipefield-os.com'
       const FROM    = process.env.EMAIL_FROM ?? 'PipeField OS <onboarding@resend.dev>'

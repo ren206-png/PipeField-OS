@@ -22,8 +22,13 @@ function optional(name: string, fallback: string): string {
 }
 
 // ── Supabase ─────────────────────────────────────────────────
-export const SUPABASE_URL      = required('NEXT_PUBLIC_SUPABASE_URL')
-export const SUPABASE_ANON_KEY = required('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+// Validated lazily — all callers use process.env directly anyway.
+export function requireSupabaseUrl(): string {
+  return required('NEXT_PUBLIC_SUPABASE_URL')
+}
+export function requireSupabaseAnonKey(): string {
+  return required('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+}
 
 // Service role — server-side only, NEVER export to the client bundle.
 // Validated lazily so it only throws when an admin route is actually called,

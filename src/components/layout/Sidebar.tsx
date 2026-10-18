@@ -188,7 +188,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const { profile, isPlatformAdmin, isLoading } = useAuth()
   const { organization } = useOrganization()
-  const { plan } = usePlanLimits()
+  usePlanLimits()
 
   function isActive(href: string): boolean {
     const path = href.split('?')[0]
@@ -226,7 +226,7 @@ export function Sidebar() {
       const stored = localStorage.getItem(LS_KEY)
       if (stored) {
         const parsed: Record<string, boolean> = JSON.parse(stored)
-        setOpenSections(prev => {
+        setOpenSections(_prev => {
           const merged: Record<string, boolean> = { ...parsed }
           // Always keep the active section open regardless of stored state
           for (const s of NAV_SECTIONS) {

@@ -174,7 +174,7 @@ function StatusBadge({ label, color }: { label: string; color: string }) {
 }
 
 // ── Overview Tab ──────────────────────────────────────────────
-function OverviewTab({ project, welds, spools, nde, punch, rfis, stps, projectId }: {
+function OverviewTab({ project: _project, welds, spools, nde, punch, rfis, stps, projectId }: {
   project: Record<string, unknown>; welds: Weld[]; spools: Spool[]; nde: NdeRecord[]; punch: PunchItem[]; rfis: RFI[]; stps: Stp[]; projectId: string
 }) {
   const weldAccepted = welds.filter(w => w.status === 'accepted').length
@@ -454,7 +454,7 @@ function NdeTab({ nde }: { nde: NdeRecord[] }) {
 }
 
 // ── Commissioning Tab ─────────────────────────────────────────
-function CommissioningTab({ stps, projectId }: { stps: Stp[]; projectId: string }) {
+function CommissioningTab({ stps, projectId: _projectId }: { stps: Stp[]; projectId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -629,7 +629,8 @@ export function ProjectDetailClient({ id, initialData }: {
   const { data: project, isLoading: loadingProject } = useQuery({
     queryKey: ['project', id],
     queryFn: async () => {
-      const { data } = await createClient().from('projects').select('*').eq('id', id).maybeSingle()
+      const { data, error } = await createClient().from('projects').select('*').eq('id', id).maybeSingle()
+      if (error) throw error
       return data
     },
     initialData,
