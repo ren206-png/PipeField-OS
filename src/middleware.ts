@@ -13,6 +13,7 @@
 // ============================================================
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { applySecurityHeaders, detectThreat } from '@/lib/security-headers'
 
 // Routes that skip redirect-to-login (but still get session refresh)
 const PUBLIC_ROUTES = [
@@ -40,6 +41,13 @@ export async function middleware(request: NextRequest) {
     /\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$/.test(pathname)
   ) {
     return NextResponse.next()
+  }
+
+  // ── Threat detection — block scanners/malware at the edge ─
+  const threat = detectThreat(request)
+  if (threat.blocked) {
+    console.warn('[security] blocked request', { pathname, reason: threat.reason, ip: request.headers.get('x-forwarded-for') })
+    return new NextResponse(null, { status: 404 })
   }
 
   // ── Session refresh — runs on EVERY non-static request ────
@@ -104,6 +112,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  applySecurityHeaders(supabaseResponse)
   return supabaseResponse
 }
 
