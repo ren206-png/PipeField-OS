@@ -22,7 +22,7 @@ export async function PATCH(
   if (!caller?.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
   // Role check: only admin or project_manager
-  if (!['admin', 'project_manager', 'platform_admin'].includes(caller.role ?? '')) {
+  if (!['administrator', 'project_manager', 'platform_admin'].includes(caller.role ?? '')) {
     return NextResponse.json({ error: 'Only admins and project managers can override qualifications.' }, { status: 403 })
   }
 

@@ -215,7 +215,7 @@ async function processOrg(
       .from('user_profiles')
       .select('id, email, full_name, role')
       .eq('org_id', org.id)
-      .in('role', ['project_manager', 'qc_manager', 'admin'])
+      .in('role', ['project_manager', 'qa_inspector', 'administrator', 'platform_admin'])
       .eq('status', 'active'),
   ])
 

@@ -37,13 +37,17 @@ function LoginForm() {
   // tabs/newlines, so '/\evil.com' and '/\t/evil.com' both become the
   // protocol-relative '//evil.com'. Reject backslashes and control characters
   // anywhere, and a second '/' right after the leading one.
-  const redirectTo   = (
-    rawRedirect.startsWith('/') &&
-    !rawRedirect.startsWith('//') &&
-    !/[\\\u0000-\u001f\u007f]/.test(rawRedirect)
-  )
-    ? rawRedirect
-    : '/dashboard'
+  // Extract only the pathname to prevent open-redirect via Unicode separators,
+  // percent-encoded slashes, or other bypass techniques.
+  let redirectTo = '/dashboard'
+  try {
+    const parsed = new URL(rawRedirect, 'https://x')
+    if (parsed.hostname === 'x' && parsed.pathname.startsWith('/')) {
+      redirectTo = parsed.pathname + parsed.search + parsed.hash
+    }
+  } catch {
+    // malformed — keep default
+  }
 
   const [showPassword, setShowPassword]   = useState(false)
   const [isSubmitting, setIsSubmitting]   = useState(false)
