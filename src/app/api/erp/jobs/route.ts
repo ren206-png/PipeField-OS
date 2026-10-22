@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { decryptKey } from '@/lib/crypto'
 
 const TIER_ORDER: Record<string, number> = {
   free_trial: 0, field_pro: 1, starter: 2, professional: 3, enterprise: 4,
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
   if (connErr) return NextResponse.json({ error: connErr.message }, { status: 400 })
   if (!connector) return NextResponse.json({ error: 'Connector not found' }, { status: 404 })
 
-  const decodedKey = Buffer.from(connector.erp_api_key_encrypted as string, 'base64').toString('utf8')
+  const decodedKey = decryptKey(connector.erp_api_key_encrypted as string)
   const authHeader = `Bearer ${decodedKey}`
   const synced_at  = new Date().toISOString()
 

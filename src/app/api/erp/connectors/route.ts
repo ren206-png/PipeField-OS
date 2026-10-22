@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
+import { encrypt } from '@/lib/crypto'
 
 export const dynamic = 'force-dynamic'
 
@@ -69,9 +70,7 @@ export async function POST(req: NextRequest) {
 
   const { erp_api_key, ...rest } = parsed.data
 
-  // NOTE: base64 encoding is a placeholder. Replace with proper AES-256 encryption
-  // (e.g. Node crypto or a KMS) before handling real customer keys in production.
-  const erp_api_key_encrypted = Buffer.from(erp_api_key).toString('base64')
+  const erp_api_key_encrypted = encrypt(erp_api_key)
 
   const admin = createAdminClient()
 

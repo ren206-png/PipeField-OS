@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
+import { decryptKey } from '@/lib/crypto'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,7 +56,7 @@ export async function POST(
   if (connErr)   return NextResponse.json({ error: connErr.message }, { status: 400 })
   if (!connector) return NextResponse.json({ error: 'Connector not found' }, { status: 404 })
 
-  const decodedKey = Buffer.from(connector.erp_api_key_encrypted as string, 'base64').toString('utf8')
+  const decodedKey = decryptKey(connector.erp_api_key_encrypted as string)
   const authHeader = `Bearer ${decodedKey}`
 
   const exportPayload = {

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { decryptKey } from '@/lib/crypto'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,8 +28,7 @@ export async function GET(
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 400 })
   if (!connector)  return NextResponse.json({ error: 'Connector not found' }, { status: 404 })
 
-  // Decode stored key (base64 placeholder — swap with real decrypt in production)
-  const decodedKey = Buffer.from(connector.erp_api_key_encrypted as string, 'base64').toString('utf8')
+  const decodedKey = decryptKey(connector.erp_api_key_encrypted as string)
 
   const tested_at = new Date().toISOString()
   let connected   = false
