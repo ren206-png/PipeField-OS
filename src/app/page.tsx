@@ -147,6 +147,24 @@ export default async function RootPage() {
             </a>
           </div>
 
+          {/* App Store badge */}
+          <div className="flex justify-center mb-6">
+            <a
+              href="https://apps.apple.com/us/app/pipefield-os/id6804559847"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-3 rounded-xl border border-surface-700 bg-surface-800 px-5 py-3 hover:bg-surface-700 transition-colors"
+            >
+              <svg viewBox="0 0 814 1000" className="h-7 w-7 fill-surface-50" xmlns="http://www.w3.org/2000/svg">
+                <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-42.3-150.3-109.2c-48-69.8-90.5-170-90.5-264.7 0-154.7 100.2-236.6 198.8-236.6 51.9 0 95.1 33.7 127.3 33.7 30.7 0 79.1-35.7 140.5-35.7 22.4 0 108.2 1.9 164 94.5zm-209.5-178.1c30.7-36.4 52.5-86.7 52.5-137 0-6.9-.6-13.9-1.9-19.5-49.4 1.9-108.2 32.6-143.9 75.5-28.2 32.6-55.1 83.6-55.1 134.6 0 7.5 1.3 15 1.9 17.5 3.2.6 8.4 1.3 13.6 1.3 44.3 0 98.1-29.4 132.9-72.4z"/>
+              </svg>
+              <div className="text-left">
+                <div className="text-xs text-surface-400 leading-none mb-0.5">Download on the</div>
+                <div className="text-sm font-semibold text-surface-50 leading-none">App Store</div>
+              </div>
+            </a>
+          </div>
+
           {/* Sign up link */}
           <div className="mb-14">
             <Link
@@ -211,8 +229,8 @@ export default async function RootPage() {
               Your field calculators. <span className="text-brand-500">Always with you.</span>
             </h2>
             <p className="mx-auto max-w-xl text-surface-400 text-lg">
-              Built by someone who knows the job — no app store, no subscription, works on any
-              phone or tablet, even in the field.
+              Built by someone who knows the job — works on any phone or tablet, even in the field.
+              Available on the web and on iOS.
             </p>
           </div>
 
@@ -715,8 +733,22 @@ export default async function RootPage() {
             </div>
 
             {/* Right */}
-            <div className="sm:text-right text-sm text-surface-600">
-              © 2026 PipeField OS. All rights reserved.
+            <div className="sm:text-right">
+              <a
+                href="https://apps.apple.com/us/app/pipefield-os/id6804559847"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 rounded-lg border border-surface-700 bg-surface-800 px-4 py-2.5 hover:bg-surface-700 transition-colors mb-3"
+              >
+                <svg viewBox="0 0 814 1000" className="h-5 w-5 fill-surface-50 flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-42.3-150.3-109.2c-48-69.8-90.5-170-90.5-264.7 0-154.7 100.2-236.6 198.8-236.6 51.9 0 95.1 33.7 127.3 33.7 30.7 0 79.1-35.7 140.5-35.7 22.4 0 108.2 1.9 164 94.5zm-209.5-178.1c30.7-36.4 52.5-86.7 52.5-137 0-6.9-.6-13.9-1.9-19.5-49.4 1.9-108.2 32.6-143.9 75.5-28.2 32.6-55.1 83.6-55.1 134.6 0 7.5 1.3 15 1.9 17.5 3.2.6 8.4 1.3 13.6 1.3 44.3 0 98.1-29.4 132.9-72.4z"/>
+                </svg>
+                <div className="text-left">
+                  <div className="text-xs text-surface-400 leading-none mb-0.5">Download on the</div>
+                  <div className="text-sm font-semibold text-surface-50 leading-none">App Store</div>
+                </div>
+              </a>
+              <div className="text-sm text-surface-600">© 2026 PipeField OS. All rights reserved.</div>
             </div>
           </div>
         </div>
