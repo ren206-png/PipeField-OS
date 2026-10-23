@@ -96,6 +96,11 @@ export const FLAGS = {
   // Owner-facing console for reviewing/approving ref_verification_events
   // and resolving DATA_SOURCE_MANIFEST gaps in-app (post-Phase-1 UI).
   PFOS_FIELD_REF_VERIFY_CONSOLE:       process.env.PFOS_FIELD_REF_VERIFY_CONSOLE        === 'true',
+
+  // ISO Tap-to-Calculate — photograph an isometric, tap dimensions, get geometry
+  // and (where verified fitting data exists) cut length. Default OFF.
+  // Requires PFOS_FIELD_MODE to be ON. OCR assets are not loaded when this is OFF.
+  PFOS_FIELD_ISO_CALC:                 process.env.PFOS_FIELD_ISO_CALC                  === 'true',
 } as const
 
 export type FlagName = keyof typeof FLAGS

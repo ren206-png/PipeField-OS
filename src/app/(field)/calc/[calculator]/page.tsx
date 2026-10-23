@@ -4,6 +4,7 @@
 // Maps params.calculator to the correct calculator component.
 // ============================================================
 import React from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { SimpleOffsetCalc }       from '@/components/field-mode/calculators/SimpleOffsetCalc'
 import { RollingOffsetCalc }      from '@/components/field-mode/calculators/RollingOffsetCalc'
@@ -18,7 +19,17 @@ import { MiterCalc }              from '@/components/field-mode/calculators/Mite
 import { PipeWeightCalc }         from '@/components/field-mode/calculators/PipeWeightCalc'
 import { RiggingCalc }            from '@/components/field-mode/calculators/RiggingCalc'
 import { StudLookupCalc }         from '@/components/field-mode/calculators/StudLookupCalc'
-const CALCULATOR_MAP: Record<string, { label: string; Component: React.ComponentType }> = {
+import { FLAGS } from '@/intelligence/flags'
+import { useOrganization } from '@/hooks/useOrganization'
+import { requirePlanTier } from '@/lib/billing-access'
+
+// IsoTapCalc: lazy-loaded, SSR disabled (image/camera handling is browser-only)
+const IsoTapCalc = dynamic(
+  () => import('@/features/iso-tap-calculate/ui/IsoTapCalc').then(m => ({ default: m.IsoTapCalc })),
+  { ssr: false, loading: () => <div className="p-8 text-surface-400 text-sm">Loading…</div> },
+)
+
+const CALCULATOR_MAP: Record<string, { label: string; Component: React.ComponentType; minTier?: string }> = {
   'simple-offset':    { label: 'Simple Offset',         Component: SimpleOffsetCalc },
   'rolling-offset':   { label: 'Rolling Offset',        Component: RollingOffsetCalc },
   'parallel-offsets': { label: 'Parallel Offsets',      Component: ParallelOffsetsCalc },
@@ -32,15 +43,42 @@ const CALCULATOR_MAP: Record<string, { label: string; Component: React.Component
   'pipe-weight':      { label: 'Pipe Weight',           Component: PipeWeightCalc },
   'rigging':          { label: 'Rigging',               Component: RiggingCalc },
   'stud-lookup':      { label: 'Stud & Wrench',         Component: StudLookupCalc },
+  // ISO Tap-to-Calculate — only registered when flag is ON; Field Pro and above
+  ...(FLAGS.PFOS_FIELD_ISO_CALC
+    ? { 'iso-tap-calc': { label: 'ISO Tap-to-Calculate', Component: IsoTapCalc, minTier: 'field_pro' } }
+    : {}),
 }
 
 interface PageProps {
   params: { calculator: string }
 }
 
+function UpgradePrompt({ requiredTier }: { requiredTier: string }) {
+  const tierLabel: Record<string, string> = {
+    field_pro: 'Field Pro', starter: 'Starter', professional: 'Professional', enterprise: 'Enterprise',
+  }
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+      <div className="text-4xl" aria-hidden="true">🔒</div>
+      <h2 className="text-surface-100 font-bold text-lg">Upgrade Required</h2>
+      <p className="text-surface-400 text-sm max-w-xs">
+        ISO Tap-to-Calculate requires a <strong className="text-surface-200">{tierLabel[requiredTier] ?? requiredTier}</strong> plan
+        or higher. Upgrade your subscription to access this calculator.
+      </p>
+      <Link
+        href="/settings/billing"
+        className="min-h-[56px] px-6 flex items-center rounded-xl bg-brand-500 text-white font-semibold"
+      >
+        View Plans
+      </Link>
+    </div>
+  )
+}
+
 export default function CalculatorPage({ params }: PageProps) {
   const { calculator } = params
   const entry = CALCULATOR_MAP[calculator]
+  const { organization, isLoading } = useOrganization()
 
   if (!entry) {
     return (
@@ -53,7 +91,12 @@ export default function CalculatorPage({ params }: PageProps) {
     )
   }
 
-  const { label, Component } = entry
+  const { label, Component, minTier } = entry
+
+  // Tier gate — show upgrade prompt if org doesn't meet the minimum tier
+  const tierBlocked = !isLoading && minTier
+    ? !requirePlanTier(organization, minTier).allowed
+    : false
 
   return (
     <div className="min-h-screen bg-surface-950 flex flex-col">
@@ -71,7 +114,13 @@ export default function CalculatorPage({ params }: PageProps) {
 
       {/* Calculator content — scrollable */}
       <div className="flex-1 overflow-y-auto">
-        <Component />
+        {isLoading ? (
+          <div className="p-8 text-surface-500 text-sm text-center">Loading…</div>
+        ) : tierBlocked ? (
+          <UpgradePrompt requiredTier={minTier!} />
+        ) : (
+          <Component />
+        )}
       </div>
     </div>
   )
