@@ -31,6 +31,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import type { UserProfile, Organization } from '@/types'
+import { onAccountSwitch as isoCalcAccountSwitch } from '@/features/iso-tap-calculate/storage/snapshot-store'
 
 interface AuthState {
   user:            User | null
@@ -80,6 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ...SIGNED_OUT_STATE,
     isLoading: true,   // start loading until first auth event resolves
   })
+  // Ref so the onAuthStateChange callback can read current state without a stale closure.
+  const stateRef = useRef(state)
+  useEffect(() => { stateRef.current = state }, [state])
 
   // ── Core fetch ───────────────────────────────────────────────
   // accessToken is passed in from the caller — NEVER call
@@ -178,6 +182,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Explicit sign-out OR confirmed no session on initial load
           initialized = true
           clearTimeout(hardTimeout)
+          // Clear ISO Tap-to-Calculate local snapshots/images for the previous user.
+          // This is namespace separation — IDB records are cleared on sign-out.
+          // We fire-and-forget; a failure here must not block the sign-out flow.
+          if (event === 'SIGNED_OUT') {
+            const prevState = stateRef.current
+            if (prevState.user?.id && prevState.organization?.id) {
+              isoCalcAccountSwitch(prevState.user.id, prevState.organization.id).catch(() => {
+                // Best-effort — storage clear failure does not block logout
+              })
+            }
+          }
           setState(SIGNED_OUT_STATE)
         }
         // All other events with no session (USER_DELETED etc.) — ignore;

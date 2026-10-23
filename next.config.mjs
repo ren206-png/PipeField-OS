@@ -52,6 +52,10 @@ const ContentSecurityPolicy = [
   "frame-src https://js.stripe.com https://challenges.cloudflare.com",
   // Never allow embedding this app in a frame on another origin
   "frame-ancestors 'none'",
+  // Tesseract.js OCR worker uses blob: URLs — required for PFOS_FIELD_ISO_CALC
+  "worker-src blob: 'self'",
+  // Tesseract.js loads core Wasm — required alongside worker-src
+  "script-src-elem 'self' 'unsafe-inline' https://www.googletagmanager.com https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

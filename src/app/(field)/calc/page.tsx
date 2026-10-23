@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useFieldStrings } from '@/lib/field-mode/locale'
+import { FLAGS } from '@/intelligence/flags'
 
 interface CalcCard {
   id: string
@@ -27,6 +28,7 @@ export default function CalcPickerPage() {
   }, [])
 
   const CALCS: CalcCard[] = [
+    ...(FLAGS.PFOS_FIELD_ISO_CALC ? [{ id: 'iso-tap-calc', label: 'ISO Tap-to-Calculate', href: '/calc/iso-tap-calc' }] : []),
     { id: 'simple-offset',    label: t.calc_simple_offset,    href: '/calc/simple-offset' },
     { id: 'rolling-offset',   label: t.calc_rolling_offset,   href: '/calc/rolling-offset' },
     { id: 'parallel-offsets', label: t.calc_parallel_offsets, href: '/calc/parallel-offsets' },

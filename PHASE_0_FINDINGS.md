@@ -1,287 +1,434 @@
-# PHASE_0_FINDINGS.md
-# PipeField OS — Field Mode Module Pre-Work Analysis
-# Date: 2026-08-26
+# Phase 0 Findings — ISO Tap-to-Calculate
+
+> Read-only analysis. No code changes. All citations are file:line.
 
 ---
 
-## 2.1 Stack and Structure
+## 1. Framework & Tooling
 
-### Framework, Router, Rendering Model, State Management
+| Item | Value | Source |
+|------|-------|--------|
+| Next.js | 14.2.29 | `package.json:60` |
+| React | 18.3.1 | `package.json:61` |
+| TypeScript | 5.9.3 | `package.json:87` |
+| Zod | 3.25.76 | `package.json:75` |
+| Tailwind CSS | 3.4.19 | `package.json:88` |
+| Unit test runner | Jest 30.4.2 (ts-jest 29.4.11) | `package.json:83`, `jest.config.ts` |
+| E2E test runner | Playwright 1.61.1 | `package.json:80` |
+| Package manager | npm (package-lock.json present) | repo root |
+| Build command | `next build` | `package.json:7` |
+| Test command | `jest` / `jest --coverage` | `package.json:19–21` |
+| Bundle analyzer | `@next/bundle-analyzer` — enable with `ANALYZE=true npm run build` | `next.config.mjs:8–10` |
+| Lint | `next lint` (eslint-config-next 14.2.3) | `package.json:8`, `package.json:84` |
+| IndexedDB abstraction | `idb` 8.0.3 | `package.json:46` |
 
-- **Framework:** Next.js 14.2.29 (`package.json:47`) using the App Router.
-- **Router:** App Router with route groups: `(auth)`, `(dashboard)`, `(admin)`. Middleware at `src/middleware.ts` handles session refresh on every non-static request.
-- **Rendering model:** Mixed. Server Components for data-fetch pages (weld detail, spool detail, project detail use `createAdminClient` + `getCallerProfile` server-side). Client Components (`'use client'`) for interactive UI. Quote from `src/app/(dashboard)/welds/[id]/page.tsx:1–10`: "Weld Detail — Server Component."
-- **State management:** TanStack React Query (`@tanstack/react-query` 5.101.0) for server state — 333 import sites across `src/`. No Zustand or Redux found. Provider at `src/providers/QueryProvider.tsx`.
-- **Mobile:** Capacitor 8.x (`capacitor.config.ts`) targeting iOS and Android. PWA via `@ducanh2912/next-pwa` 10.2.9.
+**Jest config** (`jest.config.ts`): preset `ts-jest`, testEnvironment `node`, `@/` alias mapped to `src/`, testMatch `**/__tests__/**/*.test.ts(x)`.
 
-### Database Client and Query Layer; Tenant Scoping
-
-- **Database client:** Supabase (`@supabase/supabase-js` ^2.110.0, `@supabase/ssr` ^0.12.0).
-- **Three client variants:**
-  - `src/lib/supabase/server.ts` — anon key, cookie-based SSR sessions.
-  - `src/lib/supabase/client.ts` — anon key, browser-side.
-  - `src/lib/supabase/admin.ts` — service role key, bypasses RLS. Server-only.
-- **Tenant scoping pattern — `getCallerProfile`:** Canonical implementation at `src/lib/api-auth.ts:29`. It authenticates via Bearer token (Strategy 1) or SSR cookie (Strategy 2), then queries `user_profiles` using `createAdminClient` to resolve `organization_id`, `role`, `id`. All route handlers call `requireAuth(req)` or `requireOrgAdmin(req)` (defined at `src/lib/api-auth.ts:82–116`) before touching data. Server-Component pages call `getCallerProfile()` directly and then apply `organization_id` as an explicit `.eq('organization_id', organizationId)` filter even when using `createAdminClient` (see `src/app/(dashboard)/welds/[id]/page.tsx:20–40`). RLS on Supabase enforces the same boundary for anon-key queries via `get_my_org_id()` / `get_my_role()` helper functions defined in `supabase/schema.sql:201–215`.
-
-### Where Migrations Live and How They Are Applied
-
-- **Location:** `supabase/migrations/` — dated SQL files (20260702 through 20260815). Also unnumbered fix/setup scripts directly in `supabase/` (e.g., `schema.sql`, `setup-all.sql`, `fix-all-columns.sql`).
-- **Application:** No Supabase CLI `config.toml` found. Migrations appear to be applied manually via the Supabase Dashboard SQL editor or via `supabase/apply-missing-migrations.sql`. There is also an Alembic-based Python backend at `pipefield_os/migrations/` for the FastAPI service.
-- **Note for Field Mode:** A new Field Mode migration should follow the dated naming convention: `20260826_field_mode_*.sql`.
-
-### Feature-Flag Mechanism
-
-**Confirmed present. Two-layer system:**
-
-1. **Process-env flags** at `src/intelligence/flags.ts:1–74`. All flags are `const FLAGS = { FLAG_NAME: process.env.FLAG_NAME === 'true' }`. Evaluated at request time, not build time.
-2. **Per-tenant DB overrides** at `supabase/migrations/20260815_org_feature_flags.sql`. Table `org_feature_flags (org_id, flag_name, enabled, metadata)` unique on `(org_id, flag_name)`. Resolution order: DB row > env var > false. API at `src/app/api/org/flags/route.ts`.
-
-Current flags include: `PFOS_OFFLINE_FIELD` (Module 5A), `PFOS_MATERIAL_TRACE`, `PFOS_QUAL_ENFORCEMENT`, `PFOS_NDE_ENGINE`. A `PFOS_FIELD_MODE` flag does not yet exist — it must be added.
-
-### Existing i18n Setup
-
-**Status: SCAFFOLDED but not activated.** `next-intl` is NOT installed (absent from `package.json`).
-
-- Locale list defined at `src/i18n/request.ts:10`: `['en-US', 'en-CA', 'en-GB', 'en-AU', 'fr-CA', 'fr-FR', 'de-DE', 'pt-BR', 'es-MX', 'ar-SA', 'zh-CN']`.
-- Message files exist for three locales only: `messages/en-US.json`, `messages/en-GB.json`, `messages/fr-CA.json`.
-- `src/i18n/README.md`: "Status: SCAFFOLDED — needs `next-intl` installed to activate." Activation checklist not complete.
-- Unit conversion (`src/lib/units.ts`) is active and has no `next-intl` dependency.
-
-### Unit System: SI-Internal or Planned?
-
-**Storage is imperial. Display conversion is implemented and live.** `src/lib/units.ts:3–4`:
-
-> "All internal storage is imperial (inches, feet, psi, lb, °F). These helpers convert to SI for display when `project.unit_system === 'si'`."
-
-Conversion utilities confirmed live at `src/lib/units.ts`:
-- `inToMm`, `mmToIn`, `ftToM`, `mToFt` (lines 18–23)
-- `lbToKg`, `lbftToKgm` (lines 26–27)
-- `psiToBar`, `psiToKpa`, `psiToMpa`, `barToPsi` (lines 30–33)
-- `fToC`, `cToF` (lines 36–37)
-- `NPS_TO_DN` lookup table (lines 40–55)
-- `formatLength`, `formatSpan`, `formatPressure`, `formatTemp`, `formatWeight` (lines 59–90)
-
-`projects.unit_system` column (`CHECK (unit_system IN ('imperial', 'si', 'mixed'))`) added in `supabase/migrations/20260815_project_standards_config.sql:23`.
+**tsconfig.json**: strict mode, `moduleResolution: "bundler"`, `@/` → `src/`.
 
 ---
 
-## 2.2 Existing Assets to Reuse
+## 2. Feature-Flag Mechanism
 
-### NPS 1–48 Pipe Dimension Dataset
+Single source of truth: `src/intelligence/flags.ts`.
 
-**Not a database table — stored as JSON and in-code lookup tables.**
+**Pattern** (lines 12–83):
+```ts
+export const FLAGS = {
+  PFOS_FIELD_MODE: process.env.PFOS_FIELD_MODE === 'true',
+  PFOS_FIELD_CALC: process.env.PFOS_FIELD_CALC === 'true',
+  // ...
+} as const
 
-- `src/data/asme_pipe_dimensions.json` — keyed object `{ "B36.10M": { "<NPS>": { "OD_in": number, "schedules": { "<SCH>": { "wall_in": number, "ID_in": number } } } }, "B36.19M": {...} }`. B36.10M has 33 NPS sizes (0.5–60); B36.19M has 13 sizes (0.5–12). **No circumference column. No weight-per-length column.**
-- `src/config/pipe-data.ts` — `PIPE_OD_TABLE` (NPS → OD in inches, 35 NPS sizes 0.5–48, `pipe-data.ts:114`), `PIPE_WALL_TABLE` (NPS → schedule → wall_in, `pipe-data.ts:158`), `NPS_SIZES` array (35 entries, `pipe-data.ts:73`). **No circumference. No weight-per-length.**
-
-Circumference and weight-per-length must be computed (circumference = π × OD; weight per ASME B36.10M formula) or added as new columns.
-
-### Pipe Support Reference UI
-
-- **Pipe Support Calculator page:** `src/app/(dashboard)/pipe-support/page.tsx`
-- **Components directory:** `src/components/pipe-support/` contains:
-  - `SupportCalculator.tsx`, `InputForm.tsx`, `OutputScreen.tsx`, `PdfTriggerButton.tsx`, `SaveCalculationModal.tsx`
-  - `SupportSpecTable.tsx` — filterable 3-row spec table (hardcoded sample data, `SupportSpecTable.tsx:3–23`)
-  - `SupportPhotoIdentifier.tsx` — AI photo-ID widget
-- **Pipe Reference page:** `src/app/(dashboard)/pipe-reference/page.tsx` — multi-tab reference library (Pipe Dims, Fitting Take-Outs B16.9, Flanges B16.5, Valves B16.10, Support Spans MSS SP-69). Imports from `src/config/pipe-data.ts` and `src/config/reference-data.ts`.
-- **Reusability:** The pipe-reference multi-tab pattern is a good reference-page template. `SupportSpecTable` is a reusable filterable table. The `SupportPhotoIdentifier` is the AI photo-ID widget.
-
-### Offline Entry Queue
-
-- **Storage:** IndexedDB, database name `'pipefield-offline'`, version 2. `src/lib/offline-queue.ts`.
-- **Entity types supported:** `weld`, `daily_report`, `spool` — three fixed object stores. **Not arbitrary entity types.** (`src/lib/offline-queue.ts:32`)
-- **Retry handling:** `attempt_count` field incremented on each `markFailed()` call (`src/lib/offline-queue.ts:226–232`). No automatic back-off or max-attempt cap. No conflict-resolution strategy.
-- **Status surface:** `pending | synced | failed`. Exported helpers: `getPendingWelds()`, `getPendingDailyReports()`, `getPendingSpools()`, `getPendingCount()`, `getAllQueueItems()`, `clearSynced()`, `purgeExpired()`.
-- **TTL:** 30 days (`src/lib/offline-queue.ts:19`).
-
-### Photo-ID Offline Queue (7-Day Retention)
-
-- **Storage:** IndexedDB, database name `'pipefield-support-photos'`. `src/lib/support-photo-queue.ts`.
-- **TTL:** 7 days (`src/lib/support-photo-queue.ts:5`).
-- **Retention job:** `purgeExpiredPhotos()` marks expired items; `cleanupQueue()` physically deletes synced/expired items (`src/lib/support-photo-queue.ts:96–117`). Server-side cron cleanup at `src/app/api/cron/support-photo-cleanup/route.ts`.
-- **Limits:** Max 25 pending items, max 100 MB total (`src/lib/support-photo-queue.ts:3–4`).
-
-### Jurisdiction / Code-Edition Rule Engine
-
-**There is no rule engine.** Jurisdiction and governing code are stored as project metadata columns only (`supabase/migrations/20260815_project_standards_config.sql:20–31`):
-- `projects.jurisdiction` (ISO 3166-2, e.g., `'US-TX'`)
-- `projects.governing_code` (free text)
-- `projects.governing_code_year` (integer)
-- `projects.ahj` (Authority Having Jurisdiction, free text)
-
-No engine enforces or interprets rules based on jurisdiction or code edition. The qualification engine (`src/intelligence/engines/qualification-engine.ts`) enforces welder continuity but is not jurisdiction-parameterized.
-
-### Existing Table Schemas — Column Level
-
-**`welds`** (base: `supabase/schema.sql:102–121`; extended: `supabase/setup-all.sql:8–13`; WPS FK: `supabase/migrations/20260702_wps.sql:26`):
-- `id uuid PK`, `organization_id uuid FK`, `project_id uuid FK`, `spool_id uuid FK nullable`
-- `weld_id_number text` (e.g., "W-0001"), `welder_stamp text`, `welder_name text`
-- `status text CHECK ('draft','fit_up_approved','welded','visual_pass','xray_pending','failed','repaired','accepted')`
-- `weld_date date`, `notes text`, `created_by uuid FK`, `created_at timestamptz`, `updated_at timestamptz`
-- Extended: `spool_number text`, `line_number text`, `pipe_size text`, `wall_thickness text`, `weld_process text`
-- `wps_id uuid FK` (references `wps_records`)
-- Material trace: `base_metal_heat_a text`, `base_metal_heat_b text`, `filler_batch_number text`
-
-**`spools`** (base: `supabase/schema.sql:76–96`; extended: `supabase/setup-all.sql:15–32`):
-- `id uuid PK`, `organization_id uuid FK`, `project_id uuid FK`
-- `spool_number text`, `drawing_number text`, `area text`, `line_number text`, `assigned_crew text`
-- `status text CHECK ('designed','material_released','cut','fit_up','welded','nde','painted','released')`
-- Extended: `revision text`, `pipe_size text`, `pipe_schedule text`, `material text`, `service text`
-- `design_pressure numeric(10,2)`, `design_temp numeric(8,2)`, `total_welds integer`, `total_length_in numeric(10,3)`
-- `isometric_ref text`, `priority integer`, `required_date date`, `released_date date`
-
-**`spool_items`** (`supabase/setup-all.sql:40–54`):
-- `id uuid PK`, `spool_id uuid FK`, `organization_id uuid FK`
-- `item_number integer`, `item_type text DEFAULT 'other'`, `description text`, `quantity integer`
-- `length_in numeric(10,3)`, `heat_number text`, `is_cut boolean`, `is_fitted boolean`
-- `notes text`, `created_at timestamptz`
-
-**`weld_photos`** (`supabase/migrations/20260702_weld_photos.sql`):
-- `id uuid PK`, `organization_id uuid FK`, `weld_id uuid FK`
-- `storage_path text`, `file_name text`, `file_size integer`
-- `uploaded_by uuid FK (auth.users)`, `caption text`, `created_at timestamptz`
-
-**`audit_logs`** (`supabase/schema.sql:127–137`):
-- `id uuid PK`, `organization_id uuid FK`, `table_name text`, `record_id uuid`
-- `action text CHECK ('INSERT','UPDATE','DELETE')`
-- `previous_values jsonb`, `new_values jsonb`
-- `performed_by uuid FK (user_profiles)`, `performed_at timestamptz`
-
-### Auth Session Lifetime and Re-auth Policy
-
-- **Token lifetime:** Supabase default 1-hour JWT access token. `src/middleware.ts:7–12`: "The access token expires after 1 hour, and without middleware refreshing it... every API call fails permanently until the user manually signs out/in."
-- **Refresh mechanism:** `supabase.auth.getUser()` called on every non-static request in `src/middleware.ts:55–57`.
-- **Re-auth policy:** No explicit re-authentication challenge found anywhere in the codebase. No `reauthenticate()` call sites.
-
----
-
-## 2.3 Roles
-
-### Current Role Model
-
-Full role list from `src/types/index.ts:9–17` and enforced in `user_profiles.role CHECK` (`supabase/schema.sql:39–42`):
-
-```
-platform_admin       — cross-tenant superadmin; can access /admin; can bypass org scoping
-organization_owner   — per-tenant owner; can manage org, invite, set flags
-administrator        — per-tenant admin
-project_manager
-foreman
-qa_inspector         — QA/QC Inspector
-shop_fabricator
-pipefitter           — default role on registration
-client_viewer        — read-only client access
+export function isFlagEnabled(flag: FlagName): boolean {
+  return FLAGS[flag]
+}
 ```
 
-### Is There a Fitter/Welder Role Distinct from Foreman/QC/Admin?
+- All flags default `false` unless the env var equals the string `'true'`. One exception: `PFOS_BILLING_WELDER_LIMIT` defaults `true` and requires `!== 'false'` to disable (`flags.ts:48`).
+- Server-side check example: `src/app/(field)/layout.tsx:16` — `if (!FLAGS.PFOS_FIELD_MODE) redirect('/dashboard')`.
+- Client-side: components import `FLAGS` directly (tree-shaken in production).
+- Rollback docs referenced at `FEATURE_FLAGS.md` (repo root).
 
-**There is a `pipefitter` role** (`src/types/index.ts:17`). There is **no separate `welder` role**. Welders are tracked in a separate `welders` table (with `stamp`, `cert_expiry`, `process` columns) and linked to welds by `welder_stamp`. A `pipefitter` user can have a `welder_stamp` on their `user_profiles` record (`supabase/schema.sql:45`). The `shop_fabricator` role is closest to a field fabricator. `foreman` is distinct from `qa_inspector`.
+**Existing Field Mode flags relevant to this feature:**
 
-### Is There an Owner/Superadmin Role with Cross-Tenant Permissions?
+| Flag | Default | Purpose |
+|------|---------|---------|
+| `PFOS_FIELD_MODE` | OFF | Master switch — gates the `(field)` layout |
+| `PFOS_FIELD_CALC` | OFF | Calculator engine sub-flag |
 
-**Yes — `platform_admin`.** Confirmed at `src/lib/api-auth.ts:12–14`:
-```typescript
-export const ORG_ADMIN_ROLES = [
-  'platform_admin',
-  'organization_owner',
-  'administrator',
-] as const
+**New flag to add for this feature:**
 ```
-`platform_admin` bypasses org-scoping:
-- `src/app/api/organization/workers/route.ts:88–89`: `if (caller.role !== 'platform_admin') { // Verify target worker is in the same org }`
-- `supabase/migrations/20260710_pc1_rls_helpers.sql:10–12`: `CREATE OR REPLACE FUNCTION public.is_platform_admin() ... SELECT public.get_my_role() = 'platform_admin'`
-- `src/app/(admin)/layout.tsx:20` checks for `platform_admin` via `getCallerProfile()`.
-
-`platform_admin` is assigned only via `/api/admin/users` which itself requires `platform_admin` access (`src/app/api/admin/users/route.ts:15`).
+PFOS_FIELD_ISO_CALC: process.env.PFOS_FIELD_ISO_CALC === 'true'
+```
+Route guard: check both `FLAGS.PFOS_FIELD_MODE` and `FLAGS.PFOS_FIELD_ISO_CALC`.
 
 ---
 
-## 2.4 Inventory the Recall Data
+## 3. Calculator Navigation & Field Mode Module
 
-### `/data/sources/recall/` Directory
+### Routes
 
-**This directory does not exist in the codebase.** A full recursive search (`find /Users/rennerkargbo/Desktop/pipefield-os -name "recall*" -not -path "*/node_modules/*"`) returned zero results. There are no CSV files anywhere in the project outside of `node_modules`.
+- Calculator picker: `src/app/(field)/calc/page.tsx` — `CalcPickerPage`, renders a 2-column grid of cards.
+- Dynamic calculator: `src/app/(field)/calc/[calculator]/page.tsx` — maps `params.calculator` slug → component via `CALCULATOR_MAP`.
 
-- No `/data/sources/recall/` path exists.
-- No recall CSV files exist.
-- No `source_doc`, `verified`, `verified_by`, `verified_against`, or `recall_confidence` columns exist anywhere in the schema.
-- No VALIDATION_REPORT_batch*.md files exist.
-- No "check these first" items can be listed because the source material does not exist.
+**Adding ISO Tap-to-Calculate:** add a new card with `id: 'iso-tap-calc'`, `href: '/calc/iso-tap-calc'` in `CALCS` array (`calc/page.tsx:23–36`), and add a `CALCULATOR_MAP` entry (`calc/[calculator]/page.tsx:22–35`). The new component lives in `src/components/field-mode/calculators/IsoTapCalc.tsx`.
 
-The recall capability is implemented as a SQL function `batch_recall()` in `supabase/migrations/20260710_module3_material_trace.sql:28–79` that queries live `welds` rows by heat number or filler batch against the tenant's production data — not from imported CSV seed data.
+### Existing calculators
+
+| ID | Component | File |
+|----|-----------|------|
+| `simple-offset` | `SimpleOffsetCalc` | `calculators/SimpleOffsetCalc.tsx` |
+| `rolling-offset` | `RollingOffsetCalc` | `calculators/RollingOffsetCalc.tsx` |
+| `parallel-offsets` | `ParallelOffsetsCalc` | `calculators/ParallelOffsetsCalc.tsx` |
+| `cut-bw` | `CutLengthBwCalc` | `calculators/CutLengthBwCalc.tsx` |
+| `cut-threaded` | `CutLengthThreadedCalc` | `calculators/CutLengthThreadedCalc.tsx` |
+| `cut-sw` | `CutLengthSwCalc` | `calculators/CutLengthSwCalc.tsx` |
+| `odd-angle` | `OddAngleCutCalc` | `calculators/OddAngleCutCalc.tsx` |
+| `two-hole-flange` | `TwoHoleFlangeCalc` | `calculators/TwoHoleFlangeCalc.tsx` |
+| `branch-layout` | `BranchLayoutCalc` | `calculators/BranchLayoutCalc.tsx` |
+| `miter` | `MiterCalc` | `calculators/MiterCalc.tsx` |
+| `pipe-weight` | `PipeWeightCalc` | `calculators/PipeWeightCalc.tsx` |
+| `rigging` | `RiggingCalc` | `calculators/RiggingCalc.tsx` |
+| `stud-lookup` | `StudLookupCalc` | `calculators/StudLookupCalc.tsx` |
+
+### Fraction Keypad
+
+`src/components/field-mode/FractionKeypad.tsx`
+
+- Props: `{ value: string, onChange, onSubmit, unit: 'imperial' | 'metric' }`.
+- All buttons: `min-h-[56px]` (glove-friendly). Decimal is a mode toggle, not default entry.
+- Builds strings parseable by `fromFeetInchesFraction()` from `src/lib/field-mode/calc/types.ts`.
+- Backspace: tap = delete one char; hold 600ms = clear all.
+- **Reusable as-is** for ISO Tap-to-Calculate dimension entry.
+
+### Existing geometry functions (`src/lib/field-mode/calc/offsets.ts`)
+
+| Function | Inputs | Outputs | Assumptions |
+|----------|--------|---------|-------------|
+| `simpleOffset` | `offset + angle` OR `offset + run` | `travel, run, angle` | 2D, single elbow |
+| `rollingOffset` | `rise, roll, angle` | `true_offset, travel, run, rotation` | two equal-angle elbows, parallel axes |
+| `parallelOffsets` | 2–4 offset lines | per-line travel/run + clearance violations | independent 2D offsets |
+
+`rollingOffset` at `offsets.ts:55–79` implements the Mode B geometry required by the spec (V, H, θ → T, U). The internal formula is `trueOffsetMm = hypot(rise, roll)`, `travel = trueOffset / sin(θ)`, `run = trueOffset / tan(θ)`. **This is directly reusable for Mode B** with documented assumption verification.
+
+`simpleOffset` at `offsets.ts:36–71` covers the 2D case (roll=0 or rise=0).
+
+**Mode A** (V, H, U known → T, θ_required) is **not yet implemented**. New function needed in `offsets.ts` or the new feature's engine file.
+
+### Cut-length engines (`src/lib/field-mode/calc/cut-length.ts`)
+
+Three async functions, all taking a `ReferenceAdapter`:
+
+- `cutLengthButtWeld` (`cut-length.ts:59`) — takes `center_to_center`, list of `BwFittingSpec`, `assume_lr_standard` flag.
+- `cutLengthSocketWeld` (`cut-length.ts:115`) — SW-specific, out of scope for this feature.
+- `cutLengthThreaded` (`cut-length.ts:183`) — takes `center_to_center`, list of `ThreadedFittingSpec`.
+
+**Critical finding for threaded cut length** (`cut-length.ts:209–222`): the existing `cutLengthThreaded` uses `total_makeup_l1_plus_l3_in` from `ref_npt_threads` as the "engagement/deduction". Per the spec, this is L1 (hand-tight) + L3 (wrench makeup), which is **not** final assembled insertion depth. The spec requires distinguishing these quantities and never substituting one for another without a source. The existing implementation uses the field `total_makeup_l1_plus_l3_in` directly as the per-end deduction — this is approximately correct for threading-in-place but the basis is not documented per-product. The new ISO Tap-to-Calculate threaded strategy must use a typed, explicitly-confirmed engagement record, not silently reuse the existing function.
+
+### Unit/display helpers (`src/lib/field-mode/calc/types.ts`)
+
+| Function | Purpose |
+|----------|---------|
+| `fromFeetInchesFraction(s)` | Parse string → `Length` (internal mm) |
+| `fromMm`, `fromInches`, `fromMetres` | Construct `Length` |
+| `toMm`, `toInches` | Extract value |
+| `formatLength(l, opts)` | Display with rounding; only place rounding occurs |
+| `dualFormat(mm)` | Both units |
+| `fromDegrees`, `fromDegreesMinutes` | Parse angle strings |
+| `toDegrees` | Extract |
+
+The `Length` and `Angle` types are opaque branded types — they cannot be constructed without the factory functions. **These are directly reusable.**
+
+**Gap in existing parser**: `fromFeetInchesFraction` does not handle:
+- Signed values (negative lengths/differences)
+- Unicode fraction characters (¾, etc.)
+- Explicit rejection of NPS pipe-size callouts
+- Ambiguous decimal/thousands separators
+
+The spec's `Measurement` type requires a richer parser with source type (`ocr` | `manual`), raw text preservation, and structured error types — this is new work.
+
+### Existing tests
+
+- `src/lib/field-mode/calc/__tests__/offsets.test.ts` — covers simpleOffset, rollingOffset, parallelOffsets
+- `src/lib/field-mode/calc/__tests__/cut-length.test.ts` — covers BW, SW, threaded
+- `src/lib/field-mode/calc/__tests__/types.test.ts` — parser tests
 
 ---
 
-## 2.5 Risks
+## 4. Fitting/Reference Tables
 
-### New Route Groups
+### Schema summary (`supabase/migrations/20260829_field_mode_reference_tables.sql`)
 
-Adding a new route group (e.g., `(field)`) is low risk in Next.js App Router. Route groups do not affect URL paths. **Risk:** The service worker at `public/sw.js` is a compiled Workbox precache manifest with a hard-coded chunk URL list. Adding new routes triggers a new build which regenerates `sw.js` automatically — no manual SW change needed. The SW scope is `/` root, so any sub-path is within scope.
+Every reference table includes these provenance columns:
+```sql
+verified         BOOLEAN,
+verified_by      TEXT,
+verified_against TEXT,
+verified_at      TIMESTAMPTZ,
+recall_confidence TEXT,  -- 'high'|'medium'|'low'|'computed'|'unrated'|'source-photo'
+source_doc       TEXT,
+standard         TEXT,
+edition          TEXT,
+```
 
-### New Tables
+RLS: each table has `_read_all` (authenticated users) and `_write_owner` (platform_admin) policies.
 
-Adding new tables requires a new migration SQL file. **Risk:** The `supabase/migrations/` directory contains both dated files and ad-hoc scripts applied outside the numbered migration sequence. There is no Supabase CLI lock file (`config.toml` not found). New migrations must be idempotent (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`). **Critical:** RLS must be explicitly enabled on every new table (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`) or data is globally readable by all authenticated users. Several existing tables show this pattern being applied retroactively (see `supabase/migrations/20260805_enable_rls_core_tables.sql`).
+### Relevant tables for this feature
 
-### New Service Worker Scope
+| Table | Rows | verified=true | Source doc |
+|-------|------|---------------|------------|
+| `ref_bw_fittings` | 166 | **0** | `ref_bw_fittings_b16_9.csv` |
+| `ref_threaded_fittings` | 56 | **0** | `ref_threaded_fittings_ctr_to_end.csv` |
+| `ref_npt_threads` | 19 | **0** | `ref_npt_threads_b1_20_1.csv` |
 
-The service worker is registered at `/` scope (no explicit scope override in `next.config.mjs`). A new `/field/...` route is automatically within scope. **Risk:** The Workbox `NetworkFirst` cache for Supabase API URLs caches GET responses for 24 hours (`next.config.mjs`, workboxOptions runtimeCaching). If Field Mode endpoints return large per-user datasets, stale cached responses could surface wrong data after a session switch. This is a pre-existing risk that Field Mode's offline-first pattern will make more visible.
+**All rows have `verified=false`.** Source doc for every row is `claude-memory-2026-08-24 (recall); NOT an independent source`. Edition is `UNSPECIFIED-verify` across all rows.
 
-### Bundle Size
+Note: `ref_bw_fittings` has a separate `derived` column (42 of 166 rows = `true`) meaning the dimension was mathematically derived (e.g., 2A for a return), not that it was independently verified. The `verified` column is always false regardless.
 
-- Current `.next/static/chunks/` total: **4.1 MB across 67 JS chunks**; largest single chunk 344 KB.
-- ~1,300 reference rows as inline JSON: a typical pipe dimension row is ~200–400 bytes. 1,300 rows ≈ 260–520 KB raw. Bundled and gzip-compressed this is likely 40–80 KB. **Manageable.** However, if the data is imported into a client component without `import()` dynamic splitting, it inflates the initial bundle for every dashboard page. Recommendation: lazy-load via `import()` or a dedicated API route.
+**Consequence**: cut length is unavailable for **all** fittings in the existing catalog until at least one row per fitting/size combination receives `verified=true` from an independent source. The feature must ship geometry-only and display the gap clearly.
 
----
+### How data is loaded client-side
 
-## 2.6 Adversarial Self-Check
+`src/lib/field-mode/reference-adapter.ts` — calls `/api/field/ref` server route via `fetch`. The server route uses `createAdminClient` to bypass RLS (service role). Reference data is not cached in IndexedDB currently — it requires network access.
 
-### "I assumed a flag system exists and it doesn't."
+**Consequence for offline use**: Phase 4 must add IDB caching of the fitting/thread catalog before offline cut-length is possible.
 
-**False — confirmed present.** Two-layer flag system at `src/intelligence/flags.ts` (process-env) and `org_feature_flags` table (per-tenant DB overrides). However, no `PFOS_FIELD_MODE` flag exists yet — it must be added.
+### NPT thread data details (`ref_npt_threads_b1_20_1.csv`)
 
-### "I assumed the offline queue handles arbitrary entity types, but it only handles welds."
+Columns include: `tpi`, `pitch_in`, `pitch_mm`, `handtight_L1_in`, `handtight_L1_mm`, `effective_thread_L2_in`, `wrench_makeup_L3_in`, `total_makeup_L1_plus_L3_in`.
 
-**Corrected.** The offline queue (`src/lib/offline-queue.ts`) handles three fixed entity types: `weld`, `daily_report`, `spool`. The `EntityType` type is `'weld' | 'daily_report' | 'spool'` (`src/lib/offline-queue.ts:32`). A Field Mode entity type would require a new IndexedDB object store, union type extension, and new CRUD helpers. The queue is not plug-and-play for new types.
-
-### "I assumed SI-internal is live, but the schema stores inches."
-
-**Confirmed: schema stores imperial.** `src/lib/units.ts:3`: "All internal storage is imperial (inches, feet, psi, lb, °F)." Conversion to SI for display is live via the `formatLength`, `formatPressure`, etc. helpers. Field Mode data entry must store in imperial and display per `project.unit_system`.
-
-### "The service-role client is still reachable from a page a fitter could hit." List every remaining `createAdminClient` call site.
-
-**Pre-existing risk.** Four dashboard/public page routes use `createAdminClient` directly, accessible to any authenticated user (or unauthenticated, for share):
-
-1. `src/app/(dashboard)/projects/[id]/page.tsx:29` — Server Component; tenant-scoped by `eq('organization_id', organizationId)` after `getCallerProfile()`.
-2. `src/app/(dashboard)/spools/[id]/page.tsx:26` — same pattern.
-3. `src/app/(dashboard)/welds/[id]/page.tsx:21` — same pattern.
-4. `src/app/share/[token]/page.tsx:18,140` — public share page; no auth required to reach this route.
-
-In all three dashboard cases, org-scoping is enforced manually via `.eq('organization_id', ...)`. The risk is a missing `.eq` clause creating a cross-tenant data leak. This is a pre-existing architectural risk; Field Mode page routes must follow the same pattern.
-
-All 105 source files that import `createAdminClient` are listed (excluding `src/lib/supabase/admin.ts` which defines it):
-- **Dashboard page routes (fitter-accessible):** `src/app/(dashboard)/projects/[id]/page.tsx`, `src/app/(dashboard)/spools/[id]/page.tsx`, `src/app/(dashboard)/welds/[id]/page.tsx`, `src/app/share/[token]/page.tsx`
-- **API routes** (require auth via `requireAuth`/`requireOrgAdmin`): all files under `src/app/api/**` (~85 files)
-- **Intelligence adapters** (server-only, called from API routes): `src/intelligence/accounting.ts`, `src/intelligence/audit.ts`, `src/intelligence/registry.ts`, `src/intelligence/tier.ts`, all `src/intelligence/adapters/*.ts` (14 files), `src/intelligence/engines/nde-selection-engine.ts`, `src/intelligence/engines/qualification-engine.ts`
-- **Library utilities** (server-only): `src/lib/api-auth.ts`, `src/lib/api-billing-guard.ts`, `src/lib/ai-rate-limit.ts`, `src/lib/notifications.ts`, `src/lib/spool-auto-release.ts`, `src/lib/usage.ts`, `src/lib/weld-events.ts`
-
-### "There is no owner-level role, so reference verification would have to be per-tenant, which is wrong."
-
-**False — `platform_admin` is a confirmed cross-tenant role.** `src/lib/api-auth.ts:12–14`, `src/types/index.ts:10`, `src/app/api/admin/users/route.ts:15`. A `platform_admin` can read and write across all tenants. Reference data verification for Field Mode reference tables can be seeded or managed by `platform_admin`. Per-tenant reference customization (e.g., `pipe_support_catalog`) is gated by `organization_owner` and `administrator` within each tenant.
+**L1 (hand-tight)**, **L2 (effective thread length)**, and **L3 (wrench makeup)** are distinct. The existing `cutLengthThreaded` uses `L1+L3` as the per-end deduction. `final assembled insertion depth` (the distance the male thread end sits inside the female port after assembly) is a different quantity and is **not present** in any existing row. This is the Route 1 vs Route 2 distinction the spec requires.
 
 ---
 
-## Summary of Items Missing for Field Mode
+## 5. Service Worker
 
-| Item | Status |
-|---|---|
-| `PFOS_FIELD_MODE` feature flag | Missing — must be added to `src/intelligence/flags.ts` and `FEATURE_FLAGS.md` |
-| `/data/sources/recall/` recall CSV dataset | Does not exist — must be created if Field Mode requires static recall reference data |
-| `welder` role | Does not exist — only `pipefitter`; Field Mode role mapping must use `pipefitter` and/or `shop_fabricator` |
-| Offline queue for new entity types | Not plug-and-play — new types require explicit object store, type union, and CRUD helpers |
-| Circumference / weight-per-length in pipe dimension data | Not present — must be computed or added to `pipe-data.ts` / `asme_pipe_dimensions.json` |
-| i18n activation | `next-intl` not installed; Field Mode strings will be hardcoded like all other UI |
-| Jurisdiction/code rule engine | Does not exist — only metadata storage; runtime enforcement requires building an engine |
+Configured in `next.config.mjs` via `@ducanh2912/next-pwa@10.2.9` (Workbox).
+
+- **Disabled** in development (`disable: process.env.NODE_ENV === 'development'`).
+- **Output**: `public/sw.js` (no-cache headers applied at `next.config.mjs:108–113`).
+- **Cache ID**: `pipefield-v2`.
+- **Fallback document**: `/offline.html`.
+- **Runtime caching**:
+  - Supabase API: `NetworkFirst`, 24h, 200 entries.
+  - Next.js static chunks: `CacheFirst`, 24h, 200 entries.
+  - Next.js image optimisation: `StaleWhileRevalidate`.
+- **Precache manifest**: generated by Workbox from the build output; covers app shell + static assets automatically.
+- **OCR assets (Tesseract.js worker, Wasm, lang data)**: NOT currently cached — these do not exist yet in the project.
+
+**Offline photo queue** (`src/lib/offline-queue.ts`): IndexedDB DB `pipefield-offline` version 3. Stores: `weld_queue`, `daily_report_queue`, `spool_queue`, `field_weld_queue`. 30-day TTL. Reusable pattern for ISO Tap-to-Calculate snapshots.
 
 ---
 
-Phase 0 complete. Awaiting `APPROVED: PHASE 0`.
+## 6. IndexedDB Abstraction
+
+Library: `idb@8.0.3` (`package.json:46`).
+
+**Existing DB** (`src/lib/offline-queue.ts`):
+- DB name: `pipefield-offline`, schema version 3.
+- Migrations: v1→v2 (added `daily_report_queue`, `spool_queue`), v2→v3 (added `field_weld_queue`).
+- Error handling: write failures are surfaced via try/catch; failed items get `sync_status='failed'` with `sync_error`.
+- Persistent storage: **not requested** in the existing code.
+- Quota handling: not explicitly handled beyond try/catch.
+
+**Second DB** (`src/lib/offline/pipeCalc.ts`): pure calculation module, no IDB.
+
+**New IDB store needed for this feature**: `iso_calc_snapshots` store in a new or extended DB. Recommend extending `pipefield-offline` to version 4 with the new store, following the existing migration pattern.
+
+---
+
+## 7. Auth / Tenancy Pattern
+
+### `getCallerProfile` (`src/lib/api-auth.ts:31`)
+
+Two-strategy auth:
+1. Bearer token from `Authorization` header (injected by `apiFetch()`).
+2. Session cookie via `createServerClient` (standard SSR).
+
+Returns `CallerProfile` with `{ id, auth_user_id, role, organization_id, full_name, status }` or `null`.
+
+### `createAdminClient` usage
+
+Used in: `src/lib/api-auth.ts`, `src/lib/supabase/admin.ts`, intelligence adapters, `src/lib/field-mode/reference-adapter.ts` (server-side via the `/api/field/ref` route). **Never called directly in client components** — only in server routes and scripts.
+
+**For this feature**: any server API routes (e.g. snapshot save) must use `getCallerProfile`. Reference data reads continue through `/api/field/ref`. No `createAdminClient` in new client-side code.
+
+### Session policy
+
+See `src/lib/field-mode/SESSION_POLICY.md`. Access token TTL: 1h; refresh: 7 days. Middleware refreshes on every navigation. No re-auth challenge.
+
+**Offline reopen**: current policy does not explicitly permit offline reopen of Field Mode without a token refresh. An existing session may work if the access token has not expired. Phase 4 must document this limitation.
+
+---
+
+## 8. Design System
+
+### Color tokens (`tailwind.config.ts:12–35`)
+
+- `surface-{50–950}`: CSS-variable-driven (flip on theme change).
+- `brand-{50–950}`: PipeField orange (`#f97316` = brand-500).
+- Semantic: `success=#22c55e`, `warning=#f59e0b`, `danger=#ef4444`, `info=#3b82f6`.
+
+### Touch targets
+
+- Spacing token `touch: '2.75rem'` (44px) defined in `tailwind.config.ts:46`.
+- Convention in field calculators: `min-h-[56px]` for interactive elements (larger than the 44px minimum). See `FractionKeypad.tsx:29`, `calc/[calculator]/page.tsx:57`.
+
+### Accessibility patterns observed
+
+- `aria-label` on icon-only buttons (back buttons, keypad keys).
+- `aria-hidden` on decorative SVGs.
+- `onPointerDown` preferred over `onClick` in the keypad (glove-compatible, prevents ghost clicks).
+- No `aria-live` regions observed in calculator components — this feature should add them for calculation result announcements.
+
+### Diagram components
+
+`src/components/field-mode/diagrams/` contains SVG-based diagrams for each calculator type. A `RollingOffsetDiagram.tsx` exists and shows rise/roll/travel geometry — directly reusable or adaptable for the offset confirmation step.
+
+---
+
+## 9. OCR / Image Libraries
+
+**Tesseract.js**: NOT installed. Not in `package.json`, not in `node_modules`.
+
+**Any other OCR/CV**: none found — `grep` for `tesseract`, `opencv`, `jimp`, `konva`, `canvas` in `package.json` returned no results.
+
+**Image handling already present**:
+- `src/lib/strip-exif.ts` — strips EXIF/APP1 segments from JPEG before AI processing. **Directly reusable** for ISO Tap-to-Calculate image ingestion.
+- `src/app/api/v1/supports/identify/route.ts` — accepts image upload, strips EXIF, sends to OpenAI vision. This is a server route pattern to reference, not reuse directly.
+- `src/lib/field-mode/calc/__tests__/` — no image-related tests.
+
+**CSP note** (`next.config.mjs:27`): current `img-src` allows `self data: blob: *.supabase.co`. Tesseract.js worker scripts loaded from `blob:` would be blocked by the current `worker-src` (not explicitly set — defaults to `script-src`). **CSP must be updated** to add `worker-src blob:` for Tesseract workers.
+
+**Bundle-size budget**: no explicit budget configured. Bundle analyzer available via `ANALYZE=true npm run build`.
+
+**Tesseract.js v4/v5 size estimate**:
+- `tesseract.js` package: ~1.5MB minified (worker + core separate).
+- `tesseract-core.wasm`: ~3.5MB (downloaded at runtime or self-hosted).
+- `eng.traineddata.gz`: ~4MB (English language data).
+- Total offline footprint: ~9MB additional to self-host. Load only when flag is ON.
+
+---
+
+## 10. PDF / CAD Import Path
+
+No general PDF-to-drawing or CAD import pipeline exists. Related:
+- `mammoth@1.12.0` — .docx import for AI document embedding.
+- `pdf-parse@2.4.5` — PDF text extraction for AI knowledge sources.
+- Neither is used for isometric drawings. Both are in server-side intelligence adapter paths, not Field Mode.
+
+**Conclusion**: no existing PDF/CAD import to reuse. Out of scope per spec.
+
+---
+
+## Proposed File Layout
+
+```
+src/features/iso-tap-calculate/
+├── README.md                        # Feature README (Phase 5)
+│
+├── engines/                         # Phase 1 — pure TypeScript, no React/browser/DB
+│   ├── measurement-parser.ts        # 1A: raw text → Measurement | ParseError | Ambiguity
+│   ├── geometry-engine.ts           # 1B: Mode A (V,H,U) and Mode B (V,H,θ) — extends offsets.ts
+│   ├── bw-strategy.ts               # 1C: butt-weld cut length strategy
+│   ├── threaded-strategy.ts         # 1C: threaded NPT cut length strategy
+│   ├── schemas.ts                   # Zod schemas for all engine I/O
+│   └── __tests__/
+│       ├── measurement-parser.test.ts
+│       ├── geometry-engine.test.ts
+│       ├── bw-strategy.test.ts
+│       └── threaded-strategy.test.ts
+│
+├── catalog/                         # Phase 2 — catalog adapter + data provenance
+│   ├── fitting-catalog-adapter.ts   # Adapter over existing ReferenceAdapter
+│   ├── engagement-record.ts         # Project-entered engagement record type + Zod schema
+│   ├── coverage-report.ts           # Data gap reporting
+│   └── __tests__/
+│       └── fitting-catalog.test.ts
+│
+├── storage/                         # Phase 4 — IndexedDB snapshot store
+│   ├── snapshot-schema.ts           # IDB schema + migrations (extends pipefield-offline v4)
+│   ├── snapshot-store.ts            # CRUD for iso_calc_snapshots
+│   └── __tests__/
+│       └── snapshot-store.test.ts
+│
+├── ocr/                             # Phase 3 — OCR adapter boundary
+│   ├── ocr-adapter.ts               # Interface (lazy-loaded only when flag ON)
+│   ├── tesseract-adapter.ts         # Tesseract.js implementation
+│   └── types.ts                     # OcrRegion, BoundingBox, OcrResult
+│
+└── ui/                              # Phase 3 — React components
+    ├── IsoTapCalc.tsx               # Top-level calculator component (registered in CALCULATOR_MAP)
+    ├── ImageImportStep.tsx          # Step 1: import/capture + preview/crop/zoom/pan
+    ├── ModeSelectStep.tsx           # Step 2: Mode A vs Mode B selection
+    ├── DimensionConfirmStep.tsx     # Steps 3–4: field selection + OCR confirm
+    ├── FittingSelectStep.tsx        # Step 5: BW or Threaded NPT, per-end fitting + gap/engagement
+    ├── ResultsStep.tsx              # Step 6: geometry, deductions, warnings, save
+    ├── EngagementRecordForm.tsx     # Project-entered engagement entry with provenance
+    └── OverlayCanvas.tsx            # Bounding-box overlay (canonical image coords → viewport)
+```
+
+---
+
+## Existing Modules to Reuse
+
+| Module | Path | What to reuse |
+|--------|------|---------------|
+| Feature flags | `src/intelligence/flags.ts` | Add `PFOS_FIELD_ISO_CALC`; import `FLAGS`, `isFlagEnabled` |
+| Calculator route picker | `src/app/(field)/calc/page.tsx` | Add new card to `CALCS` array (line 23) |
+| Calculator dynamic route | `src/app/(field)/calc/[calculator]/page.tsx` | Add entry to `CALCULATOR_MAP` (line 22) |
+| Fraction Keypad | `src/components/field-mode/FractionKeypad.tsx` | Direct reuse for manual dimension entry |
+| Length / Angle opaque types | `src/lib/field-mode/calc/types.ts` | `fromMm`, `fromInches`, `formatLength`, `dualFormat`, `fromFeetInchesFraction`, `fromDegrees`, `fromDegreesMinutes` |
+| `CalcResult` / `RefRow` / error types | `src/lib/field-mode/calc/types.ts` | Direct reuse |
+| `rollingOffset` | `src/lib/field-mode/calc/offsets.ts:55` | Mode B geometry (V, H, θ → T, U) — verify assumptions |
+| `ReferenceAdapter` interface | `src/lib/field-mode/calc/reference.ts` | `ThreadedFittingRow`, `NptThreadRow`, `BwFittingRow` |
+| `createSupabaseReferenceAdapter` | `src/lib/field-mode/reference-adapter.ts` | Wrap for ISO Tap catalog adapter |
+| Offline queue IDB pattern | `src/lib/offline-queue.ts` | Version migration pattern, `idb` usage |
+| `stripExif` | `src/lib/strip-exif.ts` | Apply to imported images before any processing |
+| `getCallerProfile` | `src/lib/api-auth.ts` | Server routes for snapshot save |
+| Design tokens | `tailwind.config.ts` | `surface-*`, `brand-*`, `touch` spacing |
+| Rolling offset diagram | `src/components/field-mode/diagrams/RollingOffsetDiagram.tsx` | Reference for geometry diagram in UI |
+| Field locale | `src/lib/field-mode/locale.ts` | Add ISO Tap strings here |
+| Offline reference cache | `src/lib/field-mode/offline-reference-cache.ts` | Extend for fitting catalog offline readiness |
+
+---
+
+## New Dependencies
+
+| Dependency | Purpose | Size estimate | Notes |
+|------------|---------|---------------|-------|
+| `tesseract.js` ~5.x | OCR engine | ~1.5MB package JS; ~3.5MB core.wasm; ~4MB eng.traineddata | Self-host worker + Wasm + lang data. Lazy-load behind flag. Verify current API before using. |
+| None others | — | — | `zod`, `idb`, `react-hook-form`, `sonner` already installed |
+
+Total new bundle addition (when flag ON, lazy): ~9MB at first "prepare offline" download; nothing loaded when flag OFF.
+
+**CSP change required**: add `worker-src blob:` to `ContentSecurityPolicy` in `next.config.mjs:27` so Tesseract.js worker `blob:` URL resolves.
+
+---
+
+## Open Questions
+
+1. **`rollingOffset` reuse for Mode B**: `rollingOffset` (`offsets.ts:55`) accepts `{ rise, roll, angle }` and produces `{ travel, run, rotation }`. The rotation angle (`atan2(roll, rise)`) is computed but its reference convention is not documented in the source. The spec says "roll orientation only if the reference convention is explicitly labelled and tested; otherwise omit." **Decision needed**: document and expose the convention, or suppress it in the ISO Tap UI.
+
+2. **Mode A gap**: no existing function computes `T = hypot(V, H, U)` and `θ = atan2(O, U)` from three known dimensions. A new function is needed. It can live in `src/features/iso-tap-calculate/engines/geometry-engine.ts` (additive, not modifying offsets.ts), or be added to `offsets.ts` as a new export. **Recommendation**: new file — keeps scope clean.
+
+3. **Threaded catalog data (Route 1 vs Route 2)**: all 56 threaded fitting rows and all 19 NPT thread rows have `verified=false` and `source_doc = "claude-memory-2026-08-24 (recall); NOT an independent source"`. Route 1 (verified engagement catalog) will be **empty at pilot start**. Route 2 (project-entered values with named source) will be the only working path. **Question**: is there a Supabase table or org-approval policy for project-entered reference data already, or does Phase 2 need to define this? (Search found no existing `project_ref_` tables.)
+
+4. **`cutLengthThreaded` existing behavior**: the existing function uses `L1+L3` from `ref_npt_threads` as the per-end engagement deduction without user confirmation of the basis. The ISO Tap-to-Calculate threaded strategy must not reuse this function for cut length — it needs its own explicitly-confirmed engagement record. **Confirm**: should the existing `cut-threaded` calculator be left unchanged (its users accept the current behavior), or updated? Recommendation: leave unchanged; the ISO Tap strategy is a separate typed implementation.
+
+5. **Persistent storage request**: not currently requested (`navigator.storage.persist()` absent). Phase 4 should call it. **Confirm**: is the expected UX to silently request, or show a prompt explaining why?
+
+6. **OCR worker CSP in Capacitor (iOS)**: the Capacitor WebView CSP is set in `ios/App/App/Info.plist` (NSAppTransportSecurity). Tesseract.js uses `blob:` worker URLs and Wasm — iOS WKWebView requires `wasm-eval` in the CSP (or `unsafe-eval` for older iOS). This needs testing. Currently `ITSAppUsesNonExemptEncryption=false` in plist — Wasm does not change this.
+
+7. **Image ingestion in Capacitor**: `@capacitor/camera` is not installed (only `@capacitor/push-notifications`, `@capacitor-mlkit/barcode-scanning`). Camera capture for iOS will need either `@capacitor/camera` (new dep, ~small) or the native `<input type="file" accept="image/*" capture="environment">` approach (zero new dep, supported in WKWebView). **Recommendation**: use file input — no new native package needed, works in browser and iOS PWA/Capacitor.
+
+8. **`ref_threaded_fittings` standard column**: rows show `"ASME B16.11 forged, class 2000"` as the standard, mixed with `"ASME B16.3 malleable"` — or are all rows B16.11? The spec explicitly forbids treating B16.3 and B16.11 as interchangeable. **Need to verify** the actual standard distribution in the CSV and confirm the `standard` column is populated correctly before the catalog adapter filters on it.
+
+9. **`FEATURE_FLAGS.md`**: referenced in `flags.ts:7` but not present in the repo root (only `flags.ts` was found). Either it was never created or it lives elsewhere. Phase 1 should create or locate it.
+
+10. **Offline readiness for reference data**: `createSupabaseReferenceAdapter` uses `fetch` to `/api/field/ref` — this fails offline. `src/lib/field-mode/offline-reference-cache.ts` exists but its implementation needs review to confirm it can cache fitting/thread rows for offline use. If it cannot, Phase 4 must extend it or add a separate catalog cache in IDB.
+
+---
+
+*End of Phase 0. Awaiting `APPROVED: PHASE 0`.*
