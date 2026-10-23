@@ -108,6 +108,10 @@
 		</dict>
 	</dict>
 
+	<!-- ── Export compliance — app uses no custom encryption (HTTPS only, via OS) ── -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<!-- ── Launch storyboard ── -->
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
