@@ -274,3 +274,17 @@ img, a {
     user-select: text;  /* re-enable for editable fields */
   }
 }
+
+/* MobileDrawer: prevent body scroll when drawer is open (WKWebView-safe) */
+html.drawer-open,
+html.drawer-open body {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* MobileDrawer: contain scroll within drawer panel itself */
+.drawer-panel {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}

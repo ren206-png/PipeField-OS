@@ -182,14 +182,14 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
     onClose()
   }, [pathname, onClose])
 
-  // Lock body scroll when open
+  // Lock body scroll when open — class-based to work in WKWebView
   useEffect(() => {
     if (open) {
-      document.body.style.overflow = 'hidden'
+      document.documentElement.classList.add('drawer-open')
     } else {
-      document.body.style.overflow = ''
+      document.documentElement.classList.remove('drawer-open')
     }
-    return () => { document.body.style.overflow = '' }
+    return () => { document.documentElement.classList.remove('drawer-open') }
   }, [open])
 
   if (!open) return null
@@ -220,7 +220,7 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
       />
 
       {/* Drawer panel */}
-      <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 bg-surface-900 border-t border-surface-700 rounded-t-2xl max-h-[85vh] overflow-y-auto animate-slide-in pb-safe">
+      <div className="drawer-panel lg:hidden fixed inset-x-0 bottom-0 z-50 bg-surface-900 border-t border-surface-700 rounded-t-2xl max-h-[85vh] overflow-y-auto animate-slide-in pb-safe">
         {/* Handle */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-surface-800">
           <div className="flex items-center gap-3">
