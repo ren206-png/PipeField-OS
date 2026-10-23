@@ -6,15 +6,19 @@
 //   - "Calculate" disabled until ALL fields are confirmed (confirmed=true)
 //   - parsed Measurement starts with confirmed=false
 //   - User must tick a confirm checkbox per field
-//   - OCR "Tap region" is a placeholder — stores coordinates only
+//   - OCR result is never auto-confirmed; user must check the checkbox
+//   - TesseractAdapter is lazy-init on first "Tap region" press,
+//     reused across fields in the same session
 // ============================================================
-import React, { useState } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { parseMeasurement } from '../engines/measurement-parser'
 import { computeModeA, computeModeB } from '../engines/geometry-engine'
 import type { Measurement, ParseResult, ModeAResult, ModeBResult, GeometryError } from '../engines/schemas'
 import type { CalcMode } from './ModeSelectStep'
 import { dualFormat } from '@/lib/field-mode/calc/types'
+import { OverlayCanvas } from './OverlayCanvas'
+import type { OcrRegion } from '../ocr/ocr-adapter'
 
 // A field state for one dimension
 interface FieldState {
@@ -23,6 +27,7 @@ interface FieldState {
   parseError: string | null
   confirmed: boolean
   unit: 'imperial' | 'metric'
+  ocrWarning?: string
 }
 
 function emptyField(): FieldState {
@@ -33,15 +38,18 @@ type GeometryOutput = ModeAResult | ModeBResult | GeometryError | null
 
 interface DimensionEntryStepProps {
   mode: CalcMode
-  imageLoaded: boolean
+  imageBlob?: Blob | null
+  imageNaturalWidth?: number
+  imageNaturalHeight?: number
+  rotation?: 0 | 90 | 180 | 270
   onResult: (result: ModeAResult | ModeBResult) => void
   onBack: () => void
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  rise: 'Rise (V) — perpendicular height difference',
-  roll: 'Roll (H) — side-to-side difference',
-  run:  'Run (U) — axial distance between elbow centrelines',
+  rise:  'Rise (V) — perpendicular height difference',
+  roll:  'Roll (H) — side-to-side difference',
+  run:   'Run (U) — axial distance between elbow centrelines',
   angle: 'Elbow angle (θ) — degrees',
 }
 
@@ -54,7 +62,15 @@ function parseField(raw: string, unit: 'imperial' | 'metric'): { m: Measurement 
   return { m: null, err: result.reason }
 }
 
-export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: DimensionEntryStepProps) {
+export function DimensionEntryStep({
+  mode,
+  imageBlob,
+  imageNaturalWidth = 0,
+  imageNaturalHeight = 0,
+  rotation = 0,
+  onResult,
+  onBack,
+}: DimensionEntryStepProps) {
   const [rise,  setRise]  = useState<FieldState>(emptyField())
   const [roll,  setRoll]  = useState<FieldState>(emptyField())
   const [run,   setRun]   = useState<FieldState>(emptyField())
@@ -62,8 +78,24 @@ export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: Dime
   const [angleDeg, setAngleDeg]       = useState<number | null>(null)
   const [angleConfirmed, setAngleConfirmed] = useState(false)
 
-  const [activeField, setActiveField] = useState<'rise' | 'roll' | 'run' | null>(null)
-  const [geoResult, setGeoResult]     = useState<GeometryOutput>(null)
+  const [activeField, setActiveField]         = useState<'rise' | 'roll' | 'run' | null>(null)
+  // Which field is awaiting an OCR region tap
+  const [ocrTargetField, setOcrTargetField]   = useState<'rise' | 'roll' | 'run' | null>(null)
+  const [ocrPending, setOcrPending]           = useState(false)
+  const [geoResult, setGeoResult]             = useState<GeometryOutput>(null)
+
+  // Lazy TesseractAdapter — created once on first tap, reused
+  const ocrAdapterRef = useRef<import('../ocr/tesseract-adapter').TesseractAdapter | null>(null)
+
+  const getOcrAdapter = useCallback(async () => {
+    if (!ocrAdapterRef.current) {
+      const { TesseractAdapter } = await import('../ocr/tesseract-adapter')
+      ocrAdapterRef.current = new TesseractAdapter()
+    }
+    return ocrAdapterRef.current
+  }, [])
+
+  const imageLoaded = !!(imageBlob && imageNaturalWidth && imageNaturalHeight)
 
   const fields = mode === 'mode-a'
     ? (['rise', 'roll', 'run'] as const)
@@ -76,9 +108,9 @@ export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: Dime
     run:   (s: FieldState) => { setRun(s);  setGeoResult(null) },
   }
 
-  function updateRaw(id: 'rise' | 'roll' | 'run', raw: string, unit: 'imperial' | 'metric') {
+  function updateRaw(id: 'rise' | 'roll' | 'run', raw: string, unit: 'imperial' | 'metric', ocrWarning?: string) {
     const { m, err } = parseField(raw, unit)
-    fieldSetters[id]({ raw, measurement: m, parseError: err, confirmed: false, unit })
+    fieldSetters[id]({ raw, measurement: m, parseError: err, confirmed: false, unit, ocrWarning })
   }
 
   function confirm(id: 'rise' | 'roll' | 'run', checked: boolean) {
@@ -92,6 +124,48 @@ export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: Dime
     setGeoResult(null)
     const n = parseFloat(raw)
     setAngleDeg(isNaN(n) ? null : n)
+  }
+
+  // Called when user selects a region on the overlay canvas
+  async function onRegionSelected(region: OcrRegion) {
+    if (!ocrTargetField || !imageBlob) return
+    const targetId = ocrTargetField
+    setOcrTargetField(null)
+    setOcrPending(true)
+
+    try {
+      const adapter = await getOcrAdapter()
+      const result  = await adapter.recognizeRegion(imageBlob, region)
+      const raw     = result.rawText.trim()
+      const warning = result.confidence < 0.5
+        ? `Low OCR confidence (${Math.round(result.confidence * 100)}%) — please verify`
+        : undefined
+
+      if (raw) {
+        // Parse as OCR source — never auto-confirmed
+        const { m, err } = parseField(raw, fieldMap[targetId].unit)
+        fieldSetters[targetId]({
+          raw,
+          measurement: m ? { ...m, sourceType: 'ocr' as const, confirmed: false } : null,
+          parseError: err,
+          confirmed: false,
+          unit: fieldMap[targetId].unit,
+          ocrWarning: warning,
+        })
+      } else {
+        fieldSetters[targetId]({
+          ...fieldMap[targetId],
+          ocrWarning: 'OCR found no text in that region — try a larger area or enter manually',
+        })
+      }
+    } catch {
+      fieldSetters[targetId]({
+        ...fieldMap[targetId],
+        ocrWarning: 'OCR failed — please enter manually',
+      })
+    } finally {
+      setOcrPending(false)
+    }
   }
 
   const allConfirmed = mode === 'mode-a'
@@ -111,8 +185,8 @@ export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: Dime
       if (r.kind === 'mode-a') onResult(r)
     } else {
       const r = computeModeB({
-        rise:  { ...rise.measurement!, confirmed: true },
-        roll:  { ...roll.measurement!, confirmed: true },
+        rise:     { ...rise.measurement!, confirmed: true },
+        roll:     { ...roll.measurement!, confirmed: true },
         angleDeg: angleDeg!,
       })
       setGeoResult(r)
@@ -122,6 +196,46 @@ export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: Dime
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      {/* Image overlay in selection mode */}
+      {imageLoaded && ocrTargetField && (
+        <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: `${imageNaturalWidth}/${imageNaturalHeight}` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={URL.createObjectURL(imageBlob)}
+            alt="Drawing"
+            className="w-full h-full object-contain"
+            style={{ transform: `rotate(${rotation}deg)` }}
+          />
+          <OverlayCanvas
+            imageNaturalWidth={imageNaturalWidth}
+            imageNaturalHeight={imageNaturalHeight}
+            rotation={rotation}
+            boxes={[]}
+            selectionMode
+            onRegionSelected={onRegionSelected}
+          />
+          <div className="absolute top-2 left-0 right-0 flex justify-center">
+            <span className="bg-blue-800/90 text-white text-xs rounded-full px-3 py-1">
+              Drag to select the dimension on the drawing
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOcrTargetField(null)}
+            className="absolute top-2 right-2 min-h-[44px] min-w-[44px] bg-surface-800/80 text-surface-300 rounded-full text-lg flex items-center justify-center"
+            aria-label="Cancel region selection"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {ocrPending && (
+        <div className="bg-surface-800 border border-surface-700 rounded-xl p-3 text-center text-surface-300 text-sm animate-pulse">
+          Reading dimension…
+        </div>
+      )}
+
       {/* Dimension fields */}
       {fields.map(id => {
         const fs = fieldMap[id]
@@ -149,20 +263,29 @@ export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: Dime
               >
                 {fs.raw || <span className="text-surface-600">tap…</span>}
               </div>
-              {/* Tap region placeholder (future OCR) */}
+              {/* Tap region — opens image selection mode */}
               {imageLoaded && (
                 <button
                   type="button"
                   title="Tap a number on the drawing"
-                  className="min-h-[56px] min-w-[56px] rounded-xl bg-surface-800 border border-surface-700 text-amber-400 text-xl flex items-center justify-center"
+                  className={`min-h-[56px] min-w-[56px] rounded-xl border text-xl flex items-center justify-center transition-colors ${
+                    ocrTargetField === id
+                      ? 'bg-blue-700 border-blue-500 text-white'
+                      : 'bg-surface-800 border-surface-700 text-amber-400'
+                  }`}
                   aria-label="Tap a region on the drawing"
-                  onClick={() => {/* Phase 3 OCR placeholder — stores region coords when image is tapped */}}
+                  onClick={() => setOcrTargetField(ocrTargetField === id ? null : id)}
+                  disabled={ocrPending}
                 >
                   ⊹
                 </button>
               )}
             </div>
 
+            {/* OCR warning */}
+            {fs.ocrWarning && (
+              <p className="text-amber-400 text-xs mb-1" role="alert">{fs.ocrWarning}</p>
+            )}
             {/* Parse feedback */}
             {fs.parseError && (
               <p className="text-red-400 text-xs mb-1" role="alert">{fs.parseError}</p>
@@ -170,6 +293,9 @@ export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: Dime
             {fs.measurement && !fs.parseError && (
               <p className="text-green-400 text-xs mb-1">
                 {dualFormat(fs.measurement.valueMm).imperial} · {dualFormat(fs.measurement.valueMm).metric}
+                {fs.measurement.sourceType === 'ocr' && (
+                  <span className="text-amber-400 ml-2">(OCR — please verify before confirming)</span>
+                )}
               </p>
             )}
 
@@ -242,7 +368,7 @@ export function DimensionEntryStep({ mode, imageLoaded, onResult, onBack }: Dime
         />
       )}
 
-      {/* Geometry result */}
+      {/* Geometry result error */}
       {geoResult && geoResult.kind === 'geometry-error' && (
         <div className="bg-red-950/30 border border-red-800 rounded-xl p-3">
           <p className="text-red-400 text-sm font-medium">Calculation error</p>

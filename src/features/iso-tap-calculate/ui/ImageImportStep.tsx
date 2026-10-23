@@ -13,7 +13,7 @@ import type { BoundingBox } from '../ocr/types'
 import { OverlayCanvas } from './OverlayCanvas'
 
 interface ImageImportStepProps {
-  onImageReady: (blob: Blob, url: string) => void
+  onImageReady: (blob: Blob, url: string, naturalWidth: number, naturalHeight: number, rotation: 0 | 90 | 180 | 270) => void
   onSkip: () => void
 }
 
@@ -102,8 +102,8 @@ export function ImageImportStep({ onImageReady, onSkip }: ImageImportStepProps) 
   }
 
   function handleContinue() {
-    if (!blob || !previewUrl) return
-    onImageReady(blob, previewUrl)
+    if (!blob || !previewUrl || !naturalSize) return
+    onImageReady(blob, previewUrl, naturalSize.w, naturalSize.h, rotation)
   }
 
   const rotatedStyle: React.CSSProperties = {

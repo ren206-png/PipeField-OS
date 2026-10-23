@@ -128,6 +128,14 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
         ],
       },
+      {
+        // Self-hosted Tesseract.js OCR assets — immutable, long-lived cache.
+        // Version-pinned files; update paths when upgrading tesseract.js.
+        source: '/iso-calc-ocr/:file*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
     ]
   },
 }

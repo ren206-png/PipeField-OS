@@ -45,10 +45,11 @@ export class TesseractAdapter implements OcrAdapter {
       // Dynamic import — Tesseract.js is only loaded here
       const { createWorker } = await import('tesseract.js')
       this.worker = await createWorker('eng', 1, {
-        // Use blob: URLs for the worker (CSP: worker-src blob: 'self')
-        workerPath: undefined,    // default — uses blob URL
-        corePath: undefined,
-        langPath: undefined,
+        // Self-hosted assets from public/iso-calc-ocr/ (no CDN at runtime).
+        // These files are copied from node_modules at build time and served locally.
+        workerPath: '/iso-calc-ocr/tesseract-worker.min.js',
+        corePath:   '/iso-calc-ocr/tesseract-core.wasm',
+        langPath:   '/iso-calc-ocr/',
       })
       await this.worker.setParameters({
         tessedit_char_whitelist: CHAR_WHITELIST,

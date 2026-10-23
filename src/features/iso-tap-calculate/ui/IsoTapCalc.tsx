@@ -31,9 +31,16 @@ function StepIndicator({ current }: { current: Step }) {
   )
 }
 
+interface ImageMeta {
+  blob: Blob
+  naturalWidth: number
+  naturalHeight: number
+  rotation: 0 | 90 | 180 | 270
+}
+
 export function IsoTapCalc() {
   const [step, setStep]         = useState<Step>('image')
-  const [imageBlob, setImageBlob] = useState<Blob | null>(null)
+  const [imageMeta, setImageMeta] = useState<ImageMeta | null>(null)
   const [mode, setMode]         = useState<CalcMode | null>(null)
   const [geoResult, setGeoResult] = useState<ModeAResult | ModeBResult | null>(null)
   const [cutResult, setCutResult] = useState<BwResult | ThreadedResult | null>(null)
@@ -41,7 +48,7 @@ export function IsoTapCalc() {
 
   function reset() {
     setStep('image')
-    setImageBlob(null)
+    setImageMeta(null)
     setMode(null)
     setGeoResult(null)
     setCutResult(null)
@@ -55,7 +62,10 @@ export function IsoTapCalc() {
       <div className="flex-1 overflow-y-auto">
         {step === 'image' && (
           <ImageImportStep
-            onImageReady={(blob) => { setImageBlob(blob); setStep('mode') }}
+            onImageReady={(blob, _url, naturalWidth, naturalHeight, rotation) => {
+              setImageMeta({ blob, naturalWidth, naturalHeight, rotation })
+              setStep('mode')
+            }}
             onSkip={() => setStep('mode')}
           />
         )}
@@ -70,7 +80,10 @@ export function IsoTapCalc() {
         {step === 'dimensions' && mode && (
           <DimensionEntryStep
             mode={mode}
-            imageLoaded={imageBlob !== null}
+            imageBlob={imageMeta?.blob}
+            imageNaturalWidth={imageMeta?.naturalWidth}
+            imageNaturalHeight={imageMeta?.naturalHeight}
+            rotation={imageMeta?.rotation}
             onResult={r => { setGeoResult(r); setStep('fittings') }}
             onBack={() => setStep('mode')}
           />
