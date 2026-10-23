@@ -26,7 +26,9 @@ import {
   MoveHorizontal,
   Award,
   Shield,
+  Mail,
 } from 'lucide-react'
+import ContactForm from '@/components/ContactForm'
 
 export default async function RootPage() {
   const supabase = await createClient()
@@ -699,8 +701,49 @@ export default async function RootPage() {
         </div>
       </section>
 
+      {/* ── CONTACT ─────────────────────────────────────────── */}
+      <section id="contact" className="py-24 bg-surface-900 border-t border-surface-800">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
+            {/* Left — copy */}
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-brand-400">
+                <Mail className="h-3.5 w-3.5" />
+                Get In Touch
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-surface-50 mb-4">
+                Have a question?<br />
+                <span className="text-brand-500">We&apos;d love to hear from you.</span>
+              </h2>
+              <p className="text-surface-400 text-lg mb-8">
+                Whether you&apos;re evaluating PipeField OS for your crew, need help getting set up,
+                or have a feature request — send us a message and we&apos;ll get back to you fast.
+              </p>
+              <div className="space-y-4">
+                {[
+                  'Questions about plans & pricing',
+                  'Help setting up your organization',
+                  'Feature requests & feedback',
+                  'Enterprise & custom integrations',
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-3 text-surface-300">
+                    <CheckCircle2 className="h-4 w-4 text-brand-500 flex-shrink-0" />
+                    <span className="text-sm">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — form */}
+            <div className="rounded-2xl border border-surface-700 bg-surface-800/60 p-8">
+              <ContactForm />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── FOOTER ──────────────────────────────────────────── */}
-      <footer id="contact" className="border-t border-surface-800 bg-surface-900 py-12">
+      <footer className="border-t border-surface-800 bg-surface-900 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid sm:grid-cols-3 gap-8 items-center">
             {/* Left */}
