@@ -17,7 +17,7 @@ import {
   ListChecks,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { MobileDrawer } from './MobileDrawer'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -37,6 +37,7 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
 export function MobileNav() {
   const pathname = usePathname()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const handleCloseDrawer = useCallback(() => setDrawerOpen(false), [])
 
   function isActive(href: string): boolean {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -103,7 +104,7 @@ export function MobileNav() {
       </nav>
 
       {/* Full-screen drawer for "More" */}
-      <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <MobileDrawer open={drawerOpen} onClose={handleCloseDrawer} />
     </>
   )
 }
