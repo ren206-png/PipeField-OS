@@ -275,12 +275,10 @@ img, a {
   }
 }
 
-/* MobileDrawer: prevent body scroll when drawer is open (WKWebView-safe) */
-html.drawer-open,
+/* MobileDrawer: prevent scroll when drawer is open */
 html.drawer-open body {
   overflow: hidden;
-  position: fixed;
-  width: 100%;
+  touch-action: none;
 }
 
 /* MobileDrawer: contain scroll within drawer panel itself */
