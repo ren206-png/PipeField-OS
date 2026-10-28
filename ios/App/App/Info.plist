@@ -87,10 +87,6 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>PipeField OS saves inspection photos to your photo library.</string>
 
-	<!-- Location — for geo-tagging weld inspection records -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>PipeField OS can optionally tag weld inspection records with your location in the field.</string>
-
 	<!-- ── App Transport Security ── -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
@@ -125,9 +121,7 @@
 	</array>
 
 	<!-- WKAppBoundDomains intentionally omitted.
-	     The browser toolbar is suppressed via the apphttps:// custom URL scheme
-	     proxy (VercelProxyHandler). Adding WKAppBoundDomains here would block
-	     Capacitor's user script injection into apphttps:// pages because custom
-	     schemes are not recognised as app-bound domains by WebKit. -->
+	     The app loads directly from https://pipefield-os.com via server.url.
+	     limitsNavigationsToAppBoundDomains is false in capacitor.config.ts. -->
 </dict>
 </plist>
