@@ -17,9 +17,6 @@ import {
   ListChecks,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState, useCallback } from 'react'
-import { MobileDrawer } from './MobileDrawer'
-import { useAuth } from '@/hooks/useAuth'
 
 interface MobileNavItem {
   label: string
@@ -36,8 +33,6 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
 
 export function MobileNav() {
   const pathname = usePathname()
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const handleCloseDrawer = useCallback(() => setDrawerOpen(false), [])
 
   function isActive(href: string): boolean {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -73,19 +68,21 @@ export function MobileNav() {
             )
           })}
 
-          {/* More menu button */}
-          <button
-            onClick={() => setDrawerOpen(true)}
+          {/* More — navigates to /more page */}
+          <Link
+            href="/more"
             className={cn(
               'flex-1 flex flex-col items-center justify-center gap-1 py-2 px-1',
               'min-h-[56px] transition-colors duration-150',
-              'text-surface-500 hover:text-surface-300 active:text-surface-200'
+              pathname === '/more'
+                ? 'text-brand-400'
+                : 'text-surface-500 hover:text-surface-300 active:text-surface-200'
             )}
-            aria-label="Open full menu"
+            aria-label="More"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className={cn('w-5 h-5', pathname === '/more' && 'drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]')} />
             <span className="text-[10px] font-medium leading-none">More</span>
-          </button>
+          </Link>
 
           {/* Sign Out — always visible in bottom bar */}
           <a
@@ -102,9 +99,6 @@ export function MobileNav() {
           </a>
         </div>
       </nav>
-
-      {/* Full-screen drawer for "More" */}
-      <MobileDrawer open={drawerOpen} onClose={handleCloseDrawer} />
     </>
   )
 }

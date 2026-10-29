@@ -35,10 +35,7 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
   const pathname = usePathname()
 
   const hasAlerts = unreadCount > 0
-  const isOnPrimary = PRIMARY_ROUTES.some(r => pathname === r || (r !== '/dashboard' && pathname.startsWith(r + '/')))
-  const showBack = !isOnPrimary
-  // For More-drawer sub-pages, back always goes to /dashboard (not browser history)
-  const handleBack = () => router.push('/dashboard')
+  const showBack = !PRIMARY_ROUTES.some(r => pathname === r || (r !== '/dashboard' && pathname.startsWith(r + '/')))
 
   return (
     <>
@@ -50,7 +47,7 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
           <div className="lg:hidden flex-shrink-0">
             {showBack ? (
               <button
-                onClick={handleBack}
+                onClick={() => router.back()}
                 className="flex items-center gap-1 p-2 -ml-2 text-surface-300 hover:text-surface-100 active:text-surface-50 transition-colors rounded-lg"
                 aria-label="Go back"
               >
