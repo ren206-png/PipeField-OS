@@ -87,13 +87,13 @@ export default function AuthLayout({
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 bg-surface-900">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 bg-surface-900 overflow-y-auto">
         {/* Mobile logo — visible only on small screens */}
         <div className="lg:hidden flex items-center justify-center mb-10">
           <img src="/logo.png" alt="PipeField OS" className="h-12 w-auto" />
         </div>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md pb-8">
           {children}
         </div>
       </div>
