@@ -24,7 +24,7 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen flex">
+    <div className="h-dvh flex overflow-hidden">
       {/* Left branding panel — hidden on small screens */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 bg-surface-950 relative flex-col justify-between p-12 overflow-hidden">
         {/* Industrial grid background */}
@@ -86,14 +86,14 @@ export default function AuthLayout({
         </div>
       </div>
 
-      {/* Right form panel */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 bg-surface-900 overflow-y-auto">
+      {/* Right form panel — overflow-y-auto + h-dvh parent ensures keyboard doesn't trap content */}
+      <div className="flex-1 flex flex-col items-center overflow-y-auto bg-surface-900 px-6 py-12 sm:px-12">
         {/* Mobile logo — visible only on small screens */}
         <div className="lg:hidden flex items-center justify-center mb-10">
           <img src="/logo.png" alt="PipeField OS" className="h-12 w-auto" />
         </div>
 
-        <div className="w-full max-w-md pb-8">
+        <div className="w-full max-w-md pb-24">
           {children}
         </div>
       </div>
