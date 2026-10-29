@@ -5,7 +5,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, Search } from 'lucide-react'
+import { useRouter, usePathname } from 'next/navigation'
+import { Bell, Search, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/hooks/useNotifications'
 import { getInitials } from '@/lib/utils'
@@ -23,12 +24,18 @@ interface HeaderProps {
   actions?: React.ReactNode
 }
 
+// Primary routes that don't need a back button
+const PRIMARY_ROUTES = ['/dashboard', '/welds', '/spools', '/punch-list']
+
 export function Header({ title, subtitle, actions }: HeaderProps) {
   const { profile } = useAuth()
   const { unreadCount } = useNotifications()
   const [showNotifications, setShowNotifications] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
 
   const hasAlerts = unreadCount > 0
+  const showBack = !PRIMARY_ROUTES.some(r => pathname === r || (r !== '/dashboard' && pathname.startsWith(r + '/')))
 
   return (
     <>
@@ -36,9 +43,20 @@ export function Header({ title, subtitle, actions }: HeaderProps) {
 
       <header className="sticky top-0 z-30 bg-surface-900/80 backdrop-blur-md border-b border-surface-800">
         <div className="flex items-center gap-4 px-4 sm:px-6 lg:px-8 h-16">
-          {/* Logo — mobile only (sidebar hidden on mobile) */}
+          {/* Back button or logo — mobile only */}
           <div className="lg:hidden flex-shrink-0">
-            <img src="/logo.png" alt="PipeField OS" className="h-8 w-auto" />
+            {showBack ? (
+              <button
+                onClick={() => router.back()}
+                className="flex items-center gap-1 p-2 -ml-2 text-surface-300 hover:text-surface-100 active:text-surface-50 transition-colors rounded-lg"
+                aria-label="Go back"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                <span className="text-sm font-medium">Back</span>
+              </button>
+            ) : (
+              <img src="/logo.png" alt="PipeField OS" className="h-8 w-auto" />
+            )}
           </div>
 
           {/* Page title (shown on mobile when no logo context needed) */}
