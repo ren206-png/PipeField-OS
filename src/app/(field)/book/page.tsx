@@ -4,8 +4,6 @@
 // Seven category cards linking to table lists.
 // ============================================================
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 
 interface Category {
@@ -17,7 +15,6 @@ interface Category {
 
 export default function BookPage() {
   const t = useFieldStrings('en')
-  const router = useRouter()
 
   const CATEGORIES: Category[] = [
     {
@@ -60,17 +57,7 @@ export default function BookPage() {
 
   return (
     <div className="min-h-screen bg-surface-950 p-4">
-      <div className="flex items-center gap-2 mb-6">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-1 p-2 -ml-2 text-surface-300 hover:text-surface-100 rounded-lg transition-colors"
-          aria-label="Back"
-        >
-          <ChevronLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">Back</span>
-        </button>
-        <h1 className="text-xl font-bold text-surface-100">{t.book_title}</h1>
-      </div>
+      <h1 className="text-xl font-bold text-surface-100 mb-6">{t.book_title}</h1>
       <div className="flex flex-col gap-3">
         {CATEGORIES.map((cat) => (
           <div key={cat.id} className="rounded-2xl border bg-surface-900 border-surface-700 overflow-hidden">
