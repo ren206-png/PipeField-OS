@@ -91,14 +91,14 @@ export function useSavePipeSupportCalc() {
       if (error) throw error
 
       // Audit trail
-      await supabase.from('audit_logs').insert({
+      supabase.from('audit_logs').insert({
         organization_id: profile.organization_id,
         table_name:      'pipe_support_calculations',
         record_id:       data.id,
         action:          'INSERT',
         performed_by:    profile.id,
         new_values:      { name: data.name, project_id: data.project_id },
-      })
+      }).then(({ error: e }) => { if (e) console.warn('[audit]', e.message) })
 
       return data as PipeSupportCalc
     },
@@ -126,14 +126,14 @@ export function useUpdatePipeSupportCalc() {
         .single()
       if (error) throw error
 
-      await supabase.from('audit_logs').insert({
+      supabase.from('audit_logs').insert({
         organization_id: profile?.organization_id,
         table_name:      'pipe_support_calculations',
         record_id:       id,
         action:          'UPDATE',
         performed_by:    profile?.id,
         new_values:      patch,
-      })
+      }).then(({ error: e }) => { if (e) console.warn('[audit]', e.message) })
 
       return data as PipeSupportCalc
     },
@@ -159,14 +159,14 @@ export function useDeletePipeSupportCalc() {
         .eq('id', id)
       if (error) throw error
 
-      await supabase.from('audit_logs').insert({
+      supabase.from('audit_logs').insert({
         organization_id: profile?.organization_id,
         table_name:      'pipe_support_calculations',
         record_id:       id,
         action:          'DELETE',
         performed_by:    profile?.id,
         new_values:      {},
-      })
+      }).then(({ error: e }) => { if (e) console.warn('[audit]', e.message) })
     },
     onSuccess: (_v, id) => {
       qc.invalidateQueries({ queryKey: ['pipe-support-calcs', profile?.organization_id ?? ''] })

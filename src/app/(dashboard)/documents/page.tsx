@@ -128,7 +128,6 @@ interface UploadForm {
 export default function DocumentsPage() {
   const { data: docs = [], isLoading } = useDocuments()
   const { data: projects = [] } = useProjects()
-  const { isOrgAdmin } = useAuth()
   const uploadMutation = useUploadDocument()
   const deleteMutation = useDeleteDocument()
 

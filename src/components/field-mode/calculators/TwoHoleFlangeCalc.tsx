@@ -3,7 +3,6 @@
 // offset = BC/2 × sin(half_straddle_angle)
 import React, { useState } from 'react'
 import { TwoHoleFlangesDiagram } from '@/components/field-mode/diagrams/TwoHoleFlangesDiagram'
-import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { dualFormat } from '@/lib/field-mode/calc/types'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'

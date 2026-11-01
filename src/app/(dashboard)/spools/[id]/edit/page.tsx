@@ -55,14 +55,15 @@ export default function EditSpoolPage({ params }: PageProps) {
 
       if (updateErr) throw updateErr
 
-      await supabase.from('audit_logs').insert({
+      // Write audit entry (best-effort — don't block navigation on failure)
+      supabase.from('audit_logs').insert({
         organization_id: profile.organization_id,
         table_name:      'spools',
         record_id:       id,
         action:          'UPDATE',
         performed_by:    profile.id,
         notes:           'Spool details updated',
-      })
+      }).then(({ error: e }) => { if (e) console.warn('[audit]', e.message) })
 
       queryClient.invalidateQueries({ queryKey: ['spool',  id] })
       queryClient.invalidateQueries({ queryKey: ['spools'] })

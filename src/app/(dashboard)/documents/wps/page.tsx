@@ -58,7 +58,7 @@ function WpsModal({
 }: {
   title:   string
   initial: WpsForm
-  onSave:  (f: WpsForm) => void
+  onSave:  (_f: WpsForm) => void
   onClose: () => void
   saving:  boolean
   error:   string | null

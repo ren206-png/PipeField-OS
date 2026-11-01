@@ -48,10 +48,6 @@ function mapStatus(stripeStatus: string): string {
 function getPeriodEnd(sub: Stripe.Subscription): number {
   return (sub as Stripe.Subscription & { current_period_end: number }).current_period_end
 }
-function getInvoiceSubId(invoice: Stripe.Invoice): string | undefined {
-  return (invoice as Stripe.Invoice & { subscription?: string }).subscription
-}
-
 function tierFromPriceId(priceId: string): string | null {
   if (priceId === process.env.STRIPE_PRICE_FIELD_PRO_MONTHLY) return 'field_pro'
   if (priceId === process.env.STRIPE_PRICE_STARTER)           return 'starter'

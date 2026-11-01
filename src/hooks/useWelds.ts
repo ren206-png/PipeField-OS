@@ -156,7 +156,7 @@ export function useUpdateWeldStatus() {
       if (error) throw error
 
       if (profile) {
-        await supabase.from('audit_logs').insert({
+        supabase.from('audit_logs').insert({
           organization_id: profile.organization_id,
           table_name:      'welds',
           record_id:       weldId,
@@ -164,7 +164,7 @@ export function useUpdateWeldStatus() {
           previous_values: { status: (current as { status?: string } | null)?.status },
           new_values:      { status: newStatus, notes },
           performed_by:    profile.id,
-        })
+        }).then(({ error: e }) => { if (e) console.warn('[audit]', e.message) })
       }
 
       // Fire-and-forget email notification — never blocks the UI

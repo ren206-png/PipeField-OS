@@ -55,15 +55,15 @@ export default function EditWeldPage({ params }: PageProps) {
 
       if (updateErr) throw updateErr
 
-      // Write audit entry
-      await supabase.from('audit_logs').insert({
+      // Write audit entry (best-effort — don't block navigation on failure)
+      supabase.from('audit_logs').insert({
         organization_id: profile.organization_id,
         table_name:      'welds',
         record_id:       id,
         action:          'UPDATE',
         performed_by:    profile.id,
         notes:           'Weld details updated',
-      })
+      }).then(({ error: e }) => { if (e) console.warn('[audit]', e.message) })
 
       // Invalidate both the detail and the list so navigating back
       // to /welds shows the updated values immediately.
