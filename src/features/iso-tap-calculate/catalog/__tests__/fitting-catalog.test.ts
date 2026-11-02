@@ -6,7 +6,7 @@
 import { createIsoCatalogAdapter } from '../fitting-catalog-adapter'
 import { validateProjectEngagementRecord } from '../engagement-record'
 import { buildCoverageReport } from '../coverage-report'
-import type { VerifiedBwDeduction, UnverifiedBwRecord, ThreadedFaceRecord, NptThreadReference } from '../fitting-catalog-adapter'
+import type { VerifiedBwDeduction, UnverifiedBwRecord } from '../fitting-catalog-adapter'
 import { makeMockRefAdapter, makeRefRow } from '@/lib/field-mode/calc/__tests__/mock-ref-adapter'
 import type { BwFittingRow, ThreadedFittingRow, NptThreadRow } from '@/lib/field-mode/calc/reference'
 

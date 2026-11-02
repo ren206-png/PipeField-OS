@@ -10,7 +10,7 @@
 // ============================================================
 
 import { rollingOffset } from '../../../lib/field-mode/calc/offsets'
-import { fromMm, fromDegrees, toMm, toDegrees, type CalcError } from '../../../lib/field-mode/calc/types'
+import { fromMm, fromDegrees, toMm, type CalcError } from '../../../lib/field-mode/calc/types'
 
 function calcErrorMessage(e: CalcError): string {
   switch (e.kind) {

@@ -1,10 +1,6 @@
 import {
   slingLegTension,
-  snatchBlockLoad,
   shackleSWL,
-  wireRopeSWL,
-  syntheticSlingWLL,
-  chainSlingWLL,
 } from '../rigging'
 import { makeMockRefAdapter, makeRefRow } from './mock-ref-adapter'
 

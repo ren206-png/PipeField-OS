@@ -1,5 +1,5 @@
-import { cutLengthButtWeld, cutLengthSocketWeld, cutLengthThreaded } from '../cut-length'
-import { fromMm, fromInches, toMm } from '../types'
+import { cutLengthButtWeld } from '../cut-length'
+import { fromMm, toMm } from '../types'
 import { makeMockRefAdapter, makeRefRow } from './mock-ref-adapter'
 import type { BwFittingRow } from '../reference'
 

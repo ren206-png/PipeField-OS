@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 export const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ''
 
@@ -47,7 +47,6 @@ export function Turnstile({
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | null>(null)
   const onTokenRef = useRef(onToken)
-  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     onTokenRef.current = onToken
@@ -73,7 +72,6 @@ export function Turnstile({
       })
       .catch(() => {
         if (!cancelled) {
-          setLoadError(true)
           // Allow sign-in to proceed even if the widget can't load (e.g. ad blocker).
           // Supabase will reject the request if CAPTCHA is strictly required server-side.
           onTokenRef.current('__load_failed__')

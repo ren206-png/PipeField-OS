@@ -6,7 +6,6 @@
 import type {
   Measurement,
   ParseError,
-  AmbiguityError,
   ParseContext,
   ParseResult,
 } from './schemas'

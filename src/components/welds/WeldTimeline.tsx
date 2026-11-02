@@ -40,7 +40,6 @@ export function WeldTimeline({ entries }: WeldTimelineProps) {
         {entries.map((entry, idx) => {
           const isCreate   = entry.action === 'INSERT'
           const hasStatus  = entry.previous_status || entry.new_status
-          const isFirst    = idx === entries.length - 1
 
           return (
             <div key={entry.id} className="relative flex gap-4 pb-6">
