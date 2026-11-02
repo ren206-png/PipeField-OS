@@ -16,11 +16,13 @@ export function RiggingCalc() {
   const [loading, setLoading]     = useState(false)
 
   async function compute() {
-    setError(null); setLoading(true); setUnverified(false)
+    setError(null); setResult(null); setLoading(true); setUnverified(false)
     try {
       const load = parseFloat(loadKg)
       const angle = parseFloat(angleDeg)
       if (isNaN(load) || isNaN(angle)) { setError('Enter load and angle'); return }
+      if (load <= 0) { setError('Load must be greater than 0'); return }
+      if (angle <= 0 || angle > 90) { setError('Sling angle must be greater than 0° and at most 90° from horizontal'); return }
       const adapter = createSupabaseReferenceAdapter()
       const rows = await adapter.getSlingLegFactor({ angle_from_horizontal_deg: angle })
       if (rows.length) {
