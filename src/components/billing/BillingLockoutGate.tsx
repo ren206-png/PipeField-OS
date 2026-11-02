@@ -61,10 +61,8 @@ export function BillingLockoutGate() {
   }
 
   const isPaymentFailed = reason === 'payment_failed'
-  const isTrialExpired  = reason === 'trial_expired'
 
   const accentColor = isPaymentFailed ? '#f97316' : '#2E8AFF'
-  const icon        = isPaymentFailed ? CreditCard : Lock
 
   return (
     // Fixed overlay — sits above page content, blocks interaction
