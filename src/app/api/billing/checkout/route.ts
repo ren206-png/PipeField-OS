@@ -9,6 +9,7 @@ import { getStripe, PLANS } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAuth } from '@/lib/api-auth'
 import { z } from 'zod'
+import { stripeIdempotencyKey } from '@/lib/stripe-idempotency'
 
 export const dynamic = 'force-dynamic'
 
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
         email:    profile?.email ?? undefined,
         name:     org.name,
         metadata: { org_id: org.id, user_id: caller.auth_user_id },
-      })
+      }, { idempotencyKey: stripeIdempotencyKey('create-customer', org.id) })
       customerId = customer.id
 
       await admin
