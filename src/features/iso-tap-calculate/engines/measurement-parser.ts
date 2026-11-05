@@ -69,10 +69,16 @@ function isNpsCallout(s: string): boolean {
 // Conflicting unit marker detection
 // ---------------------------------------------------------------------------
 
+// Unit words may be glued to the number ("15mm", "2ft", "12in" from the keypad),
+// so match "not preceded by a letter" instead of \b, which needs a non-word char.
+const MM_RE = /(?<![a-z])mm\b/i
+const IN_RE = /(?<![a-z])in\b/i
+const FT_RE = /(?<![a-z])ft\b/i
+
 function hasConflictingUnits(s: string): boolean {
-  const hasMm = /\bmm\b/i.test(s)
-  const hasIn = /(\bin\b|")/.test(s)
-  const hasFt = /('|\bft\b)/i.test(s)
+  const hasMm = MM_RE.test(s)
+  const hasIn = IN_RE.test(s) || s.includes('"')
+  const hasFt = FT_RE.test(s) || s.includes("'")
   const count = [hasMm, hasIn || hasFt].filter(Boolean).length
   return count > 1
 }
@@ -171,8 +177,8 @@ export function parseMeasurement(raw: string, context: ParseContext): ParseResul
   const unsigned = isNegative ? normalized.slice(1).trim() : normalized
 
   // ── mm ────────────────────────────────────────────────────────────────────
-  if (/\bmm\b/i.test(unsigned)) {
-    const numStr = unsigned.replace(/\bmm\b/i, '').trim()
+  if (MM_RE.test(unsigned)) {
+    const numStr = unsigned.replace(MM_RE, '').trim()
     const val = parseFloat(numStr)
     if (isNaN(val) || !isFinite(val)) {
       return makeError(raw, 'Cannot parse number before "mm"', 'NONFINITE')
@@ -181,14 +187,19 @@ export function parseMeasurement(raw: string, context: ParseContext): ParseResul
     return makeMeasurement(raw, normalized, mm, 'mm', context.sourceType)
   }
 
+  // "2ft 6in" / "2 ft" / "12in" → 2' 6" / 2' / 12"
+  const marked = unsigned
+    .replace(/(\d)\s*ft\b/gi, "$1'")
+    .replace(/(\d)\s*in\b/gi, '$1"')
+
   // ── feet-inches ───────────────────────────────────────────────────────────
-  if (unsigned.includes("'")) {
-    return parseFeetInches(raw, normalized, unsigned, sign, context.sourceType)
+  if (marked.includes("'")) {
+    return parseFeetInches(raw, normalized, marked, sign, context.sourceType)
   }
 
   // ── plain inches with unit marker ─────────────────────────────────────────
-  if (/"$/.test(unsigned) || /\bin\b/.test(unsigned)) {
-    return parseInches(raw, normalized, unsigned, sign, context.sourceType)
+  if (/"$/.test(marked)) {
+    return parseInches(raw, normalized, marked, sign, context.sourceType)
   }
 
   // ── fraction without explicit inch marker (e.g. "3 3/4") ─────────────────

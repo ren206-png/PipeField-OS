@@ -167,3 +167,31 @@ describe('measurement-parser — unicode normalisation', () => {
     expect(m.valueMm).toBeCloseTo(3.75 * 25.4)
   })
 })
+
+// Regression: keypad appends the unit with no space. "15mm" in an inch-default
+// field was read as 15 in (381 mm).
+describe('measurement-parser — unit glued to the number', () => {
+  test('"15mm" in an inch project is 15 mm', () => {
+    const m = ok(parseMeasurement('15mm', ctxIn))
+    expect(m.valueMm).toBe(15)
+    expect(m.originalUnit).toBe('mm')
+  })
+  test('"450mm" in an inch project is 450 mm', () => {
+    expect(ok(parseMeasurement('450mm', ctxIn)).valueMm).toBe(450)
+  })
+  test('"12in" in a mm project is 12 inches', () => {
+    expect(ok(parseMeasurement('12in', ctxMm)).valueMm).toBeCloseTo(304.8, 6)
+  })
+  test('"2ft" in a mm project is 24 inches', () => {
+    expect(ok(parseMeasurement('2ft', ctxMm)).valueMm).toBeCloseTo(609.6, 6)
+  })
+  test('"2ft 6in" is 30 inches', () => {
+    expect(ok(parseMeasurement('2ft 6in', ctxMm)).valueMm).toBeCloseTo(762, 6)
+  })
+  test('"3 1/2in" is 3.5 inches', () => {
+    expect(ok(parseMeasurement('3 1/2in', ctxMm)).valueMm).toBeCloseTo(88.9, 6)
+  })
+  test('"15mm 2in" is rejected as conflicting units', () => {
+    expect(err(parseMeasurement('15mm 2in', ctxIn))).toBe('CONFLICTING_UNITS')
+  })
+})
