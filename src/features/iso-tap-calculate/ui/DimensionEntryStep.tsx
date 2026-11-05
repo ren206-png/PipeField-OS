@@ -28,6 +28,18 @@ interface FieldState {
   confirmed: boolean
   unit: 'imperial' | 'metric'
   ocrWarning?: string
+  /** Readings from the rotated-crop OCR, best first; the user picks one. */
+  ocrCandidates?: CandidateView[]
+}
+
+interface CandidateView {
+  text: string
+  confidence: number
+  previewUrl: string
+}
+
+function revokeCandidates(c?: CandidateView[]) {
+  c?.forEach(x => URL.revokeObjectURL(x.previewUrl))
 }
 
 function emptyField(): FieldState {
@@ -110,7 +122,28 @@ export function DimensionEntryStep({
 
   function updateRaw(id: 'rise' | 'roll' | 'run', raw: string, unit: 'imperial' | 'metric', ocrWarning?: string) {
     const { m, err } = parseField(raw, unit)
+    // Typing replaces any OCR readings for this field
+    revokeCandidates(fieldMap[id].ocrCandidates)
     fieldSetters[id]({ raw, measurement: m, parseError: err, confirmed: false, unit, ocrWarning })
+  }
+
+  // Fill a field from an OCR reading. Never confirmed: the user must tick the box.
+  function applyCandidate(
+    id: 'rise' | 'roll' | 'run',
+    text: string,
+    unit: 'imperial' | 'metric',
+    candidates: CandidateView[],
+  ) {
+    const { m, err } = parseField(text, unit)
+    fieldSetters[id]({
+      raw: text,
+      measurement: m ? { ...m, sourceType: 'ocr' as const, confirmed: false } : null,
+      parseError: err,
+      confirmed: false,
+      unit,
+      ocrCandidates: candidates,
+      ocrWarning: 'Check the reading against the drawing, pick the right one, or type it.',
+    })
   }
 
   function confirm(id: 'rise' | 'roll' | 'run', checked: boolean) {
@@ -135,27 +168,26 @@ export function DimensionEntryStep({
 
     try {
       const adapter = await getOcrAdapter()
-      const result  = await adapter.recognizeRegion(imageBlob, region)
-      const raw     = result.rawText.trim()
-      const warning = result.confidence < 0.5
-        ? `Low OCR confidence (${Math.round(result.confidence * 100)}%) — please verify`
-        : undefined
+      const unit = fieldMap[targetId].unit
+      const candidates = await adapter.recognizeCandidates(
+        imageBlob,
+        region,
+        text => parseField(text, unit).m !== null,
+      )
+      revokeCandidates(fieldMap[targetId].ocrCandidates)
 
-      if (raw) {
-        // Parse as OCR source — never auto-confirmed
-        const { m, err } = parseField(raw, fieldMap[targetId].unit)
-        fieldSetters[targetId]({
-          raw,
-          measurement: m ? { ...m, sourceType: 'ocr' as const, confirmed: false } : null,
-          parseError: err,
-          confirmed: false,
-          unit: fieldMap[targetId].unit,
-          ocrWarning: warning,
-        })
+      if (candidates.length) {
+        const views: CandidateView[] = candidates.map(c => ({
+          text: c.text,
+          confidence: c.confidence,
+          previewUrl: URL.createObjectURL(c.preview),
+        }))
+        applyCandidate(targetId, views[0].text, unit, views)
       } else {
         fieldSetters[targetId]({
           ...fieldMap[targetId],
-          ocrWarning: 'OCR found no text in that region — try a larger area or enter manually',
+          ocrCandidates: undefined,
+          ocrWarning: 'OCR found no number in that region — try a tighter box or enter manually',
         })
       }
     } catch (err) {
@@ -286,6 +318,50 @@ export function DimensionEntryStep({
             {/* OCR warning */}
             {fs.ocrWarning && (
               <p className="text-amber-400 text-xs mb-1" role="alert">{fs.ocrWarning}</p>
+            )}
+            {/* OCR readings — the user picks one (or types it) */}
+            {fs.ocrCandidates && fs.ocrCandidates.length > 0 && (
+              <div className="mb-2 rounded-xl border border-surface-700 bg-surface-900 p-2">
+                {(() => {
+                  const shown = fs.ocrCandidates.find(c => c.text === fs.raw) ?? fs.ocrCandidates[0]
+                  return (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={shown.previewUrl}
+                      alt={`What the OCR read: ${shown.text}`}
+                      className="mb-2 max-h-16 w-auto rounded bg-white"
+                    />
+                  )
+                })()}
+                <div className="flex flex-wrap gap-2" role="group" aria-label="OCR readings">
+                  {fs.ocrCandidates.map(c => (
+                    <button
+                      key={c.text}
+                      type="button"
+                      aria-pressed={fs.raw === c.text}
+                      onClick={() => applyCandidate(id, c.text, fs.unit, fs.ocrCandidates!)}
+                      className={`min-h-[44px] px-3 rounded-xl border font-mono text-sm ${
+                        fs.raw === c.text
+                          ? 'bg-blue-700 border-blue-500 text-white'
+                          : 'bg-surface-800 border-surface-700 text-surface-200'
+                      }`}
+                    >
+                      {c.text}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      revokeCandidates(fs.ocrCandidates)
+                      fieldSetters[id]({ ...emptyField(), unit: fs.unit })
+                      setActiveField(id)
+                    }}
+                    className="min-h-[44px] px-3 rounded-xl border border-surface-700 bg-surface-800 text-surface-400 text-sm"
+                  >
+                    None of these — type it
+                  </button>
+                </div>
+              </div>
             )}
             {/* Parse feedback */}
             {fs.parseError && (

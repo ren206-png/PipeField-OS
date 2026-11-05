@@ -14,8 +14,40 @@
 // to viewport coordinates via OverlayCanvas.
 // ============================================================
 
-import type { OcrAdapter, OcrRegion, OcrResult } from './ocr-adapter'
+import type { OcrAdapter, OcrCandidate, OcrRegion, OcrResult } from './ocr-adapter'
 import type { BoundingBox } from './types'
+import {
+  CANDIDATE_ANGLES,
+  CANDIDATE_SCALES,
+  binarizeAndStripLines,
+  planLevelledCrop,
+  rankReadings,
+  type RawReading,
+} from './level-crop'
+
+// Tesseract page-segmentation modes: 3 = auto page, 7 = single text line.
+const PSM_AUTO = '3'
+const PSM_SINGLE_LINE = '7'
+
+/** Rotate `bitmap` so text at `deg` is level, upscale, binarise and strip lines. */
+async function levelledCrop(bitmap: ImageBitmap, deg: number, scale: number): Promise<Blob> {
+  const w = bitmap.width
+  const h = bitmap.height
+  const plan = planLevelledCrop(w, h, deg, scale)
+  const canvas = new OffscreenCanvas(plan.width, plan.height)
+  const ctx = canvas.getContext('2d')!
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, plan.width, plan.height)
+  ctx.translate(plan.width / 2, plan.height / 2)
+  ctx.scale(scale, scale)
+  ctx.rotate((-deg * Math.PI) / 180)
+  ctx.drawImage(bitmap, -w / 2, -h / 2)
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  const img = ctx.getImageData(0, 0, plan.width, plan.height)
+  binarizeAndStripLines(img.data, plan.width, plan.height, plan.maxRunPx)
+  ctx.putImageData(img, 0, 0)
+  return canvas.convertToBlob({ type: 'image/png' })
+}
 
 const CHAR_WHITELIST = "0123456789 '-./\"¾½¼⅛⅜⅝⅞mmincftMINFT"
 
@@ -45,13 +77,13 @@ export class TesseractAdapter implements OcrAdapter {
       // Dynamic import — Tesseract.js is only loaded here
       const { createWorker } = await import('tesseract.js')
       this.worker = await createWorker('eng', 1, {
-        // Self-hosted assets from public/iso-calc-ocr/ (no CDN at runtime).
+        // Self-hosted assets from public/iso-calc-ocr-v2/ (no CDN at runtime).
         // These files are copied from node_modules at build time and served locally.
-        workerPath: '/iso-calc-ocr/tesseract-worker.min.js',
+        workerPath: '/iso-calc-ocr-v2/tesseract-worker.min.js',
         // Directory, not a .wasm file: tesseract.js picks the best
         // tesseract-core-{relaxedsimd-,simd-,}lstm.wasm.js for this device.
-        corePath:   '/iso-calc-ocr',
-        langPath:   '/iso-calc-ocr/',
+        corePath:   '/iso-calc-ocr-v2',
+        langPath:   '/iso-calc-ocr-v2',
         // Load the worker from its same-origin URL. The default (a blob: URL)
         // is blocked by our CSP, which has no worker-src and no blob: in
         // script-src, so worker start-up failed with 'OCR failed'.
@@ -76,6 +108,7 @@ export class TesseractAdapter implements OcrAdapter {
     const jobId = ++this.currentJobId
     const target = region ? await cropBlob(image, region) : image
 
+    await this.worker.setParameters({ tessedit_pageseg_mode: PSM_AUTO })
     // Pass the Blob itself. A blob: object URL would make tesseract fetch()
     // it, which the page CSP (connect-src has no blob:) blocks.
     const result = await this.worker.recognize(target, {}, { blocks: true })
@@ -114,6 +147,46 @@ export class TesseractAdapter implements OcrAdapter {
       boundingBoxes: boxes,
       source: 'ocr',
     }
+  }
+
+  async recognizeCandidates(
+    image: Blob,
+    region: OcrRegion,
+    isLength: (text: string) => boolean,
+  ): Promise<OcrCandidate[]> {
+    await this.init()
+
+    const jobId = ++this.currentJobId
+    const bitmap = await createImageBitmap(image, region.x, region.y, region.width, region.height)
+    const readings: RawReading<Blob>[] = []
+
+    try {
+      await this.worker.setParameters({ tessedit_pageseg_mode: PSM_SINGLE_LINE })
+      for (const angle of CANDIDATE_ANGLES) {
+        for (const scale of CANDIDATE_SCALES) {
+          if (jobId !== this.currentJobId) return []
+          const crop = await levelledCrop(bitmap, angle, scale)
+          const result = await this.worker.recognize(crop)
+          readings.push({
+            text: result.data.text ?? '',
+            confidence: (result.data.confidence ?? 0) / 100,
+            angle,
+            scale,
+            payload: crop,
+          })
+        }
+      }
+    } finally {
+      bitmap.close()
+    }
+
+    if (jobId !== this.currentJobId) return []
+    return rankReadings(readings, isLength).map(r => ({
+      text: r.text,
+      confidence: r.confidence,
+      angle: r.angle,
+      preview: r.payload!,
+    }))
   }
 
   async dispose(): Promise<void> {
