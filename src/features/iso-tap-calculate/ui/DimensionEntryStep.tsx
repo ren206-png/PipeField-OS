@@ -10,7 +10,7 @@
 //   - TesseractAdapter is lazy-init on first "Tap region" press,
 //     reused across fields in the same session
 // ============================================================
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { FractionKeypad } from '@/components/field-mode/FractionKeypad'
 import { parseMeasurement } from '../engines/measurement-parser'
 import { computeModeA, computeModeB } from '../engines/geometry-engine'
@@ -108,6 +108,13 @@ export function DimensionEntryStep({
   }, [])
 
   const imageLoaded = !!(imageBlob && imageNaturalWidth && imageNaturalHeight)
+
+  // The drawing opens above the fields; bring it into view when the user
+  // taps "read" on a lower field.
+  const overlayRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (ocrTargetField) overlayRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [ocrTargetField])
 
   const fields = mode === 'mode-a'
     ? (['rise', 'roll', 'run'] as const)
@@ -231,7 +238,7 @@ export function DimensionEntryStep({
     <div className="flex flex-col gap-4 p-4">
       {/* Image overlay in selection mode */}
       {imageLoaded && ocrTargetField && (
-        <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: `${imageNaturalWidth}/${imageNaturalHeight}` }}>
+        <div ref={overlayRef} className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: `${imageNaturalWidth}/${imageNaturalHeight}` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={URL.createObjectURL(imageBlob)}
