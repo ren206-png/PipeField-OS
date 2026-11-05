@@ -29,6 +29,13 @@ export function createAdminClient(): SupabaseClient {
       autoRefreshToken:  false,
       persistSession:    false,
     },
+    // Never let the Next.js data cache serve admin reads. Without this,
+    // route handlers that don't touch cookies()/headers() (e.g. /api/me via
+    // Bearer token) returned months-old rows such as a stale subscription_tier.
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: 'no-store' }),
+    },
   })
 
   return _adminClient
