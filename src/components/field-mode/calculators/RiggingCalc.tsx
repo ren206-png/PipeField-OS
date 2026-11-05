@@ -6,6 +6,13 @@ import { RiggingDiagram } from '@/components/field-mode/diagrams/RiggingDiagram'
 import { useFieldStrings } from '@/lib/field-mode/locale'
 import { createSupabaseReferenceAdapter } from '@/lib/field-mode/reference-adapter'
 
+// Upper bound to catch typos (1,000 tonnes).
+const MAX_LOAD_KG = 1_000_000
+// Sling angles below 30° from horizontal are generally not recommended;
+// below 15° leg tension rises steeply (≈ 3.9× at 15°).
+const MIN_SAFE_ANGLE_DEG = 30
+const CRITICAL_ANGLE_DEG = 15
+
 export function RiggingCalc() {
   const t = useFieldStrings('en')
   const [loadKg, setLoadKg]       = useState('')
@@ -14,15 +21,19 @@ export function RiggingCalc() {
   const [unverified, setUnverified] = useState(false)
   const [error, setError]         = useState<string | null>(null)
   const [loading, setLoading]     = useState(false)
+  const [angleWarning, setAngleWarning] = useState<'low' | 'critical' | null>(null)
 
   async function compute() {
-    setError(null); setResult(null); setLoading(true); setUnverified(false)
+    setError(null); setResult(null); setLoading(true); setUnverified(false); setAngleWarning(null)
     try {
       const load = parseFloat(loadKg)
       const angle = parseFloat(angleDeg)
       if (isNaN(load) || isNaN(angle)) { setError('Enter load and angle'); return }
       if (load <= 0) { setError('Load must be greater than 0'); return }
+      if (load > MAX_LOAD_KG) { setError(`Load must be at most ${MAX_LOAD_KG.toLocaleString('en-US')} kg (1,000 t). Check the value.`); return }
       if (angle <= 0 || angle > 90) { setError('Sling angle must be greater than 0° and at most 90° from horizontal'); return }
+      if (angle < CRITICAL_ANGLE_DEG) setAngleWarning('critical')
+      else if (angle < MIN_SAFE_ANGLE_DEG) setAngleWarning('low')
       const adapter = createSupabaseReferenceAdapter()
       const rows = await adapter.getSlingLegFactor({ angle_from_horizontal_deg: angle })
       if (rows.length) {
@@ -77,6 +88,16 @@ export function RiggingCalc() {
       </button>
       {unverified && <div className="px-3 py-2 rounded-lg bg-amber-900/40 text-amber-300 text-sm">{t.calc_unverified_badge}</div>}
       {error && <p className="text-red-400 text-sm">{error}</p>}
+      {result && angleWarning === 'critical' && (
+        <div role="alert" className="px-4 py-3 rounded-xl bg-red-700 border-2 border-red-400 text-white text-sm font-semibold">
+          ⛔ DANGER: sling angle under {CRITICAL_ANGLE_DEG}°. Each leg carries several times its share of the load. Do not rig at this angle. Use longer slings or a spreader bar.
+        </div>
+      )}
+      {result && angleWarning === 'low' && (
+        <div role="alert" className="px-4 py-3 rounded-xl bg-red-900/60 border border-red-600 text-red-200 text-sm font-medium">
+          ⚠ Sling angle under {MIN_SAFE_ANGLE_DEG}° is not recommended. Leg tension rises sharply at low angles. Consider longer slings or a spreader bar.
+        </div>
+      )}
       {result && (
         <div className="bg-surface-800 rounded-xl p-4 space-y-3 border border-surface-700">
           <div className="flex justify-between items-center">
