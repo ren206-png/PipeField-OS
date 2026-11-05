@@ -48,7 +48,9 @@ export class TesseractAdapter implements OcrAdapter {
         // Self-hosted assets from public/iso-calc-ocr/ (no CDN at runtime).
         // These files are copied from node_modules at build time and served locally.
         workerPath: '/iso-calc-ocr/tesseract-worker.min.js',
-        corePath:   '/iso-calc-ocr/tesseract-core.wasm',
+        // Directory, not a .wasm file: tesseract.js picks the best
+        // tesseract-core-{relaxedsimd-,simd-,}lstm.wasm.js for this device.
+        corePath:   '/iso-calc-ocr',
         langPath:   '/iso-calc-ocr/',
       })
       await this.worker.setParameters({
