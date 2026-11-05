@@ -151,6 +151,15 @@ export function normalizeReading(text: string): string {
   return splitRunTogetherFraction(text.trim().replace(/\s+/g, ' '))
 }
 
+/**
+ * True when every fraction in `text` uses a denominator found on drawings
+ * (2–64). "143/14" is an OCR misread of "14 3/4", never a real dimension.
+ */
+export function hasDrawingFractions(text: string): boolean {
+  const dens = text.match(/\/(\d+)/g) ?? []
+  return dens.every(d => DRAWING_DENOMINATORS.has(parseInt(d.slice(1), 10)))
+}
+
 /** All texts a raw reading could stand for (fraction splits), normalised. */
 function readingTexts(raw: string): string[] {
   const t = raw.trim().replace(/\s+/g, ' ')
@@ -173,6 +182,8 @@ export function rankReadings<P>(
   for (const r of readings) for (const text of readingTexts(r.text)) {
     const digits = (text.match(/\d/g) ?? []).length
     if (digits === 0) continue
+    // A fraction no drawing would use means the OCR misread it — don't offer it.
+    if (!hasDrawingFractions(text)) continue
     const score = (isLength(text) ? 1 : 0) + r.confidence * Math.sqrt(digits) * 0.5
     const prev = best.get(text)
     if (!prev || score > prev.score) best.set(text, { ...r, text, score })

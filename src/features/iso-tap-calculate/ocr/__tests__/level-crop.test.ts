@@ -2,6 +2,7 @@ import {
   binarizeAndStripLines,
   normalizeReading,
   fractionAlternatives,
+  hasDrawingFractions,
   splitRunTogetherFraction,
   planLevelledCrop,
   rankReadings,
@@ -120,5 +121,21 @@ describe('splitRunTogetherFraction', () => {
   })
   test('normalizeReading collapses spaces and splits', () => {
     expect(normalizeReading('  81/2"  ')).toBe('8 1/2"')
+  })
+})
+
+describe('hasDrawingFractions', () => {
+  test.each(['14 3/4"', '1/2', "2'-6 3/8\"", '450', '12 15/16'])('%s is a drawing value', s => {
+    expect(hasDrawingFractions(s)).toBe(true)
+  })
+  test.each(['143/14"', '3/10', '1/3', '7/0'])('%s is a misread', s => {
+    expect(hasDrawingFractions(s)).toBe(false)
+  })
+  test('rankReadings drops misread fractions (live: "14 3/4" read as "143/14")', () => {
+    const out = rankReadings([
+      { text: '143/14"', confidence: 0.7, angle: 30, scale: 2 },
+      { text: '9', confidence: 0.3, angle: 0, scale: 2 },
+    ], () => true)
+    expect(out.map(x => x.text)).toEqual(['9'])
   })
 })
