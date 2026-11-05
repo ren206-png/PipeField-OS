@@ -98,6 +98,11 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Flags read by 'use client' pages must be inlined at build time, or they are
+  // always undefined in the browser. Non-secret booleans only.
+  env: {
+    PFOS_FIELD_ISO_CALC: process.env.PFOS_FIELD_ISO_CALC ?? 'false',
+  },
   eslint: { ignoreDuringBuilds: true },
   pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'md', 'mdx'],
   images: {
