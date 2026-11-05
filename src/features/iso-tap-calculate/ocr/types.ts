@@ -19,6 +19,16 @@ export interface BoundingBox {
   confidence: number
 }
 
+/** One possible reading of a selected dimension (from one rotation attempt). */
+export interface OcrCandidate {
+  text: string
+  confidence: number   // 0–1
+  /** Text angle that produced it, in screen degrees (clockwise +). */
+  angle: number
+  /** The levelled crop the OCR read, for showing to the user. */
+  preview: Blob
+}
+
 export interface OcrResult {
   rawText: string
   confidence: number   // 0–1 (Tesseract 0–100 normalised to 0–1)
