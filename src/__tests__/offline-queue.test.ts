@@ -97,9 +97,7 @@ jest.mock('idb', () => ({
 }))
 
 // Helper: set transaction mock without TS complaining about Mock vs plain fn
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setTxMock(impl: (storeName: StoreName) => { store: { get: any; put: any; delete: any }; done: Promise<void> }) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(_mockDB.transaction as any).mockImplementation(impl)
 }
 

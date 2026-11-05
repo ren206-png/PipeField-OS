@@ -3,7 +3,6 @@ import {
   fromMm,
   fromInches,
   fromMetres,
-  fromDegrees,
   fromDegreesMinutes,
   toMm,
   toInches,
@@ -138,7 +137,6 @@ describe('fromMm / fromInches / fromMetres', () => {
 
 describe('formatLength', () => {
   const imperial16: DisplayOpts = { unit: 'imperial', precision: '1/16' }
-  const imperial32: DisplayOpts = { unit: 'imperial', precision: '1/32' }
   const metric: DisplayOpts = { unit: 'metric', precision: '1mm' }
 
   it('formats 0 mm as 0"', () => {

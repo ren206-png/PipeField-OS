@@ -242,7 +242,7 @@ export default function WeldersPage() {
   const [deleteId,    setDeleteId]    = useState<string | null>(null)
   const [formError,   setFormError]   = useState<string | null>(null)
 
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } =
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { is_active: true } })
 
   function openNew() {

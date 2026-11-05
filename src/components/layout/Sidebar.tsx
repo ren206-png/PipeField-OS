@@ -65,7 +65,6 @@ import { hasPermission } from '@/lib/auth/permissions'
 import { NotificationBell } from './NotificationBell'
 import { WidgetErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { UsageBar } from '@/components/billing/UsageBar'
-import { usePlanLimits } from '@/hooks/usePlanLimits'
 
 interface NavItem {
   label: string
@@ -188,7 +187,6 @@ export function Sidebar() {
   const pathname = usePathname()
   const { profile, isPlatformAdmin, isLoading } = useAuth()
   const { organization } = useOrganization()
-  const { plan } = usePlanLimits()
 
   function isActive(href: string): boolean {
     const path = href.split('?')[0]

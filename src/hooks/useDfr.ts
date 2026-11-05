@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/apiFetch'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from './useAuth'
-import type { DailyFieldReport, DfrStatus } from '@/types'
+import type { DailyFieldReport } from '@/types'
 
 export function useDfrs(projectId?: string) {
   const { profile } = useAuth()
