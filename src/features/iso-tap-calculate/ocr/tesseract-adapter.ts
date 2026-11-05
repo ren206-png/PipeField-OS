@@ -75,47 +75,44 @@ export class TesseractAdapter implements OcrAdapter {
 
     const jobId = ++this.currentJobId
     const target = region ? await cropBlob(image, region) : image
-    const url = URL.createObjectURL(target)
 
-    try {
-      const result = await this.worker.recognize(url, {}, { blocks: true })
+    // Pass the Blob itself. A blob: object URL would make tesseract fetch()
+    // it, which the page CSP (connect-src has no blob:) blocks.
+    const result = await this.worker.recognize(target, {}, { blocks: true })
 
-      // If a newer job has started, discard this result
-      if (jobId !== this.currentJobId) {
-        return { rawText: '', confidence: 0, boundingBoxes: [], source: 'ocr' }
-      }
+    // If a newer job has started, discard this result
+    if (jobId !== this.currentJobId) {
+      return { rawText: '', confidence: 0, boundingBoxes: [], source: 'ocr' }
+    }
 
-      const boxes: BoundingBox[] = []
-      const blocks = result.data.blocks ?? []
-      for (const block of blocks) {
-        for (const para of (block.paragraphs ?? [])) {
-          for (const line of (para.lines ?? [])) {
-            for (const word of (line.words ?? [])) {
-              const bb = word.bbox
-              if (!bb) continue
-              // Bounding boxes are in cropped-image coordinates.
-              // If a region was provided, offset back to canonical (pre-crop) coordinates.
-              boxes.push({
-                x0: bb.x0 + (region?.x ?? 0),
-                y0: bb.y0 + (region?.y ?? 0),
-                x1: bb.x1 + (region?.x ?? 0),
-                y1: bb.y1 + (region?.y ?? 0),
-                text: word.text,
-                confidence: word.confidence / 100,
-              })
-            }
+    const boxes: BoundingBox[] = []
+    const blocks = result.data.blocks ?? []
+    for (const block of blocks) {
+      for (const para of (block.paragraphs ?? [])) {
+        for (const line of (para.lines ?? [])) {
+          for (const word of (line.words ?? [])) {
+            const bb = word.bbox
+            if (!bb) continue
+            // Bounding boxes are in cropped-image coordinates.
+            // If a region was provided, offset back to canonical (pre-crop) coordinates.
+            boxes.push({
+              x0: bb.x0 + (region?.x ?? 0),
+              y0: bb.y0 + (region?.y ?? 0),
+              x1: bb.x1 + (region?.x ?? 0),
+              y1: bb.y1 + (region?.y ?? 0),
+              text: word.text,
+              confidence: word.confidence / 100,
+            })
           }
         }
       }
+    }
 
-      return {
-        rawText: result.data.text,
-        confidence: result.data.confidence / 100,
-        boundingBoxes: boxes,
-        source: 'ocr',
-      }
-    } finally {
-      URL.revokeObjectURL(url)
+    return {
+      rawText: result.data.text,
+      confidence: result.data.confidence / 100,
+      boundingBoxes: boxes,
+      source: 'ocr',
     }
   }
 
