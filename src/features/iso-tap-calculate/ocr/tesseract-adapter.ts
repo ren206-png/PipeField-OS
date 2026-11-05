@@ -52,6 +52,10 @@ export class TesseractAdapter implements OcrAdapter {
         // tesseract-core-{relaxedsimd-,simd-,}lstm.wasm.js for this device.
         corePath:   '/iso-calc-ocr',
         langPath:   '/iso-calc-ocr/',
+        // Load the worker from its same-origin URL. The default (a blob: URL)
+        // is blocked by our CSP, which has no worker-src and no blob: in
+        // script-src, so worker start-up failed with 'OCR failed'.
+        workerBlobURL: false,
       })
       await this.worker.setParameters({
         tessedit_char_whitelist: CHAR_WHITELIST,
