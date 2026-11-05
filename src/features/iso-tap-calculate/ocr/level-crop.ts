@@ -116,8 +116,46 @@ export interface RankedReading<P = unknown> extends RawReading<P> {
   score: number
 }
 
-function normalizeReading(text: string): string {
-  return text.trim().replace(/\s+/g, ' ')
+const DRAWING_DENOMINATORS = new Set([2, 4, 8, 16, 32, 64])
+
+/**
+ * OCR often drops the space in a mixed number: "8 1/2" reads as "81/2",
+ * which would parse as 40½. Drawings only use proper fractions with
+ * denominators 2–64 and odd numerators, so an improper fraction is re-split
+ * so the numerator is below the denominator. Returns every valid split
+ * (e.g. "1215/16" → "12 15/16" and "121 5/16"), or [] if nothing to fix.
+ */
+export function fractionAlternatives(text: string): string[] {
+  const m = text.match(/^(.*?)(\d{2,})\/(\d{1,2})(?!\d)(.*)$/)
+  if (!m) return []
+  const [, pre, numStr, denStr, post] = m
+  if (/[\d/]$/.test(pre)) return []
+  const den = parseInt(denStr, 10)
+  if (!DRAWING_DENOMINATORS.has(den) || parseInt(numStr, 10) < den) return []
+  const out: string[] = []
+  for (const k of [2, 1]) {
+    if (numStr.length <= k) continue
+    const num = parseInt(numStr.slice(-k), 10)
+    if (String(num).length !== k) continue // no leading zero
+    if (num > 0 && num < den && num % 2 === 1) out.push(`${pre}${numStr.slice(0, -k)} ${num}/${den}${post}`)
+  }
+  return out
+}
+
+/** The most likely correction (first alternative), or the text unchanged. */
+export function splitRunTogetherFraction(text: string): string {
+  return fractionAlternatives(text)[0] ?? text
+}
+
+export function normalizeReading(text: string): string {
+  return splitRunTogetherFraction(text.trim().replace(/\s+/g, ' '))
+}
+
+/** All texts a raw reading could stand for (fraction splits), normalised. */
+function readingTexts(raw: string): string[] {
+  const t = raw.trim().replace(/\s+/g, ' ')
+  const alts = fractionAlternatives(t)
+  return alts.length ? alts : [t]
 }
 
 /**
@@ -132,8 +170,7 @@ export function rankReadings<P>(
   limit = 3,
 ): RankedReading<P>[] {
   const best = new Map<string, RankedReading<P>>()
-  for (const r of readings) {
-    const text = normalizeReading(r.text)
+  for (const r of readings) for (const text of readingTexts(r.text)) {
     const digits = (text.match(/\d/g) ?? []).length
     if (digits === 0) continue
     const score = (isLength(text) ? 1 : 0) + r.confidence * Math.sqrt(digits) * 0.5

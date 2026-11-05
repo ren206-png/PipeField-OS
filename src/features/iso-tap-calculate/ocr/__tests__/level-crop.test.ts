@@ -1,5 +1,8 @@
 import {
   binarizeAndStripLines,
+  normalizeReading,
+  fractionAlternatives,
+  splitRunTogetherFraction,
   planLevelledCrop,
   rankReadings,
   textLineThickness,
@@ -92,5 +95,30 @@ describe('rankReadings', () => {
   test('returns at most `limit` readings', () => {
     const out = rankReadings([r('1', .1), r('2', .2), r('3', .3), r('4', .4)], isLength, 3)
     expect(out).toHaveLength(3)
+  })
+})
+
+describe('splitRunTogetherFraction', () => {
+  test.each([
+    ['81/2"', '8 1/2"'],
+    ['143/4"', '14 3/4"'],
+    ['1215/16', '12 15/16'],
+    ["2'-63/8\"", "2'-6 3/8\""],
+    ['37/8', '3 7/8'],
+  ])('%s → %s', (input, expected) => {
+    expect(splitRunTogetherFraction(input)).toBe(expected)
+  })
+  test.each(['1/2"', '3/4', '8 1/2"', '450', '15/16', '600mm', '12/5'])('leaves %s alone', s => {
+    expect(splitRunTogetherFraction(s)).toBe(s)
+  })
+  test('ambiguous sixteenths offer both splits', () => {
+    expect(fractionAlternatives('1215/16')).toEqual(['12 15/16', '121 5/16'])
+  })
+  test('rankReadings offers every split as its own reading', () => {
+    const out = rankReadings([{ text: '1215/16', confidence: 0.6, angle: 0, scale: 2 }], () => true)
+    expect(out.map(x => x.text).sort()).toEqual(['12 15/16', '121 5/16'])
+  })
+  test('normalizeReading collapses spaces and splits', () => {
+    expect(normalizeReading('  81/2"  ')).toBe('8 1/2"')
   })
 })
