@@ -158,7 +158,8 @@ export function DimensionEntryStep({
           ocrWarning: 'OCR found no text in that region — try a larger area or enter manually',
         })
       }
-    } catch {
+    } catch (err) {
+      console.error('[iso-calc] OCR failed:', err)
       fieldSetters[targetId]({
         ...fieldMap[targetId],
         ocrWarning: 'OCR failed — please enter manually',
