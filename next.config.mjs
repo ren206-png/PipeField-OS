@@ -28,7 +28,9 @@ const ContentSecurityPolicy = [
   // challenges.cloudflare.com: Turnstile CAPTCHA on the web login page
   isDev
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://challenges.cloudflare.com"
-    : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://challenges.cloudflare.com",
+    // 'wasm-unsafe-eval' lets the self-hosted Tesseract OCR worker compile its
+    // WebAssembly. It permits Wasm compilation only, not JS eval().
+    : "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.googletagmanager.com https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   // Images: self + Supabase storage + data URIs (avatars, QR codes) + Google
   "img-src 'self' data: blob: https://*.supabase.co https://www.google.com https://www.gstatic.com",
