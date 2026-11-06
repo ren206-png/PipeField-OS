@@ -5,6 +5,38 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireActiveBilling } from '@/lib/api-billing-guard'
+
+// ── Billing lockout on writes ────────────────────────────────
+// A locked org (payment failed past grace, or trial ended without a plan)
+// keeps read access but cannot write. These paths stay open so a locked
+// org can still sign in, see itself, fix billing and contact support.
+const BILLING_EXEMPT_PREFIXES = [
+  '/api/billing',
+  '/api/auth',
+  '/api/me',
+  '/api/register',
+  '/api/contact',
+  '/api/feedback',
+  '/api/errors',
+  '/api/notifications',
+  '/api/cron',
+  '/api/admin',
+]
+const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+
+/** True when this request must pass the billing lockout check. */
+export function needsBillingCheck(method: string, path: string, role: string | null | undefined): boolean {
+  if (READ_METHODS.has(method.toUpperCase())) return false
+  if (role === 'platform_admin') return false
+  return !BILLING_EXEMPT_PREFIXES.some(p => path === p || path.startsWith(p + '/'))
+}
+
+async function billingLockout(req: NextRequest | undefined, caller: CallerProfile): Promise<NextResponse | null> {
+  if (!req) return null
+  if (!needsBillingCheck(req.method, req.nextUrl?.pathname ?? '', caller.role)) return null
+  return requireActiveBilling(caller.organization_id)
+}
 
 // ── Role sets ─────────────────────────────────────────────────
 export const ORG_ADMIN_ROLES = [
@@ -90,6 +122,8 @@ export async function requireAuth(req?: NextRequest): Promise<
   if (caller.status && caller.status !== 'active') {
     return { error: NextResponse.json({ error: 'Account suspended' }, { status: 403 }) }
   }
+  const locked = await billingLockout(req, caller)
+  if (locked) return { error: locked }
   return { caller }
 }
 
@@ -101,6 +135,8 @@ export async function requireOrgAdmin(req?: NextRequest): Promise<
   if (!caller || !ORG_ADMIN_ROLES.includes(caller.role as OrgAdminRole)) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
+  const locked = await billingLockout(req, caller)
+  if (locked) return { error: locked }
   return { caller }
 }
 
