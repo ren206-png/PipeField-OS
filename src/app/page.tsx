@@ -153,6 +153,7 @@ export default async function RootPage() {
           <div className="flex justify-center mb-6">
             <a
               href="https://apps.apple.com/us/app/pipefield-os/id6804559847"
+              data-store-badge
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-3 rounded-xl border border-surface-700 bg-surface-800 px-5 py-3 hover:bg-surface-700 transition-colors"
@@ -779,6 +780,7 @@ export default async function RootPage() {
             <div className="sm:text-right">
               <a
                 href="https://apps.apple.com/us/app/pipefield-os/id6804559847"
+              data-store-badge
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2.5 rounded-lg border border-surface-700 bg-surface-800 px-4 py-2.5 hover:bg-surface-700 transition-colors mb-3"
