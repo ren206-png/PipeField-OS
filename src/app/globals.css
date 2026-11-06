@@ -286,3 +286,8 @@ html.drawer-open body {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+/* Inside the iOS/Android app: don't advertise app stores (set in layout.tsx) */
+html[data-native-app] [data-store-badge] {
+  display: none !important;
+}

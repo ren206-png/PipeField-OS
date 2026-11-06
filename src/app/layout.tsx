@@ -120,6 +120,14 @@ export default function RootLayout({
                   document.documentElement.classList.remove('dark', 'light');
                   document.documentElement.classList.add(theme);
                 } catch(e) {}
+                // Inside the iOS/Android app (Capacitor injects its bridge before
+                // page scripts), mark <html> so store badges etc. can be hidden.
+                try {
+                  var cap = window.Capacitor;
+                  if (cap && cap.isNativePlatform && cap.isNativePlatform()) {
+                    document.documentElement.setAttribute('data-native-app', cap.getPlatform());
+                  }
+                } catch(e) {}
               })();
             `,
           }}
