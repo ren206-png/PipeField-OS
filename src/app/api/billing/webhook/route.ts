@@ -89,6 +89,28 @@ async function updateOrg(
   if (error) logger.error('billing.webhook.update_org_failed', new Error(error.message))
 }
 
+// ── Idempotency ────────────────────────────────────────────────
+// Stripe can deliver the same event more than once. Claim the event id
+// first; a unique-violation means it was already handled.
+type ClaimResult = 'new' | 'duplicate' | 'unavailable'
+
+async function claimEvent(id: string, type: string): Promise<ClaimResult> {
+  const { error } = await createAdminClient()
+    .from('stripe_webhook_events')
+    .insert({ id, type })
+  if (!error) return 'new'
+  if (error.code === '23505') return 'duplicate'
+  // Table missing / DB hiccup: don't block billing — process without dedupe.
+  logger.error('billing.webhook.claim_failed', new Error(error.message))
+  return 'unavailable'
+}
+
+/** Release a claim so Stripe's retry can process the event again. */
+async function releaseEvent(id: string): Promise<void> {
+  const { error } = await createAdminClient().from('stripe_webhook_events').delete().eq('id', id)
+  if (error) logger.error('billing.webhook.release_failed', new Error(error.message))
+}
+
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
   if (!webhookSecret) {
@@ -118,6 +140,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true, warning: 'DEAD_LETTER' })
   }
   const validatedEvent = eventParse.data
+
+  const claim = await claimEvent(validatedEvent.id, validatedEvent.type)
+  if (claim === 'duplicate') {
+    return NextResponse.json({ received: true, duplicate: true })
+  }
 
   try {
     switch (validatedEvent.type) {
@@ -178,21 +205,25 @@ export async function POST(req: NextRequest) {
         }
         const subData    = subParse.data
         const customerId = subData.customer
-        const priceId    = subData.items?.data[0]?.price.id ?? ''
-        const periodEnd  = subData.current_period_end ?? 0
+        // Events can arrive out of order: read the subscription as it is now,
+        // not as it was when this (possibly stale) event was created.
+        const live       = await getStripe().subscriptions.retrieve(subData.id)
+        if (live.status === 'canceled') break // handled by customer.subscription.deleted
+        const priceId    = live.items.data[0]?.price.id ?? ''
+        const periodEnd  = getPeriodEnd(live)
         const tier2      = tierFromPriceId(priceId)
-        const dbStatus2  = STRIPE_STATUS_MAP[subData.status] ?? 'incomplete'
+        const dbStatus2  = STRIPE_STATUS_MAP[live.status] ?? 'incomplete'
 
         if (tier2) {
           const updatePayload2: Parameters<typeof updateOrg>[1] = {
             subscription_tier:         tier2,
             subscription_status:       dbStatus2,
-            stripe_subscription_id:    subData.id,
+            stripe_subscription_id:    live.id,
             stripe_current_period_end: new Date(periodEnd * 1000).toISOString(),
           }
           // If trial_end is present, update trial_ends_at
-          if (subData.trial_end) {
-            updatePayload2.trial_ends_at = new Date(subData.trial_end * 1000).toISOString()
+          if (live.trial_end) {
+            updatePayload2.trial_ends_at = new Date(live.trial_end * 1000).toISOString()
           }
           await updateOrg(customerId, updatePayload2)
         }
@@ -248,6 +279,14 @@ export async function POST(req: NextRequest) {
           //   - Dunning recovery (payment retried + succeeded)
           //   - Normal monthly renewal
           const adminClient = createAdminClient()
+          // Read the status BEFORE updating, so we only announce a recovery.
+          const { data: before } = await adminClient
+            .from('organizations')
+            .select('id, subscription_status')
+            .eq('stripe_customer_id', customerId)
+            .maybeSingle()
+          const wasPastDue = before?.subscription_status === 'past_due'
+
           await adminClient
             .from('organizations')
             .update({
@@ -260,15 +299,10 @@ export async function POST(req: NextRequest) {
             })
             .eq('stripe_customer_id', customerId)
 
-          // In-app notification: subscription is now active
-          // (skip if this is just a normal renewal — only fire on recovery)
-          const { data: orgRow } = await adminClient
-            .from('organizations')
-            .select('id, subscription_status')
-            .eq('stripe_customer_id', customerId)
-            .maybeSingle()
-
-          if (orgRow) {
+          // In-app notification only when this payment recovered a failed one
+          // (not on every normal monthly renewal).
+          const orgRow = before
+          if (orgRow && wasPastDue) {
             // Insert reactivation notification — fire-and-forget, never throw
             void Promise.resolve(
               adminClient.from('notifications').insert({
@@ -295,6 +329,11 @@ export async function POST(req: NextRequest) {
         }
         const invoiceData = invParse.data
         const customerId  = invoiceData.customer
+
+        // A late or retried failure event for an invoice that has since been
+        // paid (or voided) must not put a paying customer back into past_due.
+        const liveInvoice = await getStripe().invoices.retrieve(invoiceData.id)
+        if (liveInvoice.status === 'paid' || liveInvoice.status === 'void') break
 
         // 3-day grace period from first failure.
         // Only set grace_period_ends_at if not already set (idempotent —
@@ -343,6 +382,8 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     logger.error('billing.webhook.handler_failed', err)
+    // Let Stripe's retry process it again
+    if (claim === 'new') await releaseEvent(validatedEvent.id)
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 }
