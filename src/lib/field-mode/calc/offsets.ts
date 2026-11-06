@@ -114,6 +114,18 @@ export function rollingOffset(input: RollingOffsetInput): CalcResult<RollingOffs
 // parallelOffsets
 // ---------------------------------------------------------------------------
 
+/**
+ * Parallel offsets: lines `spacingMm` apart (centre to centre) making the same
+ * offset with `angleDeg` elbows. Each next line's elbow centre moves along the
+ * run by spacing × tan(θ/2); travel is identical for every line.
+ * e.g. 12" spacing, 45° → 4.971".
+ */
+export function parallelOffsetShiftMm(spacingMm: number, angleDeg: number): number {
+  if (!(spacingMm > 0)) throw new RangeError('spacing must be > 0')
+  if (!(angleDeg > 0 && angleDeg < 180)) throw new RangeError('angle must be > 0 and < 180')
+  return spacingMm * Math.tan((angleDeg * Math.PI) / 360)
+}
+
 export type OffsetLine = {
   od_mm: number
   insulation_mm: number
@@ -148,13 +160,22 @@ export function parallelOffsets(input: ParallelOffsetInput): CalcResult<Parallel
     required_mm: number
   }> = []
 
-  for (const line of input.lines) {
+  // Each line i starts later along the run by (distance from line 0) × tan(θ/2),
+  // using centre-to-centre spacing = OD/2 + insulation each side + clearance.
+  let cumulativeMm = 0
+  for (let i = 0; i < input.lines.length; i++) {
+    const line = input.lines[i]
     const r = simpleOffset({ offset: line.offset, angle: line.angle })
     if (!r.ok) return r
+    if (i > 0) {
+      const prev = input.lines[i - 1]
+      cumulativeMm += prev.od_mm / 2 + prev.insulation_mm + line.od_mm / 2 + line.insulation_mm + requiredMm
+    }
+    const angleDeg = toDegrees(line.angle)
     results.push({
       travel: r.value.travel,
       run: r.value.run,
-      travel_adjustment: fromMm(0),
+      travel_adjustment: fromMm(i === 0 ? 0 : parallelOffsetShiftMm(cumulativeMm, angleDeg)),
     })
   }
 
