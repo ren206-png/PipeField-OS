@@ -22,6 +22,9 @@ export type LockoutReason = 'payment_failed' | 'trial_expired' | null
  * "In good standing" includes: active, trialing (within window),
  * canceled-but-grace-still-running, or past_due within grace window.
  */
+// KEEP IN SYNC with public.org_can_write() in
+// supabase/migrations/20261106_billing_write_lock_rls.sql, which enforces the
+// same rule at the database level (RLS) for writes from the Supabase client.
 export function getLockoutReason(org: Organization | null | undefined): LockoutReason {
   if (!org) return null
 
