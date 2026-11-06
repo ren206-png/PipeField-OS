@@ -124,7 +124,10 @@ export default function PrivacyPage() {
             30 days after account closure to allow for data export and dispute resolution.
           </p>
           <p>
-            You may request deletion of your data at any time by contacting us at{' '}
+            You can delete your account yourself at any time in the app or on the website under
+            Settings → Delete Account. See{' '}
+            <Link href="/delete-account" className="text-brand-400 hover:underline">pipefield-os.com/delete-account</Link>{' '}
+            for what is deleted and what is kept. You may also request deletion of your data at any time by contacting us at{' '}
             <a href="mailto:support@pipefield-os.com" className="text-brand-400 hover:underline">
               support@pipefield-os.com
             </a>. Some data may be retained longer where required by law or for legitimate business

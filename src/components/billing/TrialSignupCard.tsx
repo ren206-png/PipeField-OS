@@ -85,7 +85,7 @@ export function TrialSignupCard({ isAdmin }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-brand-500/30 bg-brand-500/5 p-6 space-y-5">
+    <div data-purchase className="rounded-2xl border border-brand-500/30 bg-brand-500/5 p-6 space-y-5">
       {/* Header */}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-brand-500/20 flex items-center justify-center flex-shrink-0">

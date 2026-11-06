@@ -291,3 +291,12 @@ html.drawer-open body {
 html[data-native-app] [data-store-badge] {
   display: none !important;
 }
+
+/* Inside the iOS/Android app: no purchase or upgrade entry points
+   (store payment rules). The billing/pricing pages show plan status only. */
+html[data-native-app] a[href^="/settings/billing"],
+html[data-native-app] a[href^="/settings/pricing"],
+html[data-native-app] a[href^="/settings?tab=billing"],
+html[data-native-app] [data-purchase] {
+  display: none !important;
+}

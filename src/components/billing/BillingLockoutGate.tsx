@@ -119,6 +119,7 @@ export function BillingLockoutGate() {
               <div className="space-y-3">
                 {isPaymentFailed ? (
                   <button
+                    data-purchase
                     onClick={openPortal}
                     disabled={loadingPortal}
                     className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-50"

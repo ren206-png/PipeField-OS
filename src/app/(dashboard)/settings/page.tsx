@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { User, Building2, Lock, CheckCircle2, Loader2, AlertCircle, CreditCard, ArrowRight, MessageSquare, Mail, ShieldAlert, ShieldCheck, Bell } from 'lucide-react'
+import { User, Building2, Lock, CheckCircle2, Loader2, AlertCircle, CreditCard, ArrowRight, MessageSquare, Mail, ShieldAlert, ShieldCheck, Bell, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
@@ -654,8 +654,96 @@ export default function SettingsPage() {
             )}
           </div>
         </form>
-      </Section>
+            </Section>
+
+      {/* ── Delete account (store requirement) ── */}
+      <DeleteAccountSection />
 
     </div>
+  )
+}
+
+function DeleteAccountSection() {
+  const { profile } = useAuth()
+  const [open, setOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  if (profile?.role === 'platform_admin') return null
+
+  async function deleteAccount() {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await apiFetch('/api/me/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: confirmText }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error ?? 'Could not delete the account')
+      await createClient().auth.signOut().catch(() => {})
+      window.location.href = '/delete-account?done=1'
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete the account')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Section icon={Trash2} title="Delete Account">
+      <div className="space-y-3 text-sm text-surface-400">
+        <p>
+          Permanently deletes your login and personal details (name, email, phone, welder stamp,
+          personal work log and notifications). Quality records you created for your company,
+          such as welds, inspections and signatures, stay with the company and will show
+          &ldquo;Deleted user&rdquo;.
+        </p>
+        <p>
+          If you are the only member of your company, its subscription is cancelled. This can&apos;t be undone.
+        </p>
+        {!open ? (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="px-4 py-2 rounded-lg border border-red-500/50 text-red-400 hover:bg-red-500/10 font-semibold"
+          >
+            Delete my account…
+          </button>
+        ) : (
+          <div className="space-y-3 rounded-xl border border-red-500/40 bg-red-500/5 p-4">
+            <label className="label" htmlFor="delete-confirm">Type DELETE to confirm</label>
+            <input
+              id="delete-confirm"
+              className="input"
+              value={confirmText}
+              onChange={e => setConfirmText(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="characters"
+            />
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={confirmText !== 'DELETE' || busy}
+                onClick={deleteAccount}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white font-semibold disabled:opacity-40 flex items-center gap-2"
+              >
+                {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</> : 'Permanently delete'}
+              </button>
+              <button type="button" onClick={() => { setOpen(false); setConfirmText('') }} className="px-4 py-2 rounded-lg text-surface-300">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Section>
   )
 }

@@ -26,6 +26,7 @@ const PUBLIC_ROUTES = [
   '/share/',
   '/billing',
   '/privacy',          // Legal pages must be reachable logged-out (App Store review)
+  '/delete-account',   // Google Play 'Delete account URL' — must work logged out
   '/terms',
   '/blog',
   '/api/',             // API routes: refresh session but never redirect to /login
