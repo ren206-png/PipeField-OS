@@ -10,6 +10,8 @@ import { useOrganization } from '@/hooks/useOrganization'
 import { BillingStatusBanner } from '@/components/billing/BillingStatusBanner'
 import { TrialSignupCard } from '@/components/billing/TrialSignupCard'
 import { apiFetch } from '@/lib/apiFetch'
+import { useIsNativeApp } from '@/hooks/useIsNativeApp'
+import { NativeBillingNotice } from '@/components/billing/NativeBillingNotice'
 
 // ── Plan definitions (mirrors src/lib/stripe.ts — client-safe, no secret) ──
 const PLANS = [
@@ -419,6 +421,9 @@ function BillingContent() {
 }
 
 export default function BillingPage() {
+  // No purchases inside the store apps — plan status only.
+  const native = useIsNativeApp()
+  if (native) return <NativeBillingNotice />
   return (
     <Suspense fallback={<div className="text-surface-500 text-sm p-8">Loading billing…</div>}>
       <BillingContent />

@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { useOrganization } from '@/hooks/useOrganization'
+import { useIsNativeApp } from '@/hooks/useIsNativeApp'
+import { NativeBillingNotice } from '@/components/billing/NativeBillingNotice'
 
 interface PlanCard {
   key: string
@@ -87,6 +89,8 @@ const PLANS: PlanCard[] = [
 export default function DashboardPricingPage() {
   const { organization } = useOrganization()
   const currentTier = organization?.subscription_tier ?? null
+  const native = useIsNativeApp()
+  if (native) return <NativeBillingNotice />
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
