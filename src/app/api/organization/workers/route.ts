@@ -89,12 +89,22 @@ export async function PATCH(req: NextRequest) {
     if (caller.role !== 'platform_admin') {
       const { data: target } = await admin
         .from('user_profiles')
-        .select('organization_id')
+        .select('organization_id, role, auth_user_id')
         .eq('id', worker_profile_id)
         .maybeSingle()
 
       if (!target || target.organization_id !== caller.organization_id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      // Ownership rules (SEC-009): nobody changes their own role/status here,
+      // and only the owner can grant ownership or change another owner.
+      if (target.auth_user_id === caller.auth_user_id) {
+        return NextResponse.json({ error: 'You cannot change your own role or status' }, { status: 403 })
+      }
+      const callerIsOwner = caller.role === 'organization_owner'
+      if ((role === 'organization_owner' || target.role === 'organization_owner') && !callerIsOwner) {
+        return NextResponse.json({ error: 'Only the organization owner can change ownership' }, { status: 403 })
       }
     }
 

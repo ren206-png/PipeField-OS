@@ -56,11 +56,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Registration token expired. Please sign up again.' }, { status: 400 })
     }
 
-    // ── Auto-confirm email ─────────────────────────────────
-    await admin.auth.admin.updateUserById(authUserId, {
-      email_confirm: true,
-    })
-
     // ── PATH B: Invite-based signup ────────────────────────
     if (inviteToken) {
       const { data: invite, error: inviteErr } = await admin
@@ -84,6 +79,17 @@ export async function POST(req: NextRequest) {
         await admin.from('pending_invites').update({ status: 'expired' }).eq('id', invite.id)
         return NextResponse.json({ error: 'Invite expired' }, { status: 400 })
       }
+
+      // The invite only works for the address it was sent to (SEC-006)
+      if (!invite.email || invite.email.trim().toLowerCase() !== email.trim().toLowerCase()) {
+        return NextResponse.json(
+          { error: 'This invite was sent to a different email address. Sign up with the invited email.' },
+          { status: 403 }
+        )
+      }
+
+      // Invited email proven by the token sent to it — confirm it
+      await admin.auth.admin.updateUserById(authUserId, { email_confirm: true })
 
       // Create the profile in the invited org
       const { error: profileError } = await admin
@@ -145,6 +151,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    // New-org signup: email is auto-confirmed (unchanged behaviour — this
+    // only creates a brand-new empty org, it grants no existing data).
+    await admin.auth.admin.updateUserById(authUserId, { email_confirm: true })
 
     const insertOrg = async (slug: string) =>
       admin
