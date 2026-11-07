@@ -141,6 +141,13 @@ export function hasPermission(role: UserRole, permission: Permission): boolean {
   return ROLE_PERMISSIONS[role]?.includes(permission) ?? false
 }
 
+/** Weld statuses that are inspection / QC verdicts — setting them needs welds:approve. */
+export const WELD_APPROVAL_STATUSES = ['fit_up_approved', 'visual_pass', 'failed', 'accepted'] as const
+
+export function isWeldApprovalStatus(status: string | null | undefined): boolean {
+  return !!status && (WELD_APPROVAL_STATUSES as readonly string[]).includes(status)
+}
+
 /**
  * Get all permissions for a given role.
  */

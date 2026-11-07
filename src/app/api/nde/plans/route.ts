@@ -3,7 +3,7 @@
 // POST /api/nde/plans — create an NDE plan
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NDE_ENGINE_ENABLED } from '@/intelligence/flags'
 import { z } from 'zod'
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, ['projects:update', 'welds:approve'])
     if (authError) return authError
 
     if (!NDE_ENGINE_ENABLED) {

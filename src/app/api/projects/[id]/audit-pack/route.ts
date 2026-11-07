@@ -2,7 +2,7 @@
 // Generates a compliance audit package for a project in JSON or PDF format.
 import React from 'react'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import {
@@ -326,7 +326,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const { caller, error: authError } = await requireAuth(req)
+  const { caller, error: authError } = await requirePermission(req, 'reports:generate')
   if (authError) return authError
   if (!caller.organization_id) {
     return NextResponse.json({ error: 'No organization' }, { status: 400 })

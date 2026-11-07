@@ -1,7 +1,7 @@
 // PATCH  /api/welds/[id]/repairs/[repairId]  → update a repair record
 // DELETE /api/welds/[id]/repairs/[repairId]  → hard delete
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
@@ -35,7 +35,7 @@ async function verifyOwnership(admin: ReturnType<typeof createAdminClient>, weld
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:update')
     if (authError) return authError
     if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 
@@ -68,7 +68,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:update')
     if (authError) return authError
     if (!caller.organization_id) return NextResponse.json({ error: 'No organization' }, { status: 400 })
 

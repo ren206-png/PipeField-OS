@@ -4,7 +4,7 @@
 //   fields: file (File), caption? (string)
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logger } from '@/lib/logger'
 
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 // ── POST ──────────────────────────────────────────────────────
 export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:update')
     if (authError) return authError
 
     if (!caller.organization_id) {

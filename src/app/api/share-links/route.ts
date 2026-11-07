@@ -3,7 +3,7 @@
 // POST /api/share-links  — create new link
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'projects:update')
     if (authError) return authError
 
     if (!caller.organization_id) {

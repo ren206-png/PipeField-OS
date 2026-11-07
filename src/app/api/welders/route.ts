@@ -7,7 +7,7 @@
 // plan-seat limit is enforced server-side before any DB write.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkWelderLimit } from '@/lib/usage'
 import { z } from 'zod'
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
 // ── POST — create welder (with plan limit check) ──────────────
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, ['projects:update', 'welds:approve'])
     if (authError) return authError
     if (!caller.organization_id) {
       return NextResponse.json({ error: 'No organization' }, { status: 400 })

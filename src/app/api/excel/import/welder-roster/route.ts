@@ -3,7 +3,7 @@
 // Validates rows, optionally upserts welders by stamp.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OFFLINE_FIELD_ENABLED } from '@/intelligence/flags'
 import { parseWorkbook, WELDER_ROSTER_COLUMNS } from '@/lib/excel'
@@ -21,7 +21,7 @@ interface ValidationError {
 }
 
 export async function POST(req: NextRequest) {
-  const { caller, error: authError } = await requireAuth(req)
+  const { caller, error: authError } = await requirePermission(req, ['projects:update', 'welds:approve'])
   if (authError) return authError
 
   if (!OFFLINE_FIELD_ENABLED) {

@@ -7,7 +7,9 @@
 // runs to detect elevated rejection rates for the welder.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { hasPermission, isWeldApprovalStatus } from '@/lib/auth/permissions'
+import type { UserRole } from '@/types'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkWelderRejectionRate } from '@/lib/welder-alerts'
 import { createNotification } from '@/lib/notifications'
@@ -32,7 +34,7 @@ interface RouteContext {
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:update')
     if (authError) return authError
 
     if (!caller.organization_id) {
@@ -47,6 +49,10 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         { error: parsed.error.errors[0]?.message ?? 'Invalid payload' },
         { status: 400 }
       )
+    }
+
+    if (isWeldApprovalStatus(parsed.data.status) && !hasPermission(caller.role as UserRole, 'welds:approve')) {
+      return NextResponse.json({ error: 'Your role cannot set an approval status' }, { status: 403 })
     }
 
     const admin = createAdminClient()
