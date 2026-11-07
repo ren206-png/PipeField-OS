@@ -72,8 +72,10 @@ function buildWeeklyHtml({
 }
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get('authorization')?.replace('Bearer ', '')
-  if (secret !== process.env.CRON_SECRET) {
+  // Fail closed: if CRON_SECRET is unset, nobody is authorised (SEC-010).
+  const expected = process.env.CRON_SECRET
+  const secret   = req.headers.get('authorization')?.replace('Bearer ', '')
+  if (!expected || secret !== expected) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
