@@ -179,7 +179,7 @@ function ShareLinksPanel({ projects }: { projects: any[] }) {
               </select>
             </div>
             <div>
-              <label className="label">Expires (optional)</label>
+              <label className="label">Expires (default 90 days)</label>
               <input
                 type="datetime-local"
                 className="input w-full"

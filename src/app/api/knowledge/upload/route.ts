@@ -148,8 +148,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: uploadError.message }, { status: 500 })
     }
 
-    const { data: urlData } = admin.storage.from(BUCKET).getPublicUrl(storagePath)
-
     // Insert knowledge_source record
     const { data: source, error: insertError } = await admin
       .from('knowledge_sources')
@@ -165,7 +163,7 @@ export async function POST(req: NextRequest) {
         file_size:         file.size,
         file_type:         file.type || 'application/octet-stream',
         storage_path:      storagePath,
-        public_url:        urlData.publicUrl,
+        public_url:        null,
         tags,
         visibility,
         status:            'active',
@@ -182,6 +180,11 @@ export async function POST(req: NextRequest) {
       if (cleanupError) console.error('[knowledge/upload] orphaned storage cleanup failed:', cleanupError.message)
       return NextResponse.json({ error: insertError.message }, { status: 500 })
     }
+
+    // Link through the access-checked download route, never a public bucket URL (SEC-008)
+    const fileUrl = `/api/knowledge/sources/${source.id}/file`
+    await admin.from('knowledge_sources').update({ public_url: fileUrl }).eq('id', source.id)
+    source.public_url = fileUrl
 
     // Audit log
     const { error: auditError } = await admin.from('knowledge_audit_log').insert({

@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid'
 const MAX_FILE_SIZE   = 10 * 1024 * 1024 // 10 MB
 const ACCEPTED_TYPES  = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic'])
 const BUCKET          = 'weld-photos'
+const PHOTO_URL_SECONDS = 60 * 60
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -53,13 +54,15 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 
     if (error) throw error
 
-    // Attach public URL to each record
-    const withUrls = (data ?? []).map((photo: Record<string, unknown>) => {
-      const { data: urlData } = admin.storage
-        .from(BUCKET)
-        .getPublicUrl(photo.storage_path as string)
-      return { ...photo, public_url: urlData.publicUrl }
-    })
+    // Short-lived signed URLs; field name kept as public_url for existing clients (SEC-008)
+    const rows = data ?? []
+    const { data: signed } = rows.length
+      ? await admin.storage.from(BUCKET).createSignedUrls(rows.map((r: Record<string, unknown>) => r.storage_path as string), PHOTO_URL_SECONDS)
+      : { data: [] as { signedUrl: string | null }[] }
+    const withUrls = rows.map((photo: Record<string, unknown>, i: number) => ({
+      ...photo,
+      public_url: signed?.[i]?.signedUrl ?? null,
+    }))
 
     return NextResponse.json(withUrls)
   } catch (err) {
@@ -143,8 +146,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: uploadError.message }, { status: 500 })
     }
 
-    // Get public URL
-    const { data: urlData } = admin.storage.from(BUCKET).getPublicUrl(storagePath)
+    // Signed URL (SEC-008)
+    const { data: urlData } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, PHOTO_URL_SECONDS)
 
     // Insert record
     const captionValue = typeof caption === 'string' && caption.trim() ? caption.trim() : null
@@ -169,7 +172,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
       throw insertError
     }
 
-    return NextResponse.json({ ...photo, public_url: urlData.publicUrl }, { status: 201 })
+    return NextResponse.json({ ...photo, public_url: urlData?.signedUrl ?? null }, { status: 201 })
   } catch (err) {
     logger.error('welds.photos.post.failed', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
