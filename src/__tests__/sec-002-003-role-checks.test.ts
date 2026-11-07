@@ -95,7 +95,7 @@ describe('POST /api/welds/sync-queue', () => {
     expect(res.status).toBe(200)
     expect(createWeld).toHaveBeenCalledTimes(1)
     {
-      const input = createWeld.mock.calls[0][1] as Record<string, unknown>
+      const input = (createWeld.mock.calls[0] as unknown[])[1] as Record<string, unknown>
       expect(input).not.toHaveProperty('created_by')
       expect(input).not.toHaveProperty('spool_id')
       expect(input).not.toHaveProperty('qualification_flag')
