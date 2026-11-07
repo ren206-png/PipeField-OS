@@ -3,7 +3,7 @@
 // POST /api/erp/jobs/[erp_job_id]/welds
 // Exports a single weld to the ERP job and records the result.
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { decryptKey } from '@/lib/crypto'
@@ -19,7 +19,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { erp_job_id: string } },
 ) {
-  const { caller, error: authError } = await requireAuth(req)
+  const { caller, error: authError } = await requirePermission(req, 'organization:manage')
   if (authError) return authError
   if (!caller.organization_id) {
     return NextResponse.json({ error: 'No organization' }, { status: 400 })

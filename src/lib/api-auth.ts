@@ -6,6 +6,8 @@ import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireActiveBilling } from '@/lib/api-billing-guard'
+import { hasPermission } from '@/lib/auth/permissions'
+import type { Permission, UserRole } from '@/types'
 
 // ── Billing lockout on writes ────────────────────────────────
 // A locked org (payment failed past grace, or trial ended without a plan)
@@ -125,6 +127,26 @@ export async function requireAuth(req?: NextRequest): Promise<
   const locked = await billingLockout(req, caller)
   if (locked) return { error: locked }
   return { caller }
+}
+
+/**
+ * requireAuth + role check against the permission matrix (SEC-002).
+ * Passing several permissions means the caller needs ANY one of them.
+ */
+export async function requirePermission(
+  req: NextRequest | undefined,
+  permission: Permission | Permission[],
+): Promise<
+  { caller: CallerProfile; error?: never } |
+  { caller?: never; error: NextResponse }
+> {
+  const result = await requireAuth(req)
+  if (result.error) return result
+  const needed = Array.isArray(permission) ? permission : [permission]
+  if (!needed.some(p => hasPermission(result.caller.role as UserRole, p))) {
+    return { error: NextResponse.json({ error: 'Your role does not allow this action' }, { status: 403 }) }
+  }
+  return result
 }
 
 export async function requireOrgAdmin(req?: NextRequest): Promise<

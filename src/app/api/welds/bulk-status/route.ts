@@ -4,7 +4,9 @@
 // one call. Scoped to the caller's organization.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { hasPermission, isWeldApprovalStatus } from '@/lib/auth/permissions'
+import type { UserRole } from '@/types'
+import { requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -19,7 +21,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:update')
     if (authError) return authError
 
     if (!caller.organization_id) {
@@ -33,6 +35,10 @@ export async function POST(req: NextRequest) {
         { error: parsed.error.errors[0]?.message ?? 'Invalid payload' },
         { status: 400 }
       )
+    }
+
+    if (isWeldApprovalStatus(parsed.data.newStatus) && !hasPermission(caller.role as UserRole, 'welds:approve')) {
+      return NextResponse.json({ error: 'Your role cannot set an approval status' }, { status: 403 })
     }
 
     const { weldIds, newStatus, notes } = parsed.data

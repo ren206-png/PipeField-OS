@@ -5,7 +5,7 @@
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 // ── PATCH ─────────────────────────────────────────────────────
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:update')
     if (authError) return authError
 
     if (!caller.organization_id) {
@@ -122,7 +122,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 // ── DELETE ────────────────────────────────────────────────────
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:delete')
     if (authError) return authError
 
     if (!caller.organization_id) {

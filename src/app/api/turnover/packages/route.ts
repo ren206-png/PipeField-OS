@@ -3,7 +3,7 @@
 // POST /api/turnover/packages — create + kick off async generation
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { TURNOVER_GEN_ENABLED } from '@/intelligence/flags'
 import { runGapCheck } from '@/lib/turnover-gap-check'
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'reports:generate')
     if (authError) return authError
 
     if (!TURNOVER_GEN_ENABLED) {

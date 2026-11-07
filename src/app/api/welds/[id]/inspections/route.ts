@@ -1,6 +1,6 @@
 // GET + POST /api/welds/[id]/inspections — list and create weld inspections
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
@@ -64,7 +64,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:approve')
     if (authError) return authError
 
     if (!caller.organization_id) {

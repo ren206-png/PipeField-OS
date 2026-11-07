@@ -4,7 +4,7 @@
 //   Caller must belong to the same org as the weld.
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,7 @@ interface RouteContext {
 
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'welds:update')
     if (authError) return authError
 
     if (!caller.organization_id) {

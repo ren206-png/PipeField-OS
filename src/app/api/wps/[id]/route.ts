@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
@@ -49,7 +49,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, ['projects:update', 'welds:approve'])
     if (authError) return authError
     const body = await req.json()
     const parsed = patchSchema.safeParse(body)
@@ -79,7 +79,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, ['projects:update', 'welds:approve'])
     if (authError) return authError
     const supabase = await createClient()
     // Block delete if welds reference this WPS

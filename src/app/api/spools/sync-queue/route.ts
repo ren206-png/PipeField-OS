@@ -13,12 +13,21 @@
 //   - max 50 items per request
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OFFLINE_FIELD_ENABLED } from '@/intelligence/flags'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
+
+// Server-owned columns a client payload must never set (SEC-003).
+const SERVER_OWNED = new Set([
+  'id', 'organization_id', 'project_id', 'created_by', 'created_at', 'updated_at',
+  'status', 'approved_by', 'approved_at', 'released_by', 'released_at', 'submitted_by',
+])
+function clientFields(payload: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(payload).filter(([k]) => !SERVER_OWNED.has(k)))
+}
 
 const ItemSchema = z.object({
   local_id:   z.string().uuid(),
@@ -38,7 +47,7 @@ interface SyncResult {
 }
 
 export async function POST(req: NextRequest) {
-  const { caller, error: authError } = await requireAuth(req)
+  const { caller, error: authError } = await requirePermission(req, ['spools:create', 'spools:update'])
   if (authError) return authError
 
   if (!OFFLINE_FIELD_ENABLED) {
@@ -100,7 +109,7 @@ export async function POST(req: NextRequest) {
       const { data: newSpool, error: insertErr } = await admin
         .from('spools')
         .insert({
-          ...payload,
+          ...clientFields(payload),
           project_id,
           organization_id: caller.organization_id,
           created_by: caller.auth_user_id,

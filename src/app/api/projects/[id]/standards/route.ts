@@ -5,7 +5,7 @@
 //         unit_system, locale, ahj, page_size
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
@@ -26,7 +26,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'projects:update')
     if (authError) return authError
 
     const orgId = caller.organization_id

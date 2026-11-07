@@ -1,6 +1,7 @@
 // POST /api/welds/sync-queue — sync offline weld queue items
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requirePermission } from '@/lib/api-auth'
+import { createWeld, weldCreateSchema } from '@/lib/welds/create-weld'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OFFLINE_FIELD_ENABLED } from '@/intelligence/flags'
 
@@ -20,7 +21,7 @@ interface SyncResult {
 }
 
 export async function POST(req: NextRequest) {
-  const { caller, error: authError } = await requireAuth(req)
+  const { caller, error: authError } = await requirePermission(req, 'welds:create')
   if (authError) return authError
 
   if (!OFFLINE_FIELD_ENABLED) {
@@ -78,21 +79,18 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      // Insert weld
-      const { data: newWeld, error: insertError } = await admin
-        .from('welds')
-        .insert({
-          ...payload,
-          project_id,
-          organization_id: caller.organization_id,
-        })
-        .select('id')
-        .single()
-
-      if (insertError) {
-        results.push({ local_id, status: 'error', error: insertError.message })
+      // Same allowlist, approval-role check and qualification enforcement
+      // as POST /api/welds — never spread the raw client payload (SEC-003).
+      const parsed = weldCreateSchema.safeParse({ ...payload, project_id })
+      if (!parsed.success) {
+        results.push({ local_id, status: 'error', error: parsed.error.errors[0]?.message ?? 'Invalid weld' })
+        continue
+      }
+      const created = await createWeld({ ...caller, organization_id: caller.organization_id }, parsed.data)
+      if (created.ok) {
+        results.push({ local_id, status: 'created', weld_id: created.weld.id as string })
       } else {
-        results.push({ local_id, status: 'created', weld_id: newWeld.id as string })
+        results.push({ local_id, status: 'error', error: String(created.body.error ?? 'Could not create weld') })
       }
     } catch (err) {
       results.push({

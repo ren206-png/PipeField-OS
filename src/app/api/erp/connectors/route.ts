@@ -1,7 +1,7 @@
 // GET /api/erp/connectors  — list all ERP connectors for caller's org
 // POST /api/erp/connectors — create a new ERP connector
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requireAuth, requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import { encrypt } from '@/lib/crypto'
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { caller, error: authError } = await requireAuth(req)
+  const { caller, error: authError } = await requirePermission(req, 'organization:manage')
   if (authError) return authError
   if (!caller.organization_id) {
     return NextResponse.json({ error: 'No organization' }, { status: 400 })

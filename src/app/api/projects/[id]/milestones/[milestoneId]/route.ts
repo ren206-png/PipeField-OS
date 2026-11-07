@@ -3,7 +3,7 @@
 // DELETE /api/projects/[id]/milestones/[milestoneId]
 // ============================================================
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/api-auth'
+import { requirePermission } from '@/lib/api-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 
@@ -47,7 +47,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; milestoneId: string }> }
 ) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'projects:update')
     if (authError) return authError
 
     const { id: projectId, milestoneId } = await params
@@ -86,7 +86,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; milestoneId: string }> }
 ) {
   try {
-    const { caller, error: authError } = await requireAuth(req)
+    const { caller, error: authError } = await requirePermission(req, 'projects:update')
     if (authError) return authError
 
     const { id: projectId, milestoneId } = await params
